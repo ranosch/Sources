@@ -88,7 +88,7 @@ class LNode {
         LNode*  insertSP(poly t, int i, poly p, RuleOld* r);
         // insert new elements to the list with resp. to increasing labels
         // only used for the S-polys to be reduced (TopReduction building new S-polys with higher label)
-        LNode*  insertByLabel(poly t, int i, poly p, RuleOld* r);
+        LNode*  insertByLabel(bool del, poly t, int i, poly p, RuleOld* r);
         LNode*  insertByLabel(LNode* l);
         LNode*  insertFirst(LNode* l);
         // deletes the first elements of the list with the same degree
@@ -144,7 +144,7 @@ class LList {
         // needed for sPolyList
         void    insertSP(LPolyOld* lp);
         void    insertSP(poly t,int i, poly p, RuleOld* r = NULL);
-        void    insertByLabel(poly t, int i, poly p, RuleOld* r = NULL);
+        void    insertByLabel(bool del, poly t, int i, poly p, RuleOld* r = NULL);
         void    insertByLabel(LNode* l);
         void    insertFirst(LNode* l);
         void    deleteByDeg();

@@ -190,7 +190,8 @@
      RETURN = 379,
      PARAMETER = 380,
      SYSVAR = 381,
-     UMINUS = 382
+     UMINUS = 382,
+     F5C_CMD = 383
    };
 #endif
 /* Tokens.  */
@@ -319,6 +320,7 @@
 #define PARAMETER 380
 #define SYSVAR 381
 #define UMINUS 382
+#define F5C_CMD 383
 
 
 

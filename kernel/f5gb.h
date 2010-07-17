@@ -13,6 +13,23 @@
 #include "f5lists.h"
 
 
+/* testing ars stuff */
+struct testPoly {
+  poly leading;
+  long idx;
+  testPoly* next;
+};
+
+
+
+struct testPair {
+  poly leastcommon;
+  long idx1;
+  long idx2;
+  testPair* next;
+};
+/* testing ars stuff */
+
 /*
 ======================================================
 sort polynomials in ideal i by decreasing total degree
@@ -54,7 +71,7 @@ first element in gPrev is always the newest element which must
 build critical pairs with all other elements in gPrev
 ================================================================
 */
-void criticalPair(LList* gPrev, CListOld* critPairs, LTagList* lTag, RTagList* rTag, RList* RuleOlds, PList* rejectedGBList, int plus);
+void criticalPair(LList* f5CriterionPairs, LList* reducers, ideal gbPrev, LList* gPrev, CListOld* critPairs, LTagList* lTag, RTagList* rTag, RList* RuleOlds, PList* rejectedGBList, int plus);
 
 
 bool checkDGB(LList* gPrev);
@@ -69,6 +86,7 @@ bool checkDGB(LList* gPrev);
  *               1, otherwise
  */
 bool arrisCheck(CNode* first,LNode* firstGCurr, long arrisdeg); 
+void arsCheck(testPoly* checkedPrev,testPair* checkedPairs); 
 
 /*
 ================================================================
@@ -119,15 +137,26 @@ inline void computeSPols(CNode* first, RTagList* rTag, RList* RuleOlds, LList* s
 reduction including subalgorithm topReduction() using Faugere's criteria
 ========================================================================
 */
-inline void reduction(LList* sPolyList, CListOld* critPairs, LList* gPrev, RList* RuleOlds, LTagList* lTag, RTagList* rTag,
+inline void reduction(LList* reducers, LList* sPolyList, CListOld* critPairs, LList* gPrev, RList* RuleOlds, LTagList* lTag, RTagList* rTag,
                  ideal gbPrev, PList* rejectedGBList, int plus);
+
+
+/*
+==================================
+Computation of S-Polynomials in F5 -- TEST STUFF FOR F5 CRITERION ELEMENTS!
+==================================
+*/
+void computeSPolsTest(LList* f5CriterionElements,int currIdx, poly u1, poly p1, poly u2, poly p2, LList* gPrev, ideal gbPrev, LTagList* lTag, RTagList* rTag, RList* rules, LList* reducers); 
+
+
+void reduceTest(LList* f5CriterionElements, LNode* l,LList* gPrev,ideal gbPrev,LTagList* lTag,RTagList* rTag,RList* rules,LList* reducers);
 
 /*
 ========================================================================
 reduction including subalgorithm topReduction() using Faugere's criteria
 ========================================================================
 */
-inline void newReduction(LList* sPolyList, CListOld* critPairs, LList* gPrev, LList* reducers, RList* rules, LTagList* lTag, RTagList* rTag, ideal gbPrev, int termination, PList* rejectedGBList, int plus);
+inline void newReduction(testPoly* checkedPrev, testPair* checkedPairs, LList* f5CriterionElements, LList* sPolyList, CListOld* critPairs, LList* gPrev, LList* reducers, RList* rules, LTagList* lTag, RTagList* rTag, ideal gbPrev, int termination, PList* rejectedGBList, int plus);
 
 /*!
  * ================================================================================
@@ -141,7 +170,7 @@ inline void newReduction(LList* sPolyList, CListOld* critPairs, LList* gPrev, LL
  * later on for possible new RuleOlds and S-polynomials to be added to the algorithm
  * ================================================================================
  */
-void findReducers(LNode* l, LList* sPolyList, ideal gbPrev, LList* gPrev, LList* reducers, CListOld* critPairs, RList* rules, LTagList* lTag, RTagList* rTag, int termination, PList* rejectedGBList, int plus); 
+void findReducers(testPoly* checkedPrev, testPair* checkedPairs, LList* f5CriterionElements, LNode* l, LList* sPolyList, ideal gbPrev, LList* gPrev, LList* reducers, CListOld* critPairs, RList* rules, LTagList* lTag, RTagList* rTag, int termination, PList* rejectedGBList, int plus); 
 
 /*
 =====================================================================================
@@ -149,7 +178,7 @@ top reduction in F5, i.e. reduction of a given S-polynomial by labeled polynomia
 the same index whereas the labels are taken into account
 =====================================================================================
 */
-inline void topReduction(LNode* l, LList* sPolyList, LList* gPrev, CListOld* critPairs, RList* RuleOlds, LTagList* lTag, RTagList* rTag, ideal gbPrev, PList* rejectedGBList, int plus); 
+inline void topReduction(LList* reducers, LNode* l, LList* sPolyList, LList* gPrev, CListOld* critPairs, RList* RuleOlds, LTagList* lTag, RTagList* rTag, ideal gbPrev, PList* rejectedGBList, int plus); 
 
 /*
 =======================================================================================

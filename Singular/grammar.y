@@ -276,6 +276,7 @@ void yyerror(const char * fmt)
 %token <i> SORTVEC_CMD
 %token <i> SRES_CMD
 %token <i> STD_CMD
+%token <i> F5C_CMD
 %token <i> SUBST_CMD
 %token <i> SYZYGY_CMD
 %token <i> VAR_CMD

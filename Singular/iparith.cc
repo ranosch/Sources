@@ -53,6 +53,7 @@
 #include "janet.h"
 #include "GMPrat.h"
 #include "tgb.h"
+#include "f5c.h"
 #include "walkProc.h"
 #include "mod_raw.h"
 #include "MinorInterface.h"
@@ -407,6 +408,7 @@ cmdnames cmds[] =
 #endif /* OLD_RES */
   { "status",      0, STATUS_CMD,         CMD_M},
   { "std",         0, STD_CMD ,           CMD_M},
+  { "f5c",         0, F5C_CMD ,           CMD_1},
   { "string",      0, STRING_CMD ,        ROOT_DECL_LIST},
   { "subst",       0, SUBST_CMD ,         CMD_M},
   { "system",      0, SYSTEM_CMD,         CMD_M},
@@ -4835,6 +4837,32 @@ static BOOLEAN jjSLIM_GB(leftv res, leftv u)
   if (w!=NULL) atSet(res,omStrDup("isHomog"),w,INTVEC_CMD);
   return FALSE;
 }
+static BOOLEAN jjF5C(leftv res, leftv v)
+{
+  ideal result;
+  ideal v_id=(ideal)v->Data();
+  intvec *w=(intvec *)atGet(v,"isHomog",INTVEC_CMD);
+  tHomog hom=testHomog;
+  if (w!=NULL)
+  {
+    if (!idTestHomModule(v_id,currQuotient,w))
+    {
+      WarnS("wrong weights");
+      w=NULL;
+    }
+    else
+    {
+      hom=isHomog;
+      w=ivCopy(w);
+    }
+  }
+  result=f5cMain(v_id,currQuotient);
+  idSkipZeroes(result);
+  res->data = (char *)result;
+  if(!TEST_OPT_DEGBOUND) setFlag(res,FLAG_STD);
+  if (w!=NULL) atSet(res,omStrDup("isHomog"),w,INTVEC_CMD);
+  return FALSE;
+}
 static BOOLEAN jjSTD(leftv res, leftv v)
 {
   ideal result;
@@ -5549,6 +5577,7 @@ struct sValCmd1 dArith1[]=
 ,{jjROWS,       ROWS_CMD,        INT_CMD,        MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{jjROWS_IV,    ROWS_CMD,        INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{jjCOUNT_IV,   ROWS_CMD,        INT_CMD,        INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
+,{jjF5C,        F5C_CMD,         IDEAL_CMD,      IDEAL_CMD     , NO_PLURAL |ALLOW_RING}
 ,{jjSLIM_GB,    SLIM_GB_CMD,     IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{jjSLIM_GB,    SLIM_GB_CMD,     MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{jjSort_Id,    SORTVEC_CMD,     INTVEC_CMD,     IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}

@@ -217,12 +217,13 @@ return newElement;
 }
 // insert new elemets to the list w.r.t. increasing labels
 // only used for the S-polys to be reduced (TopReduction building new S-polys with higher label)
-inline LNode* LNode::insertByLabel(poly t, int i, poly p, RuleOld* r) {
+inline LNode* LNode::insertByLabel(bool del, poly t, int i, poly p, RuleOld* r) {
     //Print("ADDING SOLYS TO THE LIST\n");
     //Print("new element: ");
     //pWrite(t);
        if(NULL == this) { // || NULL == data) {
         LNode* newElement   =   new LNode(t, i, p, r, this);
+        newElement->data->setDel(del);
         return newElement;
     }
     else {
@@ -233,6 +234,7 @@ inline LNode* LNode::insertByLabel(poly t, int i, poly p, RuleOld* r) {
             LNode* newElement   =   new LNode(t, i, p, r, this);
             //Print("%p\n",this);
             //Print("%p\n",newElement->next);
+        newElement->data->setDel(del);
             return newElement;
         }
         else {
@@ -242,6 +244,7 @@ inline LNode* LNode::insertByLabel(poly t, int i, poly p, RuleOld* r) {
                 //pWrite(temp->getTerm());
  if(-1 == pLmCmp(t,temp->next->getTerm())) {
                     LNode* newElement   =   new LNode(t, i, p, r, temp->next);
+        newElement->data->setDel(del);
                     temp->next          =   newElement;
                     return this;
                 }
@@ -255,6 +258,7 @@ inline LNode* LNode::insertByLabel(poly t, int i, poly p, RuleOld* r) {
             }
         //Print("HIER\n");
             LNode* newElement   =   new LNode(t, i, p, r, temp->next);
+        newElement->data->setDel(del);
             temp->next          =   newElement;
             return this;
         }
@@ -488,8 +492,8 @@ void LList::insertSP(poly t,int i, poly p, RuleOld* r) {
 }
 
 
-void LList::insertByLabel(poly t, int i, poly p, RuleOld* r) {
-    first = first->insertByLabel(t,i,p,r);
+void LList::insertByLabel(bool del, poly t, int i, poly p, RuleOld* r) {
+    first = first->insertByLabel(del,t,i,p,r);
     length++;
     //Print("LENGTH %d\n",length);
 }
