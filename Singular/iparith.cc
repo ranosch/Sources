@@ -408,7 +408,7 @@ cmdnames cmds[] =
 #endif /* OLD_RES */
   { "status",      0, STATUS_CMD,         CMD_M},
   { "std",         0, STD_CMD ,           CMD_M},
-  { "f5c",         0, F5C_CMD ,           CMD_1},
+  { "f5e",         0, F5C_CMD ,           CMD_1},
   { "string",      0, STRING_CMD ,        ROOT_DECL_LIST},
   { "subst",       0, SUBST_CMD ,         CMD_M},
   { "system",      0, SYSTEM_CMD,         CMD_M},

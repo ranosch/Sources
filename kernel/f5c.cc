@@ -1,3 +1,26 @@
+/*****************************************************************************\
+ * Computer Algebra System SINGULAR    
+\*****************************************************************************/
+/** @file f5c.cc
+ * 
+ * Implementation of variant F5e of Faugere's
+ * F5 algorithm in the SINGULAR kernel. F5e reduces the computed Groebner 
+ * bases after each iteration step, whereas F5 does not do this.
+ *
+ * ABSTRACT: An enhanced variant of Faugere's F5 algorithm .
+ *
+ * LITERATURE:
+ * - F5 Algorithm:  http://www-calfor.lip6.fr/~jcf/Papers/F02a.pdf
+ * - F5C Algorithm: http://arxiv.org/abs/0906.2967
+ * - F5+ Algorithm: to be confirmed
+ *
+ * @author Christian Eder
+ *
+ * @internal @version \$Id$
+ *
+ **/
+/*****************************************************************************/
+
 #include "mod2.h"
 #ifdef HAVE_F5C
 #include <unistd.h>
@@ -19,30 +42,12 @@
 #include "f5c.h"
 #include "timer.h"
 
-/** 
- * @brief \c f5cMain() is the main function of the F5 implementation in the
- * Singular kernel. It starts the computations of a Groebner basis of \c F.
- * This is done iteratively on the generators of \c F and degree-wise in each
- * iteration step. 
- * The implemented version is not the standard F5 Algorithm, but the
- * variant F5C (for using reduced Groebner basis after each iteration step)
- * combined with the variant F5+ (for a guaranteed termination of the
- * algorithm).
- * NOTE that the input must be homogeneous to guarantee termination and
- * correctness.
- *
- * LITERATURE:
- * - F5 Algorithm:  http://www-calfor.lip6.fr/~jcf/Papers/F02a.pdf
- * - F5C Algorithm: http://arxiv.org/abs/0906.2967
- * - F5+ Algorithm: to be confirmed
- * 
- * @param \c F is the ideal for which a Groebner basis shall be computed.
- * @param \c Q is the quotientring.
- * 
- * @return A Groebner basis of the the input ideal \c F.
- */
-ideal f5cMain(ideal F, ideal Q) {
-  if(idIs0(F)) {
+/// NOTE that the input must be homogeneous to guarantee termination and
+/// correctness. Thus these properties are assumed in the following.
+ideal f5cMain(ideal F, ideal Q) 
+{
+  if(idIs0(F)) 
+  {
     return idInit(1,F->rank);
   }
   // interreduction of the input ideal F
@@ -52,7 +57,8 @@ ideal f5cMain(ideal F, ideal Q) {
   r->m[0] = F->m[0];
   // counter over the remaining generators of the input ideal F
   int gen;
-  for(gen=1; gen<IDELEMS(F); gen++) {
+  for(gen=1; gen<IDELEMS(F); gen++) 
+  {
     // computation of r: a groebner basis of <F[0],...,F[gen]> = <r,F[gen]>
     r = f5cIter(F->m[gen],r);
     // the following interreduction is the essential idea of F5C.
@@ -64,23 +70,14 @@ ideal f5cMain(ideal F, ideal Q) {
 }
 
 
-/** 
- * @brief \c f5cIter() computes a Groebner basis of < \c p , \c redGB > using
- * the criteria of Faugere's F5 Algorithm
- * 
- * @param \c p New element from the initial ideal \c F of \c f5cMain() which
- * starts the new iteration step.
- * @param \c redGB Already computed and afterwards reduced Groebner basis of
- * the generators up to element \c p of the input ideal \c F of \c f5cMain() .
- * 
- * @return A (possibly) not reduced Groebner basis of < \c p , \c redGB >.
- */
-ideal f5cIter(poly p, ideal redGB) {
+ideal f5cIter(poly p, ideal redGB) 
+{
   int i;
   // create array of leading monomials of previously computed elements in redGB
   F5Rules* f5Rules = (F5Rules*) omalloc(IDELEMS(redGB)*sizeof(struct F5Rules));
   
-  for(i=0; i<IDELEMS(redGB); i++) {
+  for(i=0; i<IDELEMS(redGB); i++) 
+  {
     //f5Rules[i].label  = (int*) omalloc((currRing->N+1)*sizeof(int));
     //pGetExpV(redGB->m[i],f5Rules[i].label);
     f5Rules[i].slabel = pGetShortExpVector(redGB->m[i]); 
