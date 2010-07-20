@@ -48,7 +48,7 @@ ideal f5cMain(ideal F, ideal Q)
 {
   if(idIs0(F)) 
   {
-    return idInit(1,F->rank);
+    return idInit(1, F->rank);
   }
   // interreduction of the input ideal F
   F = kInterRed(F);
@@ -78,12 +78,12 @@ ideal f5cIter(poly p, ideal redGB)
   
   for(i=0; i<IDELEMS(redGB); i++) 
   {
-    //f5Rules[i].label  = (int*) omalloc((currRing->N+1)*sizeof(int));
-    //pGetExpV(redGB->m[i],f5Rules[i].label);
+    f5Rules[i].label  = (int*) omalloc((currRing->N+1)*sizeof(int));
+    pGetExpV(redGB->m[i],f5Rules[i].label);
     f5Rules[i].slabel = pGetShortExpVector(redGB->m[i]); 
   } 
   // reduce and initialize the list of Lpolys with the current ideal generator p
-  p = kNF(redGB,currQuotient,p);  
+  p = kNF(redGB, currQuotient,p);  
   /******************************
    * TO DO
    *****************************/

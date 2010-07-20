@@ -33,8 +33,8 @@
 /// representing a monomial by an integer vector resp. a long (i.e. the short
 /// exponent vector)
 struct F5Rules {
-  int** label;
-  long  slabel;
+  int**   label;
+  long*   slabel;
 };
 
  
