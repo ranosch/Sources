@@ -13,15 +13,15 @@
  *
  ***************************************************************/
 
-#include "mod2.h"
+#include <Singular/mod2.h>
 
 #ifdef HAVE_MPSR
 
-#include "mpsr_Get.h"
+#include <Singular/mpsr_Get.h>
 #include "longalg.h"
-#include "tok.h"
-#include "maps.h"
-#include "lists.h"
+#include <Singular/tok.h>
+#include <kernel/maps.h>
+#include <Singular/lists.h>
 
 BOOLEAN currComplete = FALSE;
 

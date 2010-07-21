@@ -9,7 +9,7 @@
 
 /* includes */
 #include <math.h>
-#include "mod2.h"
+#include <kernel/mod2.h>
 
 #ifndef NDEBUG
 # define MYTEST 0
@@ -17,27 +17,27 @@
 # define MYTEST 0
 #endif /* ifndef NDEBUG */
 
-#include "options.h"
-#include "omalloc.h"
-#include "polys.h"
-#include "numbers.h"
-#include "febase.h"
-#include "intvec.h"
-#include "longalg.h"
-#include "ffields.h"
-#include "ideals.h"
-#include "ring.h"
-#include "prCopy.h"
-#include "../Singular/ipshell.h"
-#include "p_Procs.h"
+#include <kernel/options.h>
+#include <omalloc.h>
+#include <kernel/polys.h>
+#include <kernel/numbers.h>
+#include <kernel/febase.h>
+#include <kernel/intvec.h>
+#include <kernel/longalg.h>
+#include <kernel/ffields.h>
+#include <kernel/ideals.h>
+#include <kernel/ring.h>
+#include <kernel/prCopy.h>
+#include <Singular/ipshell.h>
+#include <kernel/p_Procs.h>
 #ifdef HAVE_PLURAL
-#include "gring.h"
-#include "sca.h"
+#include <kernel/gring.h>
+#include <kernel/sca.h>
 #endif
-#include "maps.h"
-#include "matpol.h"
+#include <kernel/maps.h>
+#include <kernel/matpol.h>
 #ifdef HAVE_FACTORY
-#include "factory.h"
+#include <factory.h>
 #endif
 
 #define BITS_PER_LONG 8*SIZEOF_LONG
@@ -128,7 +128,7 @@ void rChangeCurrRing(ring r)
   }
 }
 
-ring rDefault(int ch, int N, char **n)
+ring rDefault(int ch, int N, char **n,int ord_size, int *ord, int *block0, int *block1)
 {
   ring r=(ring) omAlloc0Bin(sip_sring_bin);
   r->ch    = ch;
@@ -142,23 +142,32 @@ ring rDefault(int ch, int N, char **n)
     r->names[i]  = omStrDup(n[i]);
   }
   /*weights: entries for 2 blocks: NULL*/
-  r->wvhdl = (int **)omAlloc0(2 * sizeof(int_ptr));
-  /*order: lp,0*/
-  r->order = (int *) omAlloc(2* sizeof(int *));
-  r->block0 = (int *)omAlloc0(2 * sizeof(int *));
-  r->block1 = (int *)omAlloc0(2 * sizeof(int *));
-  /* ringorder dp for the first block: var 1..N */
-  r->order[0]  = ringorder_lp;
-  r->block0[0] = 1;
-  r->block1[0] = N;
-  /* the last block: everything is 0 */
-  r->order[1]  = 0;
+  r->wvhdl = (int **)omAlloc0((ord_size+1) * sizeof(int_ptr));
+  r->order = ord;
+  r->block0 = block0;
+  r->block1 = block1;
   /*polynomial ring*/
   r->OrdSgn    = 1;
 
   /* complete ring intializations */
   rComplete(r);
   return r;
+}
+
+ring rDefault(int ch, int N, char **n)
+{
+  /*order: lp,0*/
+  int *order = (int *) omAlloc(2* sizeof(int));
+  int *block0 = (int *)omAlloc0(2 * sizeof(int));
+  int *block1 = (int *)omAlloc0(2 * sizeof(int));
+  /* ringorder dp for the first block: var 1..N */
+  order[0]  = ringorder_lp;
+  block0[0] = 1;
+  block1[0] = N;
+  /* the last block: everything is 0 */
+  order[1]  = 0;
+
+  return rDefault(ch,N,n,2,order,block0,block1);
 }
 
 ///////////////////////////////////////////////////////////////////////////

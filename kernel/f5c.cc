@@ -113,8 +113,6 @@ ideal f5cIter(poly p, ideal redGB)
 }
 
 
-
-
 /*
   Print("SHORT EXP VECTOR 1:  %ld\n", pGetShortExpVector(id->m[0]));
   int* expVec   = new int[(r->N)+1];

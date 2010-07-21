@@ -8,12 +8,12 @@
 */
 
 /* includes */
-#include "mod2.h"
-#include "structs.h"
-#include "numbers.h"
-#include "ring.h"
-#include "p_polys.h"
-#include "febase.h"
+#include <kernel/mod2.h>
+#include <kernel/structs.h>
+#include <kernel/numbers.h>
+#include <kernel/ring.h>
+#include <kernel/p_polys.h>
+#include <kernel/febase.h>
 
 /*2
 * writes a monomial (p),
@@ -53,8 +53,8 @@ static void writemon(poly p, int ko, ring r)
   for (i=0; i<r->N; i++)
   {
     {
-      int ee = p_GetExp(p,i+1,r);
-      if (ee!=0)
+      long ee = p_GetExp(p,i+1,r);
+      if (ee!=0L)
       {
         if (wroteCoef)
           StringAppendS("*");
@@ -62,10 +62,10 @@ static void writemon(poly p, int ko, ring r)
           wroteCoef=(rShortOut(r) == FALSE);
         writeGen=TRUE;
         StringAppendS(rRingVar(i, r));
-        if (ee != 1)
+        if (ee != 1L)
         {
           if (rShortOut(r)==0) StringAppendS("^");
-          StringAppend("%d", ee);
+          StringAppend("%ld", ee);
         }
       }
     }

@@ -9,6 +9,7 @@ include_directories(${${PROJECT_NAME}_SOURCE_DIR}/factory)
 # include directories should be solved
 #include_directories(${${PROJECT_NAME}_SOURCE_DIR}/Singular)
 include_directories(${${PROJECT_NAME}_SOURCE_DIR}/omalloc)
+include_directories(${${PROJECT_NAME}_SOURCE_DIR}/x86_64-Linux/include )
 
 
 add_subdirectory(Singular)

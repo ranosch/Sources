@@ -7,8 +7,8 @@
 /*
 * ABSTRACT - all basic methods to manipulate ideals
 */
-#include "structs.h"
-#include "ring.h"
+#include <kernel/structs.h>
+#include <kernel/ring.h>
 
 struct sip_sideal
 {
@@ -47,13 +47,12 @@ extern omBin sip_sideal_bin;
 
 #ifdef PDEBUG
 ideal idDBInit (int size, int rank, const char *f, int l);
-ideal idCopyFirstK (const ideal ide, const int k);
 #define idInit(A,B) idDBInit(A,B,__FILE__,__LINE__)
 #else
 /*- creates an ideal -*/
 ideal idInit (int size, int rank=1);
-ideal idCopyFirstK (const ideal ide, const int k);
 #endif
+ideal idCopyFirstK (const ideal ide, const int k);
 /*- deletes an ideal -*/
 #define idDelete(h) id_Delete(h, currRing)
 void id_Delete (ideal* h, ring r);

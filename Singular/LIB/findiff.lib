@@ -8,7 +8,13 @@ LIBRARY:  findiff.lib    procedures to compute finite difference schemes for
                          linear differential equations
 AUTHOR:                  Christian Dingler
 
-NOTE:
+NOTE: 
+ @texinfo
+ Using @code{qepcad}/@code{qepcadsystem} from this
+ library requires the program @code{qepcad} to be installed.
+ You can download @code{qepcad} from
+ @uref{http://www.usna.edu/Users/cs/qepcad/INSTALL/IQ.html}
+ @end texinfo
 
 PROCEDURES:
  visualize(f);        shows a scheme in index-notation
@@ -1648,7 +1654,7 @@ static proc intveclist(intvec v)
 {
   list l;
   int i;
-  for(i=size(l);i>=1;i--)
+  for(i=size(v);i>=1;i--)
   {
     l[i]=v[i];
   }

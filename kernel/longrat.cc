@@ -11,16 +11,16 @@
 
 #include <string.h>
 #include <float.h>
-#include "mod2.h"
-#include "structs.h"
-#include "omalloc.h"
-#include "febase.h"
-#include "numbers.h"
-#include "modulop.h"
-#include "ring.h"
-#include "shortfl.h"
-#include "mpr_complex.h"
-#include "longrat.h"
+#include <kernel/mod2.h>
+#include <kernel/structs.h>
+#include <omalloc.h>
+#include <kernel/febase.h>
+#include <kernel/numbers.h>
+#include <kernel/modulop.h>
+#include <kernel/ring.h>
+#include <kernel/shortfl.h>
+#include <kernel/mpr_complex.h>
+#include <kernel/longrat.h>
 
 
 #ifndef BYTES_PER_MP_LIMB
@@ -1375,7 +1375,7 @@ int nlModP(number n, int p)
 
 #ifdef HAVE_RINGS
 /*2
-* convert number to GMP and warn if denom != 1
+* convert number i (from Q) to GMP and warn if denom != 1
 */
 void nlGMP(number &i, number n)
 {
