@@ -51,6 +51,7 @@
 #include <kernel/units.h>
 #include <Singular/janet.h>
 #include <kernel/GMPrat.h>
+#include <kernel/f5c.h>
 #include <kernel/tgb.h>
 #include <kernel/walkProc.h>
 #include <kernel/mod_raw.h>

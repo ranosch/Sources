@@ -65,11 +65,11 @@
 #endif
 
 #ifdef HAVE_F5
-#include <Singular/f5gb.h>
+#include <kernel/f5gb.h>
 #endif
 
 #ifdef HAVE_F5C
-#include <Singular/f5c.h>
+#include <kernel/f5c.h>
 #endif
 
 #ifdef HAVE_WALK
