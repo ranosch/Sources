@@ -29,40 +29,47 @@
 
 
 /// @struct \c F5Rules
-/// @brief \c F5Rules is the structure of a rule checked in the F5 criterion
-/// representing a monomial by an integer vector resp. a long (i.e. the short
-/// exponent vector)
-struct F5Rules {
-  int**   label;
-  long*   slabel;
+/// \c F5Rules is the structure of an array of rules checked in the F5 criterion
+/// representing a monomial by an integer vector resp a long, the short
+/// exponent vector.
+struct F5Rules 
+{
+  int**   label;  ///< pointer to an array of exponent vectors for checks of the 
+                  ///< F5 Criterion
+  long*   slabel; ///< pointer to the corresponding short exponent vectors for 
+                  ///< faster checks of divisibility
 };
 
  
 /// @struct \c RewRules
 /// @brief \c RewRules is the structure of a rule checked in the Rewritten criterion
-/// representing a monomial by an integer vector resp. a long (i.e. the short
-/// exponent vector)
-struct RewRules {
-  RewRules* next;
-  int*      label;
-  long      slabel;
+/// representing a monomial by an integer vector resp a long, the short
+/// exponent vector.
+struct RewRules 
+{
+  RewRules* next;   ///< pointer to the next element in the linked list
+  int*      label;  ///< exponent vector of the rule
+  long      slabel; ///< short exponent vecotr of the rule
 };
 
  
 /// @struct \c Lpoly 
 /// @brief \c Lpoly is the structure of a linked list of labeled polynomials, 
 /// i.e. elements consisting of a polynomial \c p and a label computed by F5C+ 
-/// The label is defined as an integer vector resp. in a short exponent
-/// vector form as a long in \c slabel . 
-/// \c f5Rules and \c rewRules are an array resp. a list of rules (i.e. int vectors + shortExponentVectors) which are tested by the 
-/// criteria of F5 in further computations.
-/// \c redundant checks if the element is redundant for the gröbner basis. Note
-/// that the elements are still non-redundant for F5C+. 
-struct Lpoly {
-  Lpoly*          next;
-  poly            p;
-  int*            label;
-  long            slabel;
+/// The label is defined as an integer vector 
+/// TODO----resp. in a short exponent vector form as a long in \c slabel . 
+/// TODO----\c f5Rules and \c rewRules are an array resp. a list of rules (i.e. int vectors + shortExponentVectors) which are tested by the 
+/// TODO----criteria of F5 in further computations.
+/// TODO----\c redundant checks if the element is redundant for the gröbner basis. 
+/// TODO----Note that the elements are still non-redundant for F5C+. 
+struct Lpoly 
+{
+  Lpoly*  next;   ///< pointer to the next element in the linked list
+  poly    p;      ///< polynomial part
+  int*    label;  ///< exponent vector, i.e. the label/signature
+  // NOTE: You do not need the short exponent vector as you never check
+  // with this, but only with multiples of it in the critical pair
+  //long    slabel; ///< short exponent vector of the label/signature
   // keep this in mind for your idea about improving the check of rules and
   // making it parallizable:
   // The idea is to store for each labeled poly the uniquely defined lists of
@@ -81,11 +88,12 @@ struct Lpoly {
 ///@brief \c Cpair is the structure of the list of critical pairs in F5C+
 ///containing the corresponding labeled polynomials \c lpi and the multipliers
 ///\c multi (as integer vectors).
-struct Cpair {
-    int*    mult1;
-    Lpoly*  lp1;
-    int*    mult2;
-    Lpoly*  lp2;
+struct Cpair 
+{
+    int*    mult1;  ///< exponent vector of the 1st multiplier
+    Lpoly*  lp1;    ///< pointer to the 1st Lpoly
+    int*    mult2;  ///< exponent vector of the 2nd multiplier
+    Lpoly*  lp2;    ///< pointer to the 2nd Lpoly
 };
 
 /// @brief \c f5cMain is the main function of the F5 implementation in the
