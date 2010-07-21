@@ -54,7 +54,7 @@ ideal f5cMain(ideal F, ideal Q)
     return idInit(1, F->rank);
   }
   // interreduction of the input ideal F
-  F = kInterRedOld(F, NULL);
+  F = kInterRed(F, NULL);
   ideal r = idInit(1, F->rank);
   // save the first element in ideal r, initialization of iteration process
   r->m[0] = F->m[0];
@@ -63,8 +63,8 @@ ideal f5cMain(ideal F, ideal Q)
   for(gen=1; gen<IDELEMS(F); gen++) 
   {
     // computation of r: a groebner basis of <F[0],...,F[gen]> = <r,F[gen]>
-    Print("%d\n",gen);
-    pWrite(r->m[0]);
+    //Print("%d\n",gen);
+    //pWrite(r->m[0]);
     r = f5cIter(F->m[gen], r);
     // the following interreduction is the essential idea of F5C.
     // NOTE that we do not need the old rules from previous iteration steps
@@ -72,8 +72,9 @@ ideal f5cMain(ideal F, ideal Q)
     //r = kInterRed(r);
     //idDelete(&r);
     //r = r1;
-  Print("interred:");
-  pWrite(r->m[0]);
+    //kNF
+  //Print("interred:");
+  //pWrite(r->m[0]);
   //pWrite(r->m[1]);
   }
   return r;
@@ -84,30 +85,28 @@ ideal f5cIter(poly p, ideal redGB)
 {
   int i;
   // create array of leading monomials of previously computed elements in redGB
-  Print("ELEMENTS: %d\n",IDELEMS(redGB));
-  F5Rules* f5Rules = (F5Rules*) omalloc(IDELEMS(redGB)*sizeof(struct F5Rules));
+  
+  F5Rules* f5Rules = (F5Rules*) omalloc(sizeof(struct F5Rules));
   // malloc memory for slabel
+  f5Rules->label  = (int**) omalloc(IDELEMS(redGB)*sizeof(int*));
   f5Rules->slabel = (long*) omalloc((currRing->N+1)*sizeof(long)); 
-  Print("ALLOC FINE\n");
   for(i=0; i<IDELEMS(redGB); i++) 
   {
     f5Rules->label[i]  = (int*) omalloc((currRing->N+1)*sizeof(int));
-    Print("%d: ",i);
-    pWrite(redGB->m[i]);
+    //pWrite(redGB->m[i]);
     pGetExpV(redGB->m[i], f5Rules->label[i]);
     f5Rules->slabel[i] = pGetShortExpVector(redGB->m[i]); 
   } 
-    Print("DONE\n");
   // reduce and initialize the list of Lpolys with the current ideal generator p
-  //p = kNF(redGB, currQuotient, p);  
-  Print("kNF:");
-  pWrite(redGB->m[0]);
-  pWrite(p);
+  p = kNF(redGB, currQuotient, p);  
+  //Print("kNF:");
+  //pWrite(redGB->m[0]);
+  //pWrite(p);
   /******************************
    * TO DO
    *****************************/
   idInsertPoly(redGB,p);
-  idSkipZeroes(redGB);
+  idCompactify(redGB);
   Lpoly gCurr = {NULL, p, NULL};  
   
   return redGB;
