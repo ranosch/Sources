@@ -63,19 +63,11 @@ ideal f5cMain(ideal F, ideal Q)
   for(gen=1; gen<IDELEMS(F); gen++) 
   {
     // computation of r: a groebner basis of <F[0],...,F[gen]> = <r,F[gen]>
-    //Print("%d\n",gen);
-    //pWrite(r->m[0]);
     r = f5cIter(F->m[gen], r);
-    // the following interreduction is the essential idea of F5C.
+    // the following interreduction is the essential idea of F5e.
     // NOTE that we do not need the old rules from previous iteration steps
     // => we only interreduce the polynomials and forget about their labels
-    //r = kInterRed(r);
-    //idDelete(&r);
-    //r = r1;
-    //kNF
-  //Print("interred:");
-  //pWrite(r->m[0]);
-  //pWrite(r->m[1]);
+    r = kInterRed(r);
   }
   return r;
 }
@@ -93,25 +85,32 @@ ideal f5cIter(poly p, ideal redGB)
   for(i=0; i<IDELEMS(redGB); i++) 
   {
     f5Rules->label[i]  = (int*) omalloc((currRing->N+1)*sizeof(int));
-    //pWrite(redGB->m[i]);
     pGetExpV(redGB->m[i], f5Rules->label[i]);
     f5Rules->slabel[i] = pGetShortExpVector(redGB->m[i]); 
   } 
   // reduce and initialize the list of Lpolys with the current ideal generator p
   p = kNF(redGB, currQuotient, p);  
-  //Print("kNF:");
-  //pWrite(redGB->m[0]);
-  //pWrite(p);
   /******************************
    * TO DO
    *****************************/
   idInsertPoly(redGB,p);
   idCompactify(redGB);
-  Lpoly gCurr = {NULL, p, NULL};  
+  Lpoly gCurr = {NULL, p, NULL, false};  
   
+  // initializing the list of critical pairs for this iteration step 
+  Cpair* critPairs = (Cpair*) omalloc(sizeof(struct Cpair));
+  
+  criticalPairInit(gCurr, redGB, *f5Rules); 
+  
+  // free memory 
+  omfree(critPairs); 
   return redGB;
 }
 
+void criticalPairInit(const Lpoly& gCurr, const ideal gPrev, const F5Rules& f5Rules)
+{
+    
+}
 
 /*
   Print("SHORT EXP VECTOR 1:  %ld\n", pGetShortExpVector(id->m[0]));
