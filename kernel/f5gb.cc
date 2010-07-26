@@ -183,8 +183,9 @@ LList* F5inc(int i, poly f_i, LList* gPrev, LList* reducers, ideal gbPrev, poly 
         //else {
           critPairsMinDeg =   critPairs->getMinDeg();
           
-          /*
+          
           // check with lower degree bound of F5+
+          /*
           CNode* f5check = critPairsMinDeg;
           bool checker = 1;
           if(highestDegreeGBCriticalPairNotDet != 0 and f5check->getData()->getDeg() > highestDegreeGBCriticalPairNotDet) {
@@ -206,9 +207,9 @@ LList* F5inc(int i, poly f_i, LList* gPrev, LList* reducers, ideal gbPrev, poly 
               //Print("number of useless pairs: %d\n\n",numberUselessPairs);
             //Print("Degree of following reduction: %d\n",critPairsMinDeg->getData()->getDeg());  
           //long degreecheck = critPairsMinDeg->getData()->getDeg(); 
-           */ 
+          */  
             computeSPols(critPairsMinDeg,rTag,rules,sPolyList, rejectedGBList);
-        /*  
+          /*
           }
           else {
             return gPrev;
@@ -432,7 +433,7 @@ void arsCheck(testPoly* checkedPrev, testPair* checkedPairs) {
       testPoly* tempTest = checkedPrev->next;
       while(NULL != tempTest) {
         
-        if(found<2 && tempTest != temp && tempTest != newElement && pDivisibleBy(pHead(tempTest->leading),lcm)) {
+        if(found<2 && tempTest != temp && tempTest != newElement && pDivisibleBy(pHead(tempTest->leading),lcm) && pDeg(tempTest->leading)<pDeg(lcm)) {
           testPair* tempPair = checkedPairs;
           while(NULL != tempPair) {
             if(found<2 && (tempPair->idx1 == tempTest->idx && tempPair->idx2 == temp->idx) || (tempPair->idx2 == tempTest->idx && tempPair->idx1 == temp->idx) || (tempPair->idx1 == newElement->idx && tempPair->idx2 == tempTest->idx) || (tempPair->idx1 == tempTest->idx && tempPair->idx2 == newElement->idx)) {
@@ -631,15 +632,15 @@ inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPr
           if(plus && highestDegreeGBCriticalPair < degree) {
             highestDegreeGBCriticalPair = degree;
           }
-          if(!criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag)) {
+          //if(!criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag)) {
               // if they pass the test, add them to CListOld critPairs, having the LPolyOld with greater
               // add a lower degree bound for F5+
               if(plus && highestDegreeGBCriticalPairNotDet < degree) {
                 highestDegreeGBCriticalPairNotDet = degree;
               }
 
-          if(!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
-            && !criterion2(gPrev->getFirst()->getIndex(), u1, newElement, rules, rTag)) { 
+          //if(!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
+          //  && !criterion2(gPrev->getFirst()->getIndex(), u1, newElement, rules, rTag)) { 
             //&& !criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag)) {
               // if they pass the test, add them to CListOld critPairs, having the LPolyOld with greater
               // add a lower degree bound for F5+
@@ -661,8 +662,9 @@ inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPr
                   // counting the number of useful pairs
                   numberUsefulPairs++;
               }
-          }
-          }
+          //}
+          //}
+          /*
           else {
             if(criterion1(gPrev,u1,newElement,lTag) || criterion1(gPrev,u2,temp,lTag)) {
               //Print("DETECTED LABEL: ");
@@ -672,6 +674,7 @@ inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPr
               
 
             }
+            */
             // TODO: generate a list of lcms of rejected GB critical pairs and
             //       check F5 critical pairs with it at their creation
             //Print("--------------------------------------------------------------------\n");
@@ -682,15 +685,15 @@ inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPr
             //pWrite(lcm);
             //Print("--------------------------------------------------------------------\n");
             //rejectedGBList->print();
-          }
+          //}
         }
         else {
         //Print("LABEL:  ");
         //pWrite(ppMult_qq(u1,newElement->getTerm()));
           //if(rejectedGBList->check(lcm)) { // if there is equality of lcms then we need the F5 critical pair
-            if(!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
-              && !criterion2(gPrev->getFirst()->getIndex(), u1, newElement, rules, rTag) 
-              && !criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag)) {
+            //if(!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
+            //  && !criterion2(gPrev->getFirst()->getIndex(), u1, newElement, rules, rTag) 
+            //  && !criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag)) {
                 // if they pass the test, add them to CListOld critPairs, having the LPolyOld with greater
                 // label as first element in the CPairOld
                 if(newElement->getIndex() == temp->getIndex() && 
@@ -706,7 +709,7 @@ inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPr
                     critPairs->insert(cp);
                     numberUselessPairs++;
                 }
-            }
+            //}
           //}
         }
         temp    =   temp->getNext();

@@ -133,7 +133,7 @@ ideal f5cIter (
 void criticalPairInit ( 
   const Lpoly& gCurr,      ///<[in]  essentially this is the labeled 
                            ///       polynomial of p at this point
-  const ideal gPrev,       ///<[in]  reduced Groebner basis computed in 
+  const ideal redGB,       ///<[in]  reduced Groebner basis computed in 
                            ///       the previous iteration step  
   const F5Rules& f5Rules   ///<[in]  list of exponent vectors to check the F5 
                            ///       Criterion

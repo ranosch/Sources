@@ -93,8 +93,6 @@ ideal f5cIter(poly p, ideal redGB)
   /******************************
    * TO DO
    *****************************/
-  idInsertPoly(redGB,p);
-  idCompactify(redGB);
   Lpoly gCurr = {NULL, p, NULL, false};  
   
   // initializing the list of critical pairs for this iteration step 
@@ -107,9 +105,21 @@ ideal f5cIter(poly p, ideal redGB)
   return redGB;
 }
 
-void criticalPairInit(const Lpoly& gCurr, const ideal gPrev, const F5Rules& f5Rules)
+void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Rules)
 {
+  int i;
+  int* expVecP    = (int*) omalloc((currRing->N+1)*sizeof(int));
+  pGetExpV(gCurr.p, expVecP); 
+  // this must be changed for parallelizing the generation process of critical
+  // pairs
+  int* expVecTemp = (int*) omalloc((currRing->N+1)*sizeof(int));
+  for(i=0; i<IDELEMS(redGB); i++)
+  {
+    pGetExpV(redGB->m[i], expVecTemp); 
     
+  }
+  omfree(expVecTemp);
+  omfree(expVecP);
 }
 
 /*
