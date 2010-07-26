@@ -2055,13 +2055,13 @@ addToG  = 0;
             //pDelete(&redPoly);
         }
         else {
-            //Print("\nELEMENT ADDED TO GPREV: ");
+            Print("\nELEMENT ADDED TO GPREV: ");
             pNorm(redPoly);
               if(highestDegree < pDeg(redPoly)) { 
                   highestDegree   = pDeg(redPoly);
               }   
-            //pWrite(pHead(redPoly));
-            //pWrite(l->getTerm());
+            pWrite(pHead(redPoly));
+            pWrite(l->getTerm());
             //Print("%d\n",canonicalize);
             l->setPoly(redPoly);
             // give "l" the label if it is "useful" (addToG = 0) or "useless"
@@ -2373,8 +2373,8 @@ void topReduction(LList* reducers, LNode* l, LList* sPolyList, LList* gPrev, CLi
         else {
             if(NULL != l->getPoly()) {
                 pNorm(l->getPoly());
-                //Print("ELEMENT ADDED TO GPREV: ");
-                //pWrite(l->getPoly());
+                Print("ELEMENT ADDED TO GPREV: ");
+                pWrite(l->getPoly());
                 gPrev->insert(l->getLPolyOld());
                 
                 //Print("TEMP RED == 0  ");
