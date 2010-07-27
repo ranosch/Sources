@@ -595,7 +595,7 @@ build critical pairs with all other elements in gPrev
 ================================================================
 */
 inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPrev, LList* gPrev, CListOld* critPairs, LTagList* lTag, RTagList* rTag, RList* rules, PList* rejectedGBList, int plus) {
-    //Print("IN CRITPAIRS\n");
+    Print("IN CRITPAIRS: index %d\n",gPrev->getLast()->getIndex());
     // initialization for usage in pLcm()
     number nOne         =   nInit(1);
     LNode* newElement   =   gPrev->getLast();
@@ -639,9 +639,9 @@ inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPr
                 highestDegreeGBCriticalPairNotDet = degree;
               }
 
-          //if(!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
-          //  && !criterion2(gPrev->getFirst()->getIndex(), u1, newElement, rules, rTag)) { 
-            //&& !criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag)) {
+          if((gPrev->getLast()->getIndex() == 121) || (!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
+            && !criterion2(gPrev->getFirst()->getIndex(), u1, newElement, rules, rTag) 
+            && !criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag))) {
               // if they pass the test, add them to CListOld critPairs, having the LPolyOld with greater
               // add a lower degree bound for F5+
               if(plus && highestDegreeGBCriticalPairNotDet < degree) {
@@ -662,7 +662,7 @@ inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPr
                   // counting the number of useful pairs
                   numberUsefulPairs++;
               }
-          //}
+          }
           //}
           /*
           else {
@@ -691,9 +691,9 @@ inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPr
         //Print("LABEL:  ");
         //pWrite(ppMult_qq(u1,newElement->getTerm()));
           //if(rejectedGBList->check(lcm)) { // if there is equality of lcms then we need the F5 critical pair
-            //if(!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
-            //  && !criterion2(gPrev->getFirst()->getIndex(), u1, newElement, rules, rTag) 
-            //  && !criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag)) {
+            if((gPrev->getLast()->getIndex() == 121) || (!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
+              && !criterion2(gPrev->getFirst()->getIndex(), u1, newElement, rules, rTag) 
+              && !criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag))) {
                 // if they pass the test, add them to CListOld critPairs, having the LPolyOld with greater
                 // label as first element in the CPairOld
                 if(newElement->getIndex() == temp->getIndex() && 
@@ -709,7 +709,7 @@ inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPr
                     critPairs->insert(cp);
                     numberUselessPairs++;
                 }
-            //}
+            }
           //}
         }
         temp    =   temp->getNext();
@@ -757,9 +757,9 @@ inline void criticalPair2(LList* gPrev, CListOld* critPairs, LTagList* lTag, RTa
         //Print("LABEL:  ");
         //pWrite(ppMult_qq(u1,newElement->getTerm()));
         //if(rejectedGBList->check(lcm)) { // if there is equality of lcms then we need the F5 critical pair
-          if(!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
+          if((gPrev->getLast()->getIndex() == 121) || (!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
             && !criterion2(gPrev->getFirst()->getIndex(), u1, newElement, rules, rTag) 
-            && !criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag)) {
+            && !criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag))) {
               // if they pass the test, add them to CListOld critPairs, having the LPolyOld with greater
               // label as first element in the CPairOld
               if(newElement->getIndex() == temp->getIndex() && 
