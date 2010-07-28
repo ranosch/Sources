@@ -639,7 +639,7 @@ inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPr
                 highestDegreeGBCriticalPairNotDet = degree;
               }
 
-          if((gPrev->getLast()->getIndex() == 121) || (!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
+          if((!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
             && !criterion2(gPrev->getFirst()->getIndex(), u1, newElement, rules, rTag) 
             && !criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag))) {
               // if they pass the test, add them to CListOld critPairs, having the LPolyOld with greater
@@ -649,14 +649,18 @@ inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPr
               }
               if(newElement->getIndex() == temp->getIndex() && 
               -1 == pLmCmp(ppMult_qq(u1, newElement->getTerm()),ppMult_qq(u2, temp->getTerm()))) {
-                  CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getPoly()))), u2, 
+                  //CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getPoly()))), u2, 
+                  //                temp->getLPolyOld(), u1, newElement->getLPolyOld(), 0 , testedRuleOld);                   
+                  CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getTerm()))), u2, 
                                   temp->getLPolyOld(), u1, newElement->getLPolyOld(), 0 , testedRuleOld);                   
                   critPairs->insert(cp);
                   // counting the number of useful pairs
                   numberUsefulPairs++;
               }
               else {
-                  CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getPoly()))), u1, 
+                  //CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getPoly()))), u1, 
+                  //                newElement->getLPolyOld(), u2, temp->getLPolyOld(), 0, testedRuleOld);                   
+                  CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u1,pHead(newElement->getTerm()))), u1, 
                                   newElement->getLPolyOld(), u2, temp->getLPolyOld(), 0, testedRuleOld);                   
                   critPairs->insert(cp);
                   // counting the number of useful pairs
@@ -691,20 +695,24 @@ inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPr
         //Print("LABEL:  ");
         //pWrite(ppMult_qq(u1,newElement->getTerm()));
           //if(rejectedGBList->check(lcm)) { // if there is equality of lcms then we need the F5 critical pair
-            if((gPrev->getLast()->getIndex() == 121) || (!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
+            if((!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
               && !criterion2(gPrev->getFirst()->getIndex(), u1, newElement, rules, rTag) 
               && !criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag))) {
                 // if they pass the test, add them to CListOld critPairs, having the LPolyOld with greater
                 // label as first element in the CPairOld
                 if(newElement->getIndex() == temp->getIndex() && 
                 -1 == pLmCmp(ppMult_qq(u1, newElement->getTerm()),ppMult_qq(u2, temp->getTerm()))) {
-                    CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getPoly()))), u2, 
+                    //CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getPoly()))), u2, 
+                    //                temp->getLPolyOld(), u1, newElement->getLPolyOld(), 1 , testedRuleOld);                   
+                    CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getTerm()))), u2, 
                                     temp->getLPolyOld(), u1, newElement->getLPolyOld(), 1 , testedRuleOld);                   
                     critPairs->insert(cp);
                     numberUselessPairs++;
                 }
                 else {
-                    CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getPoly()))), u1, 
+                    //CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getPoly()))), u1, 
+                    //                newElement->getLPolyOld(), u2, temp->getLPolyOld(), 1, testedRuleOld);                   
+                    CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u1,pHead(newElement->getTerm()))), u1, 
                                     newElement->getLPolyOld(), u2, temp->getLPolyOld(), 1, testedRuleOld);                   
                     critPairs->insert(cp);
                     numberUselessPairs++;
@@ -757,20 +765,24 @@ inline void criticalPair2(LList* gPrev, CListOld* critPairs, LTagList* lTag, RTa
         //Print("LABEL:  ");
         //pWrite(ppMult_qq(u1,newElement->getTerm()));
         //if(rejectedGBList->check(lcm)) { // if there is equality of lcms then we need the F5 critical pair
-          if((gPrev->getLast()->getIndex() == 121) || (!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
+          if((!criterion2(gPrev->getFirst()->getIndex(), u2, temp, rules, rTag)
             && !criterion2(gPrev->getFirst()->getIndex(), u1, newElement, rules, rTag) 
             && !criterion1(gPrev,u1,newElement,lTag) && !criterion1(gPrev,u2,temp,lTag))) {
               // if they pass the test, add them to CListOld critPairs, having the LPolyOld with greater
               // label as first element in the CPairOld
               if(newElement->getIndex() == temp->getIndex() && 
               -1 == pLmCmp(ppMult_qq(u1, newElement->getTerm()),ppMult_qq(u2, temp->getTerm()))) {
-                  CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getPoly()))), u2, 
+                  //CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getPoly()))), u2, 
+                  //                temp->getLPolyOld(), u1, newElement->getLPolyOld(), 1 , testedRuleOld);                   
+                  CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getTerm()))), u2, 
                                   temp->getLPolyOld(), u1, newElement->getLPolyOld(), 1 , testedRuleOld);                   
                   critPairs->insert(cp);
                   numberUselessPairs++;
               }
               else {
-                  CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getPoly()))), u1, 
+                  //CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u2,pHead(temp->getPoly()))), u1, 
+                  //                newElement->getLPolyOld(), u2, temp->getLPolyOld(), 1, testedRuleOld);                   
+                  CPairOld* cp   =   new CPairOld(pDeg(ppMult_qq(u1,pHead(newElement->getTerm()))), u1, 
                                   newElement->getLPolyOld(), u2, temp->getLPolyOld(), 1, testedRuleOld);                   
                   critPairs->insert(cp);
                   numberUselessPairs++;
