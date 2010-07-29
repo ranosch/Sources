@@ -29,6 +29,7 @@
 #include <kernel/timer.h>
 int notInG              =   0;
 int numberOfRules       =   0;
+int numberOfBadReductions     =   0;
 int reductionsToZero    =   0;
 int reductionTime       =   0;
 int spolsTime           =   0;
@@ -1818,6 +1819,7 @@ void findReducers(testPoly* checkedPrev, testPair* checkedPairs, LList* f5Criter
                                     if(pLmCmp(ppMult_qq(u,tempRed->getTerm()),l->getTerm()) == 1) {
                                         if(NULL == redPoly) {
                                           //Print("HERE IN BAD?\n");
+                                            numberOfBadReductions++;
                                             bad->insert(tempRed->getLPolyOld());
                                             addToG  = 1;
                                             //poly tempRedPoly    =   tempRed->getPoly();
@@ -1974,6 +1976,7 @@ addToG  = 0;
                                 if(!criterion1(gPrev,u,tempRed,lTag)) {
                                     if(pLmCmp(ppMult_qq(u,tempRed->getTerm()),l->getTerm()) == 1) {
                                         if(NULL == redPoly) {
+                                            numberOfBadReductions++;
                                             bad->insert(tempRed->getLPolyOld());
                                             addToG  = 1;
                                             //poly tempRedPoly    =   tempRed->getPoly();
@@ -2715,6 +2718,7 @@ ideal F5main(ideal id, ring r, int opt, int plus, int termination) {
     timer   =   getTimer();
     //Print("\n\nADDING TIME IN REDUCTION: %d\n\n",reductionTime);
     Print("\n\nNumber of zero-reductions:           %d\n",reductionsToZero);
+    Print("Number of bad reductions:            %d\n",numberOfBadReductions); 
     Print("Number of rules:                     %d\n",numberOfRules); 
     Print("Number of rejected F5-critical pairs:%d\n",numberRejectedF5CriticalPairs); 
     Print("Number of reductions:                %d\n",numberOfReductions); 
