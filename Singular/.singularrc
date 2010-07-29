@@ -4,8 +4,8 @@ system("--ticks-per-sec", 1000);
 LIB"f5ex2.lib";
 LIB"poly.lib";
 //cyclic_n(7);
-ring r = 32003,(x(1..7)),dp;
-ideal i = cyclic(7);
-ideal g = system("f5",i,2,0);
+ring r = 32003,(x(1..11)),dp;
+ideal i = katsura(11);
+ideal g = system("f5",i,2,1);
 reduce(std(i),g);
 $
