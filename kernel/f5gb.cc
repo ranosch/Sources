@@ -28,9 +28,10 @@
 #include <kernel/f5lists.h>
 #include <kernel/timer.h>
 int notInG              =   0;
-int numberOfRules       =   0;
-int numberOfBadReductions     =   0;
-int reductionsToZero    =   0;
+long numberOfRules       =   0;
+long numberOfDetections     =   0;
+long numberOfBadReductions     =   0;
+long reductionsToZero    =   0;
 int reductionTime       =   0;
 int spolsTime           =   0;
 int highestDegree       =   0;
@@ -828,6 +829,7 @@ inline bool criterion1(LList* gPrev, poly t, LNode* l, LTagList* lTag) {
                 if(idx != gPrev->getLast()->getIndex()) {
                     //Print("DOCH!\n");
                 }
+                numberOfDetections++;
                 return true;
             }
             //pWrite(testNode->getNext()->getPoly());
@@ -959,6 +961,7 @@ inline bool criterion2(int idx, poly t, LNode* l, RList* rules, RTagList* rTag) 
             //Print("INDEX: %d\n",l->getIndex());
             pDelete(&u1);
     //Print("------------------------------IN CRITERION 2/1-----------------------------------------\n\n");
+                numberOfDetections++;
             return true;
         }
 		testNode    =   testNode->getNext();
@@ -1006,6 +1009,7 @@ inline bool criterion2(poly t, LPolyOld* l, RList* rules, RuleOld* testedRuleOld
             //Print("INDEX: %d\n",l->getIndex());
             pDelete(&u1);
     //Print("------------------------------IN CRITERION 2/2-----------------------------------------\n\n");
+                numberOfDetections++;
             return true;
         }
 		testNode    =   testNode->getNext();
@@ -2717,11 +2721,12 @@ ideal F5main(ideal id, ring r, int opt, int plus, int termination) {
     }
     timer   =   getTimer();
     //Print("\n\nADDING TIME IN REDUCTION: %d\n\n",reductionTime);
-    Print("\n\nNumber of zero-reductions:           %d\n",reductionsToZero);
-    Print("Number of bad reductions:            %d\n",numberOfBadReductions); 
-    Print("Number of rules:                     %d\n",numberOfRules); 
+    Print("\n\nNumber of zero-reductions:           %ld\n",reductionsToZero);
+    Print("Number of detections:                %ld\n",numberOfDetections); 
+    Print("Number of bad reductions:            %ld\n",numberOfBadReductions); 
+    Print("Number of rules:                     %ld\n",numberOfRules); 
     Print("Number of rejected F5-critical pairs:%d\n",numberRejectedF5CriticalPairs); 
-    Print("Number of reductions:                %d\n",numberOfReductions); 
+    Print("Number of reductions:                %ld\n",numberOfReductions); 
     Print("Elements not added to G:             %d\n",notInG); 
     Print("Highest Degree during computations:  %d\n",highestDegree);
     Print("Highest new deg bounrd:              %d\n",highestDegreeGBCriticalPairNotDet);
@@ -2739,7 +2744,9 @@ ideal F5main(ideal id, ring r, int opt, int plus, int termination) {
     delete rTag;
     delete gPrev;
     notInG                        =   0;
+    numberOfDetections            =   0;
     numberOfRules                 =   0;
+    numberOfBadReductions         =   0;
     reductionsToZero              =   0;
     arsdeg = 0;
     highestDegree                 =   0;
