@@ -84,16 +84,19 @@ struct Lpoly
 };
 
  
-///@struct \c Cpair 
-///@brief \c Cpair is the structure of the list of critical pairs in F5C+
-///containing the corresponding labeled polynomials \c lpi and the multipliers
-///\c multi (as integer vectors).
+/// @struct \c Cpair 
+/// @brief \c Cpair is the structure of the list of critical pairs in F5C+
+/// containing the corresponding polynomials, the multiplied labels, and the
+/// multipliers.
 struct Cpair 
 {
-  int*    mult1;  ///< exponent vector of the 1st multiplier
-  Lpoly*  lp1;    ///< pointer to the 1st Lpoly
-  int*    mult2;  ///< exponent vector of the 2nd multiplier
-  Lpoly*  lp2;    ///< pointer to the 2nd Lpoly
+  Cpair*  next;     ///<  next critical pair sorted by label
+  int*    mlabel1;  ///<  exponent vector of the 1st multiplier * label of p1
+  int*    mult1;    ///<  multiplier of the 1st poly
+  poly    p1;       ///<  1st poly
+  int*    mlabel2;  ///<  exponent vector of the 2nd multiplier * label of p2
+  int*    mult2;    ///<  multiplier of the 2nd poly
+  poly    p2;       ///<  2nd poly
 };
 
 
@@ -131,12 +134,13 @@ ideal f5cIter (
 /// point no rewrite rule exists, thus we do not need \c RewRules .
 /// @sa TODO 
 void criticalPairInit ( 
-  const Lpoly& gCurr,      ///<[in]  essentially this is the labeled 
-                           ///       polynomial of p at this point
-  const ideal redGB,       ///<[in]  reduced Groebner basis computed in 
-                           ///       the previous iteration step  
-  const F5Rules& f5Rules   ///<[in]  list of exponent vectors to check the F5 
-                           ///       Criterion
+  const Lpoly& gCurr,     ///<[in]  essentially this is the labeled 
+                          ///       polynomial of p at this point
+  const ideal redGB,      ///<[in]  reduced Groebner basis computed in 
+                          ///       the previous iteration step  
+  const F5Rules& f5Rules, ///<[in]  list of exponent vectors to check the F5 
+                          ///       Criterion
+  Cpair* critPairs        ///<[in,out]  list of critical pairs               
                       );
 #endif
 // HAVE_F5C
