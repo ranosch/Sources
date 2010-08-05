@@ -82,13 +82,14 @@ ideal f5cIter(poly p, ideal redGB)
   F5Rules* f5Rules = (F5Rules*) omalloc(sizeof(struct F5Rules));
   // malloc memory for slabel
   f5Rules->label  = (int**) omalloc(IDELEMS(redGB)*sizeof(int*));
-  f5Rules->slabel = (long*) omalloc((currRing->N+1)*sizeof(long)); 
+  f5Rules->slabel = (unsigned long*) omalloc((currRing->N+1)*sizeof(unsigned long)); 
   for(i=0; i<IDELEMS(redGB); i++) 
   {
-    f5Rules->label[i]  = (int*) omalloc((currRing->N+1)*sizeof(int));
+    f5Rules->label[i]  =  (int*) omalloc((currRing->N+1)*sizeof(int));
     pGetExpV(redGB->m[i], f5Rules->label[i]);
-    f5Rules->slabel[i] = pGetShortExpVector(redGB->m[i]); 
+    f5Rules->slabel[i] =  ~ pGetShortExpVector(redGB->m[i]); // bit complement ~
   } 
+  f5Rules->size = i++;
   // reduce and initialize the list of Lpolys with the current ideal generator p
   p = kNF(redGB, currQuotient, p);  
   /******************************
@@ -118,7 +119,7 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
   pGetExpV(gCurr.p, expVecNewElement); 
   // this must be changed for parallelizing the generation process of critical
   // pairs
-  Cpair critPair    = {NULL, NULL, NULL, gCurr.p, NULL, NULL, NULL};
+  Cpair critPair    = {NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
   // we only need to alloc memory for the 1st label as for the initial 
   // critical pairs all 2nd generators have label NULL in F5e
   critPair.mlabel1  = (int*) omalloc((currRing->N+1)*sizeof(int));
@@ -148,14 +149,16 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
         critPair.mlabel1[j] = gCurr.label[j];
       }
     }
-    if(!criterion1(critPair.mlabel1[j]))
+    critPair.smlabel1 = pGetShortExpVecFromArray(critPair.mlabel1);
+    
+    if(!criterion1(critPair.mlabel1, critPair.smlabel1, F5Rules)) // testing the F5 Criterion
     {
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       critPair.p2       = redGB->m[i];
-      critPairsFirst    = insert(critPair, critPairsFirst);
+      critPairsFirst    = insertCritPair(critPair, critPairsFirst);
       &critPair         = (Cpair*) omalloc(sizeof(Cpair));
-      Cpair critPair    = {NULL, NULL, NULL, gCurr.p, NULL, NULL, NULL};
+      Cpair critPair    = {NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
       critPair.mlabel1  = (int*) omalloc((currRing->N+1)*sizeof(int));
       critPair.mult1    = (int*) omalloc((currRing->N+1)*sizeof(int));
       critPair.mult2    = (int*) omalloc((currRing->N+1)*sizeof(int));
@@ -185,7 +188,9 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
       critPair.mlabel1[j] = gCurr.label[j];
     }
   }
-  if(!criterion1(critPair.mlabel1[j]))
+  critPair.smlabel1 = pGetShortExpVecFromArray(critPair.mlabel1);
+  
+  if(!criterion1(critPair.mlabel1, critPair.smlabel1, F5Rules)) // testing the F5 Criterion
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
@@ -194,6 +199,88 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
   }
   omfree(expVecTemp);
   omfree(expVecNewElement);
+}
+
+
+
+unsigned long getShortExpFromArray(int* a, ring r)
+{
+  unsigned long ev  = 0; // short exponent vector
+  unsigned int  n   = BIT_SIZEOF_LONG / r->N; // number of bits per exp
+  unsigned int  i   = 0,  j = 1;
+  unsigned int  m1; // highest bit which is filled with (n+1)   
+
+  if (n == 0)
+  {
+    if (r->N<2*BIT_SIZEOF_LONG)
+    {
+      n=1;
+      m1=0;
+    }
+    else
+    {
+      for (; j<=(unsigned long) r->N; j++)
+      {
+        if (a[j] > 0) i++;
+        if (i == BIT_SIZEOF_LONG) break;
+      }
+      if (i>0)
+      ev = ~((unsigned long)0) >> ((unsigned long) (BIT_SIZEOF_LONG - i));
+      return ev;
+    }
+  }
+  else
+  {
+    m1 = (n+1)*(BIT_SIZEOF_LONG - n*r->N);
+  }
+
+  n++;
+  while (i<m1)
+  {
+    ev |= GetBitFields(a[j] , i, n);
+    i += n;
+    j++;
+  }
+
+  n--;
+  while (i<BIT_SIZEOF_LONG)
+  {
+    ev |= GetBitFields(a[j] , i, n);
+    i += n;
+    j++;
+  }
+  return ev;
+}
+
+
+
+bool criterion1(const int* mlabel1, const unsigned long smlabel1, const F5Rules& f5Rules)
+{
+  int i = 0;
+  int j = currRing->N;
+  for( ; i < f5Rules.size; i++)
+  {
+    if(!(smlabel1 & f5Rules.slabel[i]))
+    {
+      while(j)
+      {
+        if(mlabel1[j] > f5Rules.label[i][j])
+        {
+         break;
+        }
+        j--;
+      }
+      if(!j)
+      {
+        return true;
+      }
+      else 
+      {
+        j = currRing->N; 
+      }
+    }
+  }
+  return false;
 }
 
 /*
