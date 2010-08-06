@@ -34,11 +34,11 @@
 /// exponent vector.
 struct F5Rules 
 {
-  unsigned long     size;   ///< number of elements in redGB 
-  int**             label;  ///< pointer to an array of exponent vectors for checks of the 
-                            ///< F5 Criterion
-  (unsigned long)*  slabel; ///< pointer to the corresponding short exponent vectors for 
-                            ///< faster checks of divisibility
+  unsigned long     size;   ///<  number of elements in redGB 
+  int**             label;  ///<  pointer to an array of exponent vectors for checks
+                            ///   of the F5 Criterion
+  unsigned long*  slabel; ///<  pointer to the corresponding short exponent
+                            ///   vectors for faster checks of divisibility
 };
 
  
@@ -141,7 +141,7 @@ ideal f5cIter (
 /// the only element in \c gCurr at this point. So this procedure is only used
 /// at the very beginning of a new iteration step in F5e. Note that at this
 /// point no rewrite rule exists, thus we do not need \c RewRules .
-/// @sa TODO 
+/// @sa insertCritPair
 void criticalPairInit ( 
   const Lpoly& gCurr,     ///<[in]  essentially this is the labeled 
                           ///       polynomial of p at this point
@@ -159,10 +159,21 @@ void criticalPairInit (
 /// @return short exponent vector of the input
 /// @sa p_GetShortExpVector
 unsigned long getShortExpVecFromArray (
-  int*  a             ///<[in]  integer vector for which the short exponent 
+  int*  a,            ///<[in]  integer vector for which the short exponent 
                       ///       vector is to be computed
   ring  r = currRing  ///<[in]  corresponding ring, default is \c currRing
                                       );
+
+
+/// @brief \c insertCritPair() inserts \c critPair into the linked list of
+/// critical pairs.
+/// @return address of the first element of the list of critical pairs
+/// @sa criticalPairInit 
+Cpair* insertCritPair (
+  Cpair*  critPair,       ///<[in]      new critical pair to be inserted
+  Cpair*  critPairsFirst  ///<[in,out]  first element of the list of 
+                          ///           critical pairs
+                      );
 
 
 
