@@ -95,6 +95,7 @@ struct Lpoly
 struct Cpair 
 {
   Cpair*        next;     ///<  next critical pair sorted by label
+  long          ldeg;     ///<  degree of the label, needed for ordering
   int*          mlabel1;  ///<  exponent vector of the 1st multiplier * label of p1
   unsigned long smlabel1; ///<  short exponent vector of \c mlabel1
   int*          mult1;    ///<  multiplier of the 1st poly

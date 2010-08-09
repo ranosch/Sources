@@ -163,7 +163,7 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
   // this must be changed for parallelizing the generation process of critical
   // pairs
   Cpair* critPairTemp;
-  Cpair critPair    = {NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
+  Cpair critPair    = {NULL, 0, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
   critPairTemp      = &critPair;
   // we only need to alloc memory for the 1st label as for the initial 
   // critical pairs all 2nd generators have label NULL in F5e
@@ -203,7 +203,7 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
       critPairTemp->p2      = redGB->m[i];
       critPairsFirst        = insertCritPair(critPairTemp, critPairsFirst);
       //*critPair             = (Cpair*) omalloc(sizeof(Cpair));
-      Cpair critPairNew     = {NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
+      Cpair critPairNew     = {NULL, 0, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
       critPairTemp          = &critPairNew;
       critPairTemp->mlabel1 = (int*) omalloc((currRing->N+1)*sizeof(int));
       critPairTemp->mult1   = (int*) omalloc((currRing->N+1)*sizeof(int));
@@ -239,6 +239,10 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
+    for(j=1; j<=currRing->N, j++)
+    {
+      critPairTemp->labeldeg += critPairTemp->mlabel[j]; 
+    }
     critPairTemp->p2  = redGB->m[IDELEMS(redGB)-1];
     critPairsFirst    = insertCritPair(critPairTemp, critPairsFirst);
   }
@@ -247,9 +251,10 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
 }
 
 
-
+// TODO: How to sort this list? Mergesort? Copy an array and Quicksort?
 Cpair* insertCritPair(Cpair* critPair, Cpair* critPairsFirst)
 {
+  int i = 1;
   if(!critPairsFirst)
   {
     return critPair;
@@ -259,7 +264,17 @@ Cpair* insertCritPair(Cpair* critPair, Cpair* critPairsFirst)
     Cpair* temp = critPairsFirst;
     while(temp->next)
     {
-      temp  = temp->next;
+      if(temp->next->ldeg < critPair->ldeg)
+      {
+        temp  = temp->next;
+      }
+      else
+      {
+        for( ; i<=currRing->N; i++)
+        {
+          // TODO: How to compare the exponent vectors by the given polynomial ordering?
+        }
+      }
     }
     critPair->next  = temp->next;
     temp->next       = critPair;
@@ -371,25 +386,5 @@ inline bool criterion1(const int* mlabel1, const unsigned long smlabel1, const F
   return false;
 }
 
-/*
-  Print("SHORT EXP VECTOR 1:  %ld\n", pGetShortExpVector(id->m[0]));
-  int* expVec   = new int[(r->N)+1];
-  pGetExpV(id->m[0],expVec);
-  Print("EXP VECTOR 1: %d\n",expVec[1]);
-  Label* label  = new Label(expVec);
-  Print("EXP VECTOR 2: %d\n", label->getExpVec()[1]);
-  Print("SHORT EXP VECTOR 2:  %ld\n", label->getShortExpVec());
-  //Print("%ld\n", label->computeShortExpVec(expVec)); 
-  Print("SHORT EXP VECTOR 1:  %ld\n", pGetShortExpVector(id->m[1]));
-  //int* expVec   = new int[(r->N)+1];
-  pGetExpV(id->m[1],expVec);
-  Print("EXP VECTOR 1: %d\n",expVec[1]);
-  Label* label2  = new Label(expVec);
-  Print("EXP VECTOR 2: %d\n", label2->getExpVec()[1]);
-  Print("SHORT EXP VECTOR 2:  %ld\n", label2->getShortExpVec());
-
-  return id;
-}
-*/
 #endif
 // HAVE_F5C
