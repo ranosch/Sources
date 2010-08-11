@@ -168,10 +168,8 @@ ideal f5cIter(poly p, ideal redGB)
   }
   
   // initializing the list of critical pairs for this iteration step 
-  Cpair* critPairsFirst;
-  Cpair* critPairsLast;
-  critPairsFirst  = critPairsLast = NULL; 
-  criticalPairInit(gCurr, redGB, *f5Rules, critPairsLast); 
+  CpairDegBound* critPairsBounds;
+  criticalPairInit(gCurr, redGB, *f5Rules, critPairsBounds); 
   // free memory 
   //omfree(critPairsFirst); 
   //omfree(critPairsLast); 
@@ -180,7 +178,7 @@ ideal f5cIter(poly p, ideal redGB)
 
 
 
-void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Rules, Cpair* critPairsFirst)
+void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Rules, CpairDegBound* critPairsBounds)
 {
   int i, j;
   int* expVecNewElement = (int*) omalloc((currRing->N+1)*sizeof(int));
@@ -189,7 +187,7 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
   // this must be changed for parallelizing the generation process of critical
   // pairs
   Cpair* critPairTemp;
-  Cpair critPair    = {NULL, 0, NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
+  Cpair critPair    = {NULL, NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
   critPairTemp      = &critPair;
   // we only need to alloc memory for the 1st label as for the initial 
   // critical pairs all 2nd generators have label NULL in F5e
@@ -197,7 +195,7 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
   critPairTemp->mult1    = (int*) omalloc((currRing->N+1)*sizeof(int));
   critPairTemp->mult2    = (int*) omalloc((currRing->N+1)*sizeof(int));
   int temp;
-
+  long critPairDeg = 0;
   for(i=0; i<IDELEMS(redGB)-1; i++)
   {
     pGetExpV(redGB->m[i], expVecTemp); 
@@ -209,15 +207,17 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
       temp  = expVecTemp[j] - expVecNewElement[j];
       if(temp<0)
       {
-        critPairTemp->mult1[j]   = -temp;  
-        critPairTemp->mult2[j]   = 0; 
-        critPairTemp->mlabel1[j] = gCurr.label[j] - temp;
+        critPairTemp->mult1[j]    =   -temp;  
+        critPairTemp->mult2[j]    =   0; 
+        critPairTemp->mlabel1[j]  =   gCurr.label[j] - temp;
+        critPairDeg               +=  (gCurr.label[j] - temp); 
       }
       else
       {
-        critPairTemp->mult1[j]   = 0;  
-        critPairTemp->mult2[j]   = temp;  
-        critPairTemp->mlabel1[j] = gCurr.label[j];
+        critPairTemp->mult1[j]    =   0;  
+        critPairTemp->mult2[j]    =   temp;  
+        critPairTemp->mlabel1[j]  =   gCurr.label[j];
+        critPairDeg               +=  gCurr.label[j]; 
       }
     }
     critPairTemp->smlabel1 = getShortExpVecFromArray(critPairTemp->mlabel1);
@@ -227,14 +227,14 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       critPairTemp->p2      = redGB->m[i];
-      critPairsFirst        = insertCritPair(critPairTemp, critPairsFirst);
-      //*critPair             = (Cpair*) omalloc(sizeof(Cpair));
-      Cpair critPairNew     = {NULL, 0, NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
+      insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
+      Cpair critPairNew     = {NULL, NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
       critPairTemp          = &critPairNew;
       critPairTemp->mlabel1 = (int*) omalloc((currRing->N+1)*sizeof(int));
       critPairTemp->mult1   = (int*) omalloc((currRing->N+1)*sizeof(int));
       critPairTemp->mult2   = (int*) omalloc((currRing->N+1)*sizeof(int));
     }
+    critPairDeg = 0;
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -248,15 +248,17 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
     temp  = expVecTemp[j] - expVecNewElement[j];
     if(temp<0)
     {
-      critPairTemp->mult1[j]   = -temp;  
-      critPairTemp->mult2[j]   = 0; 
-      critPairTemp->mlabel1[j] = gCurr.label[j] - temp;
+      critPairTemp->mult1[j]    =   -temp;  
+      critPairTemp->mult2[j]    =   0; 
+      critPairTemp->mlabel1[j]  =   gCurr.label[j] - temp;
+      critPairDeg               +=  (gCurr.label[j] - temp);
     }
     else
     {
-      critPairTemp->mult1[j]   = 0;  
-      critPairTemp->mult2[j]   = temp;  
-      critPairTemp->mlabel1[j] = gCurr.label[j];
+      critPairTemp->mult1[j]    =   0;  
+      critPairTemp->mult2[j]    =   temp;  
+      critPairTemp->mlabel1[j]  =   gCurr.label[j];
+      critPairDeg               +=  gCurr.label[j];
     }
   }
   critPairTemp->smlabel1 = getShortExpVecFromArray(critPairTemp->mlabel1);
@@ -265,12 +267,8 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
-    for(j=1; j<=currRing->N; j++)
-    {
-      critPairTemp->cpLabelDeg += critPairTemp->mlabel1[j]; 
-    }
     critPairTemp->p2  = redGB->m[IDELEMS(redGB)-1];
-    critPairsFirst    = insertCritPair(critPairTemp, critPairsFirst);
+    insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
   }
   omfree(expVecTemp);
   omfree(expVecNewElement);
@@ -278,34 +276,30 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
 
 
 // TODO: How to sort this list? Mergesort? Copy an array and Quicksort?
-Cpair* insertCritPair(Cpair* critPair, Cpair* critPairsFirst)
+void insertCritPair(Cpair* cp, long deg, CpairDegBound* bound)
 {
-  int i = 1;
-  if(!critPairsFirst)
+  if(!bound) // empty list?
   {
-    return critPair;
+   CpairDegBound boundNew = {NULL, deg, cp, 1};
   }
   else
   {
-    Cpair* temp = critPairsFirst;
-    while(temp->next)
+    while(bound->next && (bound->next->deg < deg))
     {
-      if(temp->next->cpLabelDeg < critPair->cpLabelDeg)
-      {
-        temp  = temp->next;
-      }
-      else
-      {
-        for( ; i<=currRing->N; i++)
-        {
-          // TODO: How to compare the exponent vectors by the given polynomial ordering?
-        }
-      }
+      bound = bound->next;
     }
-    critPair->next  = temp->next;
-    temp->next       = critPair;
+    if(bound->next->deg == deg)
+    {
+      cp->next        = bound->next->cp;
+      bound->next->cp = cp;
+      bound->next->length++;
+    }
+    else
+    {
+      CpairDegBound boundNew  = {bound->next, deg, cp, 1};
+      bound->next             = &boundNew;
+    }
   }
-  return critPairsFirst;
 }
 
 

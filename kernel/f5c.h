@@ -95,7 +95,6 @@ struct Lpoly
 struct Cpair 
 {
   Cpair*          next;       ///<  next critical pair sorted by label
-  long            cpLabelDeg; ///<  degree of the label, needed for ordering
   unsigned long*  cpLabelExp; ///<  exponent vector of the label of 
                               ///   the critical pair
   int*            mlabel1;    ///<  exponent vector of the 1st multiplier * label 
@@ -189,7 +188,8 @@ void criticalPairInit (
                           ///       the previous iteration step  
   const F5Rules& f5Rules, ///<[in]  list of exponent vectors to check the F5 
                           ///       Criterion
-  Cpair* critPairs        ///<[in,out]  list of critical pairs               
+  CpairDegBound* bounds   ///<[in,out]  list of critical pair 
+                          ///           degree bounds               
                       );
 
 
@@ -207,12 +207,12 @@ unsigned long getShortExpVecFromArray (
 
 /// @brief \c insertCritPair() inserts \c critPair into the linked list of
 /// critical pairs.
-/// @return address of the first element of the list of critical pairs
 /// @sa criticalPairInit 
-Cpair* insertCritPair (
-  Cpair*  critPair,       ///<[in]      new critical pair to be inserted
-  Cpair*  critPairsFirst  ///<[in,out]  first element of the list of 
-                          ///           critical pairs
+void insertCritPair (
+  Cpair*          critPair,       ///<[in]      new critical pair to be inserted
+  long            deg,            ///<[in]      degree of \c critPair
+  CpairDegBound*  critPairsBounds ///<[in,out]  first element of the list of 
+                                  ///           critical pair degree bounds
                       );
 
 
