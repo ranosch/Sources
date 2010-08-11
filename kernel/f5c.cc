@@ -40,11 +40,21 @@
 #include "intvec.h"
 #include "prCopy.h"
 #include "pInline1.h"
+#include "pInline2.h"
 #include "f5c.h"
 #include "timer.h"
 
 #define F5EDEBUG  1
 #define setMaxIdeal 64
+
+/// declaration of global variables used for exponent vector
+int pVariables  = currRing->N;
+/// reading/writing/comparison
+
+int* hbyte              = (int*) omalloc((currRing->N+1)*sizeof(int));
+int* shift              = (int*) omalloc((currRing->N+1)*sizeof(int));
+int* negBitmaskShifted  = (int*) omalloc((currRing->N+1)*sizeof(int));
+int* offset             = (int*) omalloc((currRing->N+1)*sizeof(int));
 
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -75,21 +85,37 @@ ideal f5cMain(ideal F, ideal Q)
     Print("\n");
   }
 #endif
+  /// define the global variables for fast exponent vector
+  /// reading/writing/comparison
+  int i = 0;
+  const unsigned long _bitmasks[4] = {-1, 0x7fff, 0x7f, 0x3};
+  for( ; i<currRing->N+1; i++)
+  {
+    hbyte[i]                = currRing->VarOffset[i] >> 24;
+    shift[i]                = (currRing->VarOffset[i] >> 24) & 0x3f;
+    negBitmaskShifted[i]    = ~((currRing->bitmask & 
+                                _bitmasks[(currRing->VarOffset[i] >> 30)]) 
+                                << shift[i]);
+    offset[i]               = (currRing->VarOffset[i] & 0xffffff);
+  }
 
   ideal r = idInit(1, F->rank);
   // save the first element in ideal r, initialization of iteration process
   r->m[0] = F->m[0];
   // counter over the remaining generators of the input ideal F
-  int gen;
-  for(gen=1; gen<IDELEMS(F); gen++) 
+  for(i=1; i<IDELEMS(F); i++) 
   {
     // computation of r: a groebner basis of <F[0],...,F[gen]> = <r,F[gen]>
-    r = f5cIter(F->m[gen], r);
+    r = f5cIter(F->m[i], r);
     // the following interreduction is the essential idea of F5e.
     // NOTE that we do not need the old rules from previous iteration steps
     // => we only interreduce the polynomials and forget about their labels
     r = kInterRed(r);
   }
+  omfree(hbyte);
+  omfree(shift);
+  omfree(negBitmaskShifted);
+  omfree(offset);
   return r;
 }
 
@@ -163,7 +189,7 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
   // this must be changed for parallelizing the generation process of critical
   // pairs
   Cpair* critPairTemp;
-  Cpair critPair    = {NULL, 0, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
+  Cpair critPair    = {NULL, 0, NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
   critPairTemp      = &critPair;
   // we only need to alloc memory for the 1st label as for the initial 
   // critical pairs all 2nd generators have label NULL in F5e
@@ -203,7 +229,7 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
       critPairTemp->p2      = redGB->m[i];
       critPairsFirst        = insertCritPair(critPairTemp, critPairsFirst);
       //*critPair             = (Cpair*) omalloc(sizeof(Cpair));
-      Cpair critPairNew     = {NULL, 0, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
+      Cpair critPairNew     = {NULL, 0, NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
       critPairTemp          = &critPairNew;
       critPairTemp->mlabel1 = (int*) omalloc((currRing->N+1)*sizeof(int));
       critPairTemp->mult1   = (int*) omalloc((currRing->N+1)*sizeof(int));
@@ -239,9 +265,9 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
-    for(j=1; j<=currRing->N, j++)
+    for(j=1; j<=currRing->N; j++)
     {
-      critPairTemp->labeldeg += critPairTemp->mlabel[j]; 
+      critPairTemp->cpLabelDeg += critPairTemp->mlabel1[j]; 
     }
     critPairTemp->p2  = redGB->m[IDELEMS(redGB)-1];
     critPairsFirst    = insertCritPair(critPairTemp, critPairsFirst);
@@ -264,7 +290,7 @@ Cpair* insertCritPair(Cpair* critPair, Cpair* critPairsFirst)
     Cpair* temp = critPairsFirst;
     while(temp->next)
     {
-      if(temp->next->ldeg < critPair->ldeg)
+      if(temp->next->cpLabelDeg < critPair->cpLabelDeg)
       {
         temp  = temp->next;
       }

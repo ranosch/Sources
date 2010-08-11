@@ -94,17 +94,56 @@ struct Lpoly
 /// multipliers.
 struct Cpair 
 {
-  Cpair*        next;     ///<  next critical pair sorted by label
-  long          ldeg;     ///<  degree of the label, needed for ordering
-  int*          mlabel1;  ///<  exponent vector of the 1st multiplier * label of p1
-  unsigned long smlabel1; ///<  short exponent vector of \c mlabel1
-  int*          mult1;    ///<  multiplier of the 1st poly
-  poly          p1;       ///<  1st poly
-  int*          mlabel2;  ///<  exponent vector of the 2nd multiplier * label of p2
-  unsigned long smlabel2; ///<  short exponent vector of \c mlabel2
-  int*          mult2;    ///<  multiplier of the 2nd poly
-  poly          p2;       ///<  2nd poly
+  Cpair*          next;       ///<  next critical pair sorted by label
+  long            cpLabelDeg; ///<  degree of the label, needed for ordering
+  unsigned long*  cpLabelExp; ///<  exponent vector of the label of 
+                              ///   the critical pair
+  int*            mlabel1;    ///<  exponent vector of the 1st multiplier * label 
+                              ///   of p1
+  unsigned long   smlabel1;   ///<  short exponent vector of \c mlabel1
+  int*            mult1;      ///<  multiplier of the 1st poly
+  poly            p1;         ///<  1st poly
+  int*            mlabel2;    ///<  exponent vector of the 2nd multiplier * label 
+                              ///   of p2
+  unsigned long   smlabel2;   ///<  short exponent vector of \c mlabel2
+  int*            mult2;      ///<  multiplier of the 2nd poly
+  poly            p2;         ///<  2nd poly
 };
+
+
+
+/// @struct \c CpairDegBound
+/// @brief This is the structure of linked list of linked lists of critical
+/// pairs.
+/// Each node of the linked list is a linked list of critical pairs of degree
+/// \c deg. This is a pre-sorting for the computation of the s-polynomials
+/// whereas the deg-lists themselves are not sorted at this point. This will 
+/// be done by a merge sort in \c computeSpols.
+/// @sa computeSpols
+struct CpairDegBound
+{
+  CpairDegBound*  next;   ///<  next linked list of critical pairs of next 
+                          ///   higher degree
+  long            deg;    ///<  degree of all critical pairs in this linked list
+  Cpair*          cp;     ///<  first element in critical pair-deg-linked list
+  unsigned int    length; ///<  number of critical pairs of degree \c deg
+};
+
+
+
+/// @brief F5's own function for getting the lcm of two exponent vectors.
+inline void pExpLcm (
+  const unsigned long&  p,  ///<[in] exponent vector of first poly
+  const unsigned long&  q,  ///<[in] exponent vector of second poly
+  unsigned long&        r   ///<[in,out] exponent vector of the lcm of p & q
+                    )
+{
+  int i = pVariables;
+  for( ; i; i--)
+  {
+    //pExpSetExp(r, i, si_max(pExpGetExp(p, i), pExpGetExp(q, i)));
+  }
+}
 
 
 
