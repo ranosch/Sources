@@ -51,10 +51,11 @@
 int pVariables  = currRing->N;
 /// reading/writing/comparison
 
-int* hbyte              = (int*) omalloc((currRing->N+1)*sizeof(int));
 int* shift              = (int*) omalloc((currRing->N+1)*sizeof(int));
 int* negBitmaskShifted  = (int*) omalloc((currRing->N+1)*sizeof(int));
 int* offset             = (int*) omalloc((currRing->N+1)*sizeof(int));
+
+
 
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -91,7 +92,6 @@ ideal f5cMain(ideal F, ideal Q)
   const unsigned long _bitmasks[4] = {-1, 0x7fff, 0x7f, 0x3};
   for( ; i<currRing->N+1; i++)
   {
-    hbyte[i]                = currRing->VarOffset[i] >> 24;
     shift[i]                = (currRing->VarOffset[i] >> 24) & 0x3f;
     negBitmaskShifted[i]    = ~((currRing->bitmask & 
                                 _bitmasks[(currRing->VarOffset[i] >> 30)]) 
@@ -112,7 +112,6 @@ ideal f5cMain(ideal F, ideal Q)
     // => we only interreduce the polynomials and forget about their labels
     r = kInterRed(r);
   }
-  omfree(hbyte);
   omfree(shift);
   omfree(negBitmaskShifted);
   omfree(offset);
@@ -178,6 +177,21 @@ ideal f5cIter(poly p, ideal redGB)
 
 
 
+inline void getExpFromIntArray(const int* exp, unsigned long* r)
+{
+  register int i = pVariables;
+  for( ; i; i--)
+  {
+    register int shiftL   =   shift[i];
+    long ee               =   exp[i] << shiftL;
+    register int offsetL  =   offset[i];
+    r[offsetL]            &=  negBitmaskShifted[i];
+    r[offsetL]            |=  ee;
+  }
+}
+
+
+
 void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Rules, CpairDegBound* critPairsBounds)
 {
   int i, j;
@@ -191,7 +205,7 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
   critPairTemp      = &critPair;
   // we only need to alloc memory for the 1st label as for the initial 
   // critical pairs all 2nd generators have label NULL in F5e
-  critPairTemp->mlabel1  = (int*) omalloc((currRing->N+1)*sizeof(int));
+  critPairTemp->mLabel1  = (int*) omalloc((currRing->N+1)*sizeof(int));
   critPairTemp->mult1    = (int*) omalloc((currRing->N+1)*sizeof(int));
   critPairTemp->mult2    = (int*) omalloc((currRing->N+1)*sizeof(int));
   int temp;
@@ -209,28 +223,29 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
       {
         critPairTemp->mult1[j]    =   -temp;  
         critPairTemp->mult2[j]    =   0; 
-        critPairTemp->mlabel1[j]  =   gCurr.label[j] - temp;
+        critPairTemp->mLabel1[j]  =   gCurr.label[j] - temp;
         critPairDeg               +=  (gCurr.label[j] - temp); 
       }
       else
       {
         critPairTemp->mult1[j]    =   0;  
         critPairTemp->mult2[j]    =   temp;  
-        critPairTemp->mlabel1[j]  =   gCurr.label[j];
+        critPairTemp->mLabel1[j]  =   gCurr.label[j];
         critPairDeg               +=  gCurr.label[j]; 
       }
     }
-    critPairTemp->smlabel1 = getShortExpVecFromArray(critPairTemp->mlabel1);
+    critPairTemp->smLabel1 = getShortExpVecFromArray(critPairTemp->mLabel1);
     
-    if(!criterion1(critPairTemp->mlabel1, critPairTemp->smlabel1, f5Rules)) // testing the F5 Criterion
+    if(!criterion1(critPairTemp->mLabel1, critPairTemp->smLabel1, f5Rules)) // testing the F5 Criterion
     {
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       critPairTemp->p2      = redGB->m[i];
+      getExpFromIntArray(critPairTemp->mLabel1, critPairTemp->mLabelExp);
       insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
       Cpair critPairNew     = {NULL, NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
       critPairTemp          = &critPairNew;
-      critPairTemp->mlabel1 = (int*) omalloc((currRing->N+1)*sizeof(int));
+      critPairTemp->mLabel1 = (int*) omalloc((currRing->N+1)*sizeof(int));
       critPairTemp->mult1   = (int*) omalloc((currRing->N+1)*sizeof(int));
       critPairTemp->mult2   = (int*) omalloc((currRing->N+1)*sizeof(int));
     }
@@ -250,20 +265,20 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
     {
       critPairTemp->mult1[j]    =   -temp;  
       critPairTemp->mult2[j]    =   0; 
-      critPairTemp->mlabel1[j]  =   gCurr.label[j] - temp;
+      critPairTemp->mLabel1[j]  =   gCurr.label[j] - temp;
       critPairDeg               +=  (gCurr.label[j] - temp);
     }
     else
     {
       critPairTemp->mult1[j]    =   0;  
       critPairTemp->mult2[j]    =   temp;  
-      critPairTemp->mlabel1[j]  =   gCurr.label[j];
+      critPairTemp->mLabel1[j]  =   gCurr.label[j];
       critPairDeg               +=  gCurr.label[j];
     }
   }
-  critPairTemp->smlabel1 = getShortExpVecFromArray(critPairTemp->mlabel1);
+  critPairTemp->smLabel1 = getShortExpVecFromArray(critPairTemp->mLabel1);
   
-  if(!criterion1(critPairTemp->mlabel1, critPairTemp->smlabel1, f5Rules)) // testing the F5 Criterion
+  if(!criterion1(critPairTemp->mLabel1, critPairTemp->smLabel1, f5Rules)) // testing the F5 Criterion
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
@@ -275,7 +290,7 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
 }
 
 
-// TODO: How to sort this list? Mergesort? Copy an array and Quicksort?
+
 void insertCritPair(Cpair* cp, long deg, CpairDegBound* bound)
 {
   if(!bound) // empty list?
@@ -377,17 +392,17 @@ unsigned long getShortExpVecFromArray(int* a, ring r)
 
 
 
-inline bool criterion1(const int* mlabel1, const unsigned long smlabel1, const F5Rules& f5Rules)
+inline bool criterion1(const int* mLabel1, const unsigned long smLabel1, const F5Rules& f5Rules)
 {
   int i = 0;
   int j = currRing->N;
   for( ; i < f5Rules.size; i++)
   {
-    if(!(smlabel1 & f5Rules.slabel[i]))
+    if(!(smLabel1 & f5Rules.slabel[i]))
     {
       while(j)
       {
-        if(mlabel1[j] > f5Rules.label[i][j])
+        if(mLabel1[j] > f5Rules.label[i][j])
         {
          break;
         }

@@ -95,16 +95,18 @@ struct Lpoly
 struct Cpair 
 {
   Cpair*          next;       ///<  next critical pair sorted by label
-  unsigned long*  cpLabelExp; ///<  exponent vector of the label of 
-                              ///   the critical pair
-  int*            mlabel1;    ///<  exponent vector of the 1st multiplier * label 
+  unsigned long*  mLabelExp;  ///<  exponent vector of the label of 
+                              ///   the critical pair: this element is needed
+                              ///   for sorting the critical pairs in 
+                              ///   \c computeSpols() by the given ordering
+  int*            mLabel1;    ///<  exponent vector of the 1st multiplier * label 
                               ///   of p1
-  unsigned long   smlabel1;   ///<  short exponent vector of \c mlabel1
+  unsigned long   smLabel1;   ///<  short exponent vector of \c mLabel1
   int*            mult1;      ///<  multiplier of the 1st poly
   poly            p1;         ///<  1st poly
-  int*            mlabel2;    ///<  exponent vector of the 2nd multiplier * label 
+  int*            mLabel2;    ///<  exponent vector of the 2nd multiplier * label 
                               ///   of p2
-  unsigned long   smlabel2;   ///<  short exponent vector of \c mlabel2
+  unsigned long   smLabel2;   ///<  short exponent vector of \c mLabel2
   int*            mult2;      ///<  multiplier of the 2nd poly
   poly            p2;         ///<  2nd poly
 };
@@ -130,19 +132,12 @@ struct CpairDegBound
 
 
 
-/// @brief F5's own function for getting the lcm of two exponent vectors.
-inline void pExpLcm (
-  const unsigned long&  p,  ///<[in] exponent vector of first poly
-  const unsigned long&  q,  ///<[in] exponent vector of second poly
-  unsigned long&        r   ///<[in,out] exponent vector of the lcm of p & q
-                    )
-{
-  int i = pVariables;
-  for( ; i; i--)
-  {
-    //pExpSetExp(r, i, si_max(pExpGetExp(p, i), pExpGetExp(q, i)));
-  }
-}
+/// @brief Generating a corresponding exponent vector (long*) to an 
+/// integer vector.
+inline void getExpFromIntArray (
+  const int*      exp,  ///<[in] integer exponent vector
+  unsigned long*  r     ///<[in,out] corresponding exponent vector of \c exp
+                    );
 
 
 
@@ -221,8 +216,8 @@ void insertCritPair (
 /// critical pair by the corresponding 
 /// @return 1, if the label is detected by the F5 Criterion; 0, else
 bool criterion1 (
-  const int*          mlabel1,  ///<[in]  multiplied labeled to be checked
-  const unsigned long smlabel1, ///<[in]  corresponding short exponent vector
+  const int*          mLabel1,  ///<[in]  multiplied labeled to be checked
+  const unsigned long smLabel1, ///<[in]  corresponding short exponent vector
   const F5Rules&      f5Rules   ///<[in]  rules for F5 Criterion checks
                 );
 
