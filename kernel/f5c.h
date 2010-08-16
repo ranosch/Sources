@@ -273,6 +273,19 @@ inline bool criterion2 (
 
 
 
+/// @brief \c computeSpols() computes the s-polynomials of critical pairs of 
+/// lowest given degree which are not detected by the Rewritten Criterion.
+/// @sa criticalPairInit, criticalPairPrev, criticalPairCurr
+void computeSpols  (
+              );
+
+
+
+///////////////////////////////////////////////////////////////////////////
+// MEMORY & INTERNAL EXPONENT VECTOR STUFF: HANDLED A BIT DIFFERENT FROM //
+// SINGULAR KERNEL                                                       //
+///////////////////////////////////////////////////////////////////////////
+
 /// @brief \c getShortExpVecFromArray() computes the short exponent vector of a
 /// given integer vector representing a monomial.
 /// @return short exponent vector of the input

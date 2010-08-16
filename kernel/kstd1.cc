@@ -2502,8 +2502,6 @@ ideal kInterRed (ideal F, ideal Q)
 #endif
   if ((pOrdSgn==-1)
   || (rField_is_numeric(currRing)))
-  Print("HERE DRIN: ");
-  pWrite(F->m[0]);
     return kInterRedOld(F,Q);
 
     //return kInterRedOld(F,Q);
