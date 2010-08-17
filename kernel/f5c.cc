@@ -546,23 +546,41 @@ void insertCritPair(Cpair* cp, long deg, CpairDegBound* bound)
   if(!bound) // empty list?
   {
    CpairDegBound boundNew = {NULL, deg, cp, 1};
+   bound                  = &boundNew;
   }
   else
   {
-    while(bound->next && (bound->next->deg < deg))
+    if(bound->deg < deg) 
     {
-      bound = bound->next;
-    }
-    if(bound->next->deg == deg)
-    {
-      cp->next        = bound->next->cp;
-      bound->next->cp = cp;
-      bound->next->length++;
+      while(bound->next && (bound->next->deg < deg))
+      {
+        bound = bound->next;
+      }
+      if(bound->next->deg == deg)
+      {
+        cp->next        = bound->next->cp;
+        bound->next->cp = cp;
+        bound->next->length++;
+      }
+      else
+      {
+        CpairDegBound boundNew  = {bound->next, deg, cp, 1};
+        bound->next             = &boundNew;
+      }
     }
     else
     {
-      CpairDegBound boundNew  = {bound->next, deg, cp, 1};
-      bound->next             = &boundNew;
+      if(bound->deg == deg) 
+      {
+        cp->next  = bound->cp;
+        bound->cp = cp;
+        bound->length++;
+      }
+      else
+      {
+        CpairDegBound boundNew  = {bound, deg, cp, 1};
+        bound                   = &boundNew;
+      }
     }
   }
 }
@@ -631,13 +649,86 @@ inline bool criterion2(const int* mLabel1, const unsigned long smLabel1, const R
 
 
 
-void computeSpols()
+void computeSpols ( CpairDegBound* critPairs, RewRules* rewRules, ideal redGB,
+                    Lpoly* gCurr
+                  )
 {
-
+  Cpair* temp = NULL;
+  temp  = sort(critPairs->cp, critPairs->length); 
 }
 
 
 
+Cpair* sort(Cpair* cp, unsigned int length)
+{
+  // using merge sort 
+  // Link: http://en.wikipedia.org/wiki/Merge_sort
+  if(length == 1) 
+  {
+    return cp; 
+  }
+  else
+  {
+    int length1 = length / 2;
+    int length2 = length - length1;
+    // pointer to the start of the 2nd linked list for the next
+    // iteration step of the merge sort
+    Cpair* temp = cp;
+    for(length=1; length < length1; length++)
+    {
+      temp = temp->next;
+    }
+    Cpair* cp2  = temp->next;
+    temp->next  = NULL; 
+    cp  = sort(cp, length1);
+    cp2 = sort(cp2, length2);
+    return merge(cp, cp2);
+  }
+}
+
+
+
+Cpair* merge(Cpair* cp, Cpair* cp2)
+{
+  // initialize new, sorted list of critical pairs
+  Cpair* cpNew = NULL;
+  if( expCmp(cp->mLabelExp, cp2->mLabelExp) == 1 )
+  {
+    cpNew = cp;
+    cp    = cp->next;
+  }
+  else
+  { 
+    cpNew = cp2;
+    cp2   = cp2->next;
+  }
+  Cpair* temp = cpNew;
+  while(cp!=NULL && cp2!=NULL)
+  {
+    if( expCmp(cp->mLabelExp, cp2->mLabelExp) == 1 )
+    {
+      temp->next  = cp;
+      temp        = cp;
+      cp          = cp->next;
+    }
+    else
+    {
+      temp->next  = cp2;
+      temp        = cp2;
+      cp2         = cp2->next;
+    }
+  }
+  if(cp!=NULL)
+  {
+    temp->next  = cp;
+  }
+  else 
+  {
+    temp->next  = cp2;
+  }
+
+  return cpNew;
+}
 ///////////////////////////////////////////////////////////////////////////
 // MEMORY & INTERNAL EXPONENT VECTOR STUFF: HANDLED A BIT DIFFERENT FROM //
 // SINGULAR KERNEL                                                       //
