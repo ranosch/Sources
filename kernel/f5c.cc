@@ -26,10 +26,8 @@
 #include <unistd.h>
 #include "options.h"
 #include "structs.h"
-#include "kutil.h"
 #include "omalloc.h"
 #include "polys.h"
-#include "polys-impl.h" // needed for GetBitFields
 #include "p_polys.h"
 #include "p_Procs.h"
 #include "ideals.h"
@@ -48,6 +46,7 @@
 #define F5EDEBUG  0
 #define setMaxIdeal 64
 #define NUMVARS currRing->ExpL_Size
+int create_count = 0; // for KDEBUG option in reduceByRedGBCritPair
 
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -782,7 +781,7 @@ inline poly multInit( const int* exp, int numVariables, int* shift,
 {
   poly np;
   omTypeAllocBin( poly, np, currRing->PolyBin );
-  p_SetRingOfLm( np, r );
+  p_SetRingOfLm( np, currRing );
   unsigned long* expTemp  =  (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
   getExpFromIntArray( exp, expTemp, numVariables, shift, negBitmaskShifted, offsets );
   p_MemCopy_LengthGeneral( np->exp, expTemp, NUMVARS );
@@ -790,6 +789,8 @@ inline poly multInit( const int* exp, int numVariables, int* shift,
   pSetCoeff0(np, NULL);
   return np;
 }
+
+
 
 poly createSpoly( Cpair* cp, int numVariables, int* shift, int* negBitmaskShifted,
                   int* offsets, poly spNoether, int use_buckets, ring tailRing, 
@@ -806,7 +807,7 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, int* negBitmaskShifte
 #ifdef KDEBUG
   create_count++;
 #endif
-  kTest_L(Pair);
+  kTest_L( &Pair );
   poly p1 = Pair.p1;
   poly p2 = Pair.p2;
 
@@ -1224,7 +1225,7 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
   //       q should be the s-polynomial!!!!
   ////////////////////////////////////////////////////////
   // create the s-polynomial corresponding to the critical pair cp
-
+  poly q = createSpoly( cp, numVariables, shift, negBitmaskShifted, offsets );
   
   /*- compute------------------------------------------- -*/
   p = pCopy(q);

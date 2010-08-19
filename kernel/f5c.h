@@ -26,6 +26,9 @@
 #define F5C_HEADER
 
 #ifdef HAVE_F5C
+#include "kutil.h"  // needs to be here and not in "f5c.cc" since 
+                    // "reduceByRedGBCritPair" uses "TObject" as a 
+                    // parameter
 
 
 //------------------------------------------------------------------------------
@@ -329,9 +332,25 @@ Cpair* merge  (
 
 
 
+/// @brief \c multInit gets the monomial out of an integer vector representing 
+/// the monomials exponent vector
+/// @return monomial with exponent vector = \c exp
+/// @sa createSpoly
+inline poly multInit  ( 
+  const int* exp,         ///<[in]  exponent vector we compute a corresponding monomial of
+  int numVariables,       ///<[in]  global stuff for faster exponent computations
+  int* shift,             ///<[in]  global stuff for faster exponent computations
+  int* negBitmaskShifted, ///<[in]  global stuff for faster exponent computations
+  int* offsets            ///<[in]  global stuff for faster exponent computations
+                      );
+
+
+
 /// @brief \c createSpoly() computes the s-polynomial of the critical pair \c
 /// cp . This is different from the standard s-polynomial creation in SINGULAR
 /// as we already know the multipliers of the two generators of \c cp. 
+/// @return s-polynomial of \c cp
+/// @sa multInit
 poly createSpoly  ( 
   Cpair* cp,              ///<[in] critical pair 
   int numVariables,       ///<[in] global stuff for faster exponent computations 
@@ -375,11 +394,11 @@ poly reduceByRedGBCritPair  (
   Cpair*    cp,           ///<[in]  critical pair whose corresponding s-polynomial
                           ///       is reduced w.r.t. \c redGB resp. \c strat
   kStrategy strat,        ///<[in]  strategy to reduce elements w.r.t. \c redGB
-  int numVariables,       ///<[in] global stuff for faster exponent computations
-  int* shift,             ///<[in] global stuff for faster exponent computations
-  int* negBitmaskShifted, ///<[in] global stuff for faster exponent computations
-  int* offsets,           ///<[in] global stuff for faster exponent computations
-  int       lazyReduce=0  ///<[in]  option to reduce lazy
+  int numVariables,       ///<[in]  global stuff for faster exponent computations
+  int* shift,             ///<[in]  global stuff for faster exponent computations
+  int* negBitmaskShifted, ///<[in]  global stuff for faster exponent computations
+  int* offsets,           ///<[in]  global stuff for faster exponent computations
+  int  lazyReduce=0       ///<[in]  option to reduce lazy
                     );
 
 
