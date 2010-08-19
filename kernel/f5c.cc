@@ -47,6 +47,7 @@
 #define F5EDEBUG  0
 #define setMaxIdeal 64
 #define NUMVARS currRing->ExpL_Size
+BITSET  test=(BITSET)0;
 
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -120,10 +121,18 @@ ideal f5cMain(ideal F, ideal Q)
 
 ideal f5cIter(poly p, ideal redGB, int numVariables, int* shift, int* negBitmaskShifted, int* offsets)
 {
+  // create the reduction structure "strat" which is needed for all 
+  // reductions with redGB in this iteration step
+  kStrategy strat=new skStrategy;
+  strat->syzComp = 0;
+  strat->ak = idRankFreeModule(redGB);
+  prepRedGBReduction(strat, redGB);
+
   int i;
   // create array of leading monomials of previously computed elements in redGB
-  
-  F5Rules* f5Rules = (F5Rules*) omalloc(sizeof(struct F5Rules));
+  F5Rules* f5Rules        = (F5Rules*) omalloc(sizeof(struct F5Rules));
+  RewRules* rewRulesFirst = NULL;
+  RewRules* rewRulesLast  = NULL;
   // malloc memory for slabel
   f5Rules->label  = (int**) omalloc(IDELEMS(redGB)*sizeof(int*));
   f5Rules->slabel = (unsigned long*) omalloc((currRing->N+1)*sizeof(unsigned long)); 
@@ -165,6 +174,11 @@ ideal f5cIter(poly p, ideal redGB, int numVariables, int* shift, int* negBitmask
   CpairDegBound* critPairsBounds = NULL;
   criticalPairInit( gCurr, redGB, *f5Rules, critPairsBounds, numVariables, shift,
                     negBitmaskShifted, offsets); 
+
+  // delete the reduction strategy strat since the current iteration step is
+  // completed right now
+  clearStrat( strat );
+
   return redGB;
 }
 
@@ -326,7 +340,7 @@ void criticalPairPrev(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
     
     // testing the F5 Criterion
     if( !criterion1(critPairTemp->mLabel1, critPairTemp->smLabel1, f5Rules) && 
-        !criterion2(critPairTemp->mLabel1, critPairTemp->smLabel1, rewRules) ) 
+        !criterion2(critPairTemp->mLabel1, critPairTemp->smLabel1, &rewRules) ) 
     {
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
@@ -373,7 +387,7 @@ void criticalPairPrev(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
   
   // testing the F5 Criterion
   if( !criterion1(critPairTemp->mLabel1, critPairTemp->smLabel1, f5Rules) && 
-      !criterion2(critPairTemp->mLabel1, critPairTemp->smLabel1, rewRules) ) 
+      !criterion2(critPairTemp->mLabel1, critPairTemp->smLabel1, &rewRules) ) 
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
@@ -453,8 +467,8 @@ void criticalPairCurr(const Lpoly& gCurr, const F5Rules& f5Rules,
     // testing the F5 Criterion
     if( !criterion1(critPairTemp->mLabel1, critPairTemp->smLabel1, f5Rules) 
         && !criterion1(critPairTemp->mLabel2, critPairTemp->smLabel2, f5Rules) 
-        && !criterion2(critPairTemp->mLabel1, critPairTemp->smLabel1, rewRules)   
-        && !criterion2(critPairTemp->mLabel2, critPairTemp->smLabel2, rewRules)
+        && !criterion2(critPairTemp->mLabel1, critPairTemp->smLabel1, &rewRules)   
+        && !criterion2(critPairTemp->mLabel2, critPairTemp->smLabel2, &rewRules)
       ) 
     {
       // completing the construction of the new critical pair and inserting it
@@ -514,8 +528,8 @@ void criticalPairCurr(const Lpoly& gCurr, const F5Rules& f5Rules,
   // testing the F5 Criterion
   if( !criterion1(critPairTemp->mLabel1, critPairTemp->smLabel1, f5Rules) 
       && !criterion1(critPairTemp->mLabel2, critPairTemp->smLabel2, f5Rules) 
-      && !criterion2(critPairTemp->mLabel1, critPairTemp->smLabel1, rewRules)   
-      && !criterion2(critPairTemp->mLabel2, critPairTemp->smLabel2, rewRules)
+      && !criterion2(critPairTemp->mLabel1, critPairTemp->smLabel1, &rewRules)   
+      && !criterion2(critPairTemp->mLabel2, critPairTemp->smLabel2, &rewRules)
     ) 
   {
     // completing the construction of the new critical pair and inserting it
@@ -618,10 +632,12 @@ inline bool criterion1(const int* mLabel1, const unsigned long smLabel1, const F
 
 
 
-inline bool criterion2(const int* mLabel1, const unsigned long smLabel1, const RewRules& rewRules)
+inline bool criterion2( const int* mLabel1, const unsigned long smLabel1, 
+                        const RewRules* rewRules
+                      )
 {
   int j = currRing->N;
-  const RewRules* temp = &rewRules;
+  const RewRules* temp = rewRules;
   while(temp)
   {
     if(!(smLabel1 & temp->slabel))
@@ -649,12 +665,38 @@ inline bool criterion2(const int* mLabel1, const unsigned long smLabel1, const R
 
 
 
-void computeSpols ( CpairDegBound* critPairs, RewRules* rewRules, ideal redGB,
-                    Lpoly* gCurr
+void computeSpols ( CpairDegBound* critPairs, RewRules* rewRulesFirst, 
+                    RewRules* rewRulesLast, ideal redGB, Lpoly* gCurr
                   )
 {
   Cpair* temp = NULL;
   temp  = sort(critPairs->cp, critPairs->length); 
+  
+  // The first element cannot be detected by Criterion 2 as there are no new
+  // rules added to \c rewRules until now.
+  RewRules newRule  = { NULL, temp->mLabel1, temp->smLabel1 };
+  if( NULL==rewRulesLast ) 
+  {
+    rewRulesFirst = rewRulesLast = &newRule;
+  }
+  else 
+  {
+    rewRulesLast->next  = &newRule;
+    rewRulesLast        = &newRule; 
+  }
+  // from this point on, rewRulesLast != NULL, thus we do not need to test this
+  // again in the following iteration over the list of critical pairs
+  temp  = temp->next;
+  //kNF1
+  while( temp!=NULL )
+  {
+    if(!criterion2(temp->mLabel1, temp->smLabel1, rewRulesFirst))
+    {
+      RewRules newRule    = { NULL, temp->mLabel1, temp->smLabel1 };
+      rewRulesLast->next  = &newRule;
+      rewRulesLast        = &newRule; 
+    }
+  }
 }
 
 
@@ -728,6 +770,204 @@ Cpair* merge(Cpair* cp, Cpair* cp2)
   }
 
   return cpNew;
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////
+// INTERREDUCTION STUFF: HANDLED A BIT DIFFERENT FROM SINGULAR KERNEL    //
+///////////////////////////////////////////////////////////////////////////
+
+void prepRedGBReduction(kStrategy strat, ideal F, ideal Q, int lazyReduce)
+{
+  strat->kHEdgeFound = ppNoether != NULL;
+  strat->kNoether=pCopy(ppNoether);
+  test|=Sy_bit(OPT_REDTAIL);
+  if (TEST_OPT_STAIRCASEBOUND
+  && (0<Kstd1_deg)
+  && ((!strat->kHEdgeFound)
+    ||(TEST_OPT_DEGBOUND && (pWTotaldegree(strat->kNoether)<Kstd1_deg))))
+  {
+    pDelete(&strat->kNoether);
+    strat->kNoether=pOne();
+    pSetExp(strat->kNoether,1, Kstd1_deg+1);
+    pSetm(strat->kNoether);
+    strat->kHEdgeFound=TRUE;
+  }
+  initBuchMoraCrit(strat);
+  initBuchMoraPos(strat);
+  initMora(F,strat);
+  strat->enterS = enterSMoraNF;
+  /*- set T -*/
+  strat->tl = -1;
+  strat->tmax = setmaxT;
+  strat->T = initT();
+  strat->R = initR();
+  strat->sevT = initsevT();
+  /*- set S -*/
+  strat->sl = -1;
+  /*- init local data struct.-------------------------- -*/
+  /*Shdl=*/initS(F,Q,strat);
+  if ((strat->ak!=0)
+  && (strat->kHEdgeFound))
+  {
+    if (strat->ak!=1)
+    {
+      pSetComp(strat->kNoether,1);
+      pSetmComp(strat->kNoether);
+      poly p=pHead(strat->kNoether);
+      pSetComp(p,strat->ak);
+      pSetmComp(p);
+      p=pAdd(strat->kNoether,p);
+      strat->kNoether=pNext(p);
+      p_LmFree(p,currRing);
+    }
+  }
+  if (TEST_OPT_INTSTRATEGY && ((lazyReduce & KSTD_NF_LAZY)==0))
+  {
+    for (i=strat->sl; i>=0; i--)
+      pNorm(strat->S[i]);
+  }
+  
+  assume(!(idIs0(F)&&(Q==NULL)));
+
+// lazy_reduce flags: can be combined by |
+//#define KSTD_NF_LAZY   1
+  // do only a reduction of the leading term
+//#define KSTD_NF_ECART  2
+  // only local: recude even with bad ecart
+  //poly   p;
+  int   i;
+  int   j;
+  int   o;
+  LObject   h;
+  BITSET save_test=test;
+
+  //if ((idIs0(F))&&(Q==NULL))
+  //  return pCopy(q); /*F=0*/
+  //strat->ak = si_max(idRankFreeModule(F),pMaxComp(q));
+  /*- creating temp data structures------------------- -*/
+  strat->kHEdgeFound = ppNoether != NULL;
+  strat->kNoether    = pCopy(ppNoether);
+  test|=Sy_bit(OPT_REDTAIL);
+  test&=~Sy_bit(OPT_INTSTRATEGY);
+  if (TEST_OPT_STAIRCASEBOUND
+  && (! TEST_V_DEG_STOP)
+  && (0<Kstd1_deg)
+  && ((!strat->kHEdgeFound)
+    ||(TEST_OPT_DEGBOUND && (pWTotaldegree(strat->kNoether)<Kstd1_deg))))
+  {
+    pDelete(&strat->kNoether);
+    strat->kNoether=pOne();
+    pSetExp(strat->kNoether,1, Kstd1_deg+1);
+    pSetm(strat->kNoether);
+    strat->kHEdgeFound=TRUE;
+  }
+  initBuchMoraCrit(strat);
+  initBuchMoraPos(strat);
+  initMora(F,strat);
+  strat->enterS = enterSMoraNF;
+  /*- set T -*/
+  strat->tl = -1;
+  strat->tmax = setmaxT;
+  strat->T = initT();
+  strat->R = initR();
+  strat->sevT = initsevT();
+  /*- set S -*/
+  strat->sl = -1;
+  /*- init local data struct.-------------------------- -*/
+  /*Shdl=*/initS(F,Q,strat);
+  if ((strat->ak!=0)
+  && (strat->kHEdgeFound))
+  {
+    if (strat->ak!=1)
+    {
+      pSetComp(strat->kNoether,1);
+      pSetmComp(strat->kNoether);
+      poly p=pHead(strat->kNoether);
+      pSetComp(p,strat->ak);
+      pSetmComp(p);
+      p=pAdd(strat->kNoether,p);
+      strat->kNoether=pNext(p);
+      p_LmFree(p,currRing);
+    }
+  }
+  if ((lazyReduce & KSTD_NF_LAZY)==0)
+  {
+    for (i=strat->sl; i>=0; i--)
+      pNorm(strat->S[i]);
+  }
+  /*- puts the elements of S also to T -*/
+  for (i=0; i<=strat->sl; i++)
+  {
+    h.p = strat->S[i];
+    h.ecart = strat->ecartS[i];
+    if (strat->sevS[i] == 0) strat->sevS[i] = pGetShortExpVector(h.p);
+    else assume(strat->sevS[i] == pGetShortExpVector(h.p));
+    h.length = pLength(h.p);
+    h.sev = strat->sevS[i];
+    h.SetpFDeg();
+    enterT(h,strat);
+  }
+}
+
+
+
+poly reduceByRedGB(Cpair* cp, kStrategy strat)
+{
+  poly p, q;
+  ////////////////////////////////////////////////////////
+  // TODO: critical pair -> s-polynomial
+  //       q should be the s-polynomial!!!!
+  ////////////////////////////////////////////////////////
+
+  /*- compute------------------------------------------- -*/
+  p = pCopy(q);
+  deleteHC(&p,&o,&j,strat);
+  if (TEST_OPT_PROT) { PrintS("r"); mflush(); }
+  if (p!=NULL) p = redMoraNF(p,strat, lazyReduce & KSTD_NF_ECART);
+  if ((p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
+  {
+    if (TEST_OPT_PROT) { PrintS("t"); mflush(); }
+    p = redtail(p,strat->sl,strat);
+  }
+  test=save_test;
+  if (TEST_OPT_PROT) PrintLn();
+  return p;
+}
+
+
+
+void clearStrat(kStrategy strat, ideal Q)
+{
+  cleanT(strat);
+  omFreeSize((ADDRESS)strat->T,strat->tmax*sizeof(TObject));
+  omFreeSize((ADDRESS)strat->ecartS,IDELEMS(strat->Shdl)*sizeof(int));
+  omFreeSize((ADDRESS)strat->sevS,IDELEMS(strat->Shdl)*sizeof(unsigned long));
+  omFreeSize((ADDRESS)strat->NotUsedAxis,(pVariables+1)*sizeof(BOOLEAN));
+  omfree(strat->sevT);
+  omfree(strat->S_2_R);
+  omfree(strat->R);
+
+  if ((Q!=NULL)&&(strat->fromQ!=NULL))
+  {
+    i=((IDELEMS(Q)+IDELEMS(F)+15)/16)*16;
+    omFreeSize((ADDRESS)strat->fromQ,i*sizeof(int));
+    strat->fromQ=NULL;
+  }
+  pDelete(&strat->kHEdge);
+  pDelete(&strat->kNoether);
+  if ((TEST_OPT_WEIGHTM)&&(F!=NULL))
+  {
+    pRestoreDegProcs(pFDegOld, pLDegOld);
+    if (ecartWeights)
+    {
+      omFreeSize((ADDRESS *)&ecartWeights,(pVariables+1)*sizeof(short));
+      ecartWeights=NULL;
+    }
+  }
+  idDelete(&strat->Shdl);
+
 }
 ///////////////////////////////////////////////////////////////////////////
 // MEMORY & INTERNAL EXPONENT VECTOR STUFF: HANDLED A BIT DIFFERENT FROM //
