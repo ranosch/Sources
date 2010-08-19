@@ -162,7 +162,7 @@ ideal f5cIter(poly p, ideal redGB, int numVariables, int* shift, int* negBitmask
 
   f5Rules->size = i++;
   // reduce and initialize the list of Lpolys with the current ideal generator p
-  p = kNF(redGB, currQuotient, p);  
+  p = (redGB, currQuotient, p);  
   Lpoly gCurr = {NULL, p, NULL, false};  
   gCurr.label = (int*) omalloc((currRing->N+1)*sizeof(int));
   for(i=0; i<currRing->N+1; i++)
@@ -666,7 +666,9 @@ inline bool criterion2( const int* mLabel1, const unsigned long smLabel1,
 
 
 void computeSpols ( CpairDegBound* critPairs, RewRules* rewRulesFirst, 
-                    RewRules* rewRulesLast, ideal redGB, Lpoly* gCurr
+                    RewRules* rewRulesLast, ideal redGB, Lpoly* gCurr,
+                    int numVariables, int* shift, int* negBitmaskShifted, 
+                    int* offsets
                   )
 {
   Cpair* temp = NULL;
@@ -771,6 +773,134 @@ Cpair* merge(Cpair* cp, Cpair* cp2)
 
   return cpNew;
 }
+
+
+
+inline poly multInit( const int* exp, int numVariables, int* shift, 
+                      int* negBitmaskShifted, int* offsets 
+                    )
+{
+  poly np;
+  omTypeAllocBin( poly, np, currRing->PolyBin );
+  p_SetRingOfLm( np, r );
+  unsigned long* expTemp  =  (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
+  getExpFromIntArray( exp, expTemp, numVariables, shift, negBitmaskShifted, offsets );
+  p_MemCopy_LengthGeneral( np->exp, expTemp, NUMVARS );
+  pNext(np) = NULL;
+  pSetCoeff0(np, NULL);
+  return np;
+}
+
+poly createSpoly( Cpair* cp, int numVariables, int* shift, int* negBitmaskShifted,
+                  int* offsets, poly spNoether, int use_buckets, ring tailRing, 
+                  TObject** R
+                )
+{
+  LObject Pair( currRing );
+  Pair.p1  = cp->p1;
+  Pair.p2  = cp->p2;
+  
+  poly m1 = multInit( cp->mLabel1, numVariables, shift, negBitmaskShifted, offsets );
+  poly m2 = multInit( cp->mLabel2, numVariables, shift, negBitmaskShifted, offsets );
+
+#ifdef KDEBUG
+  create_count++;
+#endif
+  kTest_L(Pair);
+  poly p1 = Pair.p1;
+  poly p2 = Pair.p2;
+
+
+  poly last;
+  Pair.tailRing = tailRing;
+
+  assume(p1 != NULL);
+  assume(p2 != NULL);
+  assume(tailRing != NULL);
+
+  poly a1 = pNext(p1), a2 = pNext(p2);
+  number lc1 = pGetCoeff(p1), lc2 = pGetCoeff(p2);
+  int co=0, ct = 3; // as lc1 = lc2 = 1 => 3=ksCheckCoeff(&lc1, &lc2); !!!
+
+  int l1=0, l2=0;
+
+  if (p_GetComp(p1, currRing)!=p_GetComp(p2, currRing))
+  {
+    if (p_GetComp(p1, currRing)==0)
+    {
+      co=1;
+      p_SetCompP(p1,p_GetComp(p2, currRing), currRing, tailRing);
+    }
+    else
+    {
+      co=2;
+      p_SetCompP(p2, p_GetComp(p1, currRing), currRing, tailRing);
+    }
+  }
+
+  if (m1 == NULL)
+    k_GetLeadTerms(p1, p2, currRing, m1, m2, tailRing);
+
+  pSetCoeff0(m1, lc2);
+  pSetCoeff0(m2, lc1);  // and now, m1 * LT(p1) == m2 * LT(p2)
+
+  if (R != NULL)
+  {
+    if (Pair.i_r1 == -1)
+    {
+      l1 = pLength(p1) - 1;
+    }
+    else
+    {
+      l1 = (R[Pair.i_r1])->GetpLength() - 1;
+    }
+    if (Pair.i_r2 == -1)
+    {
+      l2 = pLength(p2) - 1;
+    }
+    else
+    {
+      l2 = (R[Pair.i_r2])->GetpLength() - 1;
+    }
+  }
+
+  // get m2 * a2
+  if (spNoether != NULL)
+  {
+    l2 = -1;
+    a2 = tailRing->p_Procs->pp_Mult_mm_Noether(a2, m2, spNoether, l2, tailRing,last);
+    assume(l2 == pLength(a2));
+  }
+  else
+    a2 = tailRing->p_Procs->pp_Mult_mm(a2, m2, tailRing,last);
+#ifdef HAVE_RINGS
+  if (!(rField_is_Domain(currRing))) l2 = pLength(a2);
+#endif
+
+  Pair.SetLmTail(m2, a2, l2, use_buckets, tailRing, last);
+
+  // get m2*a2 - m1*a1
+  Pair.Tail_Minus_mm_Mult_qq(m1, a1, l1, spNoether);
+
+  // Clean-up time
+  Pair.LmDeleteAndIter();
+  p_LmDelete(m1, tailRing);
+
+  if (co != 0)
+  {
+    if (co==1)
+    {
+      p_SetCompP(p1,0, currRing, tailRing);
+    }
+    else
+    {
+      p_SetCompP(p2,0, currRing, tailRing);
+    }
+  }
+
+  return Pair.GetLmCurrRing();
+}
+
 
 
 
@@ -1079,9 +1209,12 @@ void prepRedGBReduction(kStrategy strat, ideal F, ideal Q, int lazyReduce)
 
 
 
-poly reduceByRedGB(Cpair* cp, kStrategy strat, int lazyReduce)
+poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables, 
+                              int* shift, int* negBitmaskShifted, 
+                              int* offsets, int lazyReduce
+                            )
 {
-  poly p, q;
+  poly  p;
   int   i;
   int   j;
   int   o;
@@ -1090,15 +1223,61 @@ poly reduceByRedGB(Cpair* cp, kStrategy strat, int lazyReduce)
   // TODO: critical pair -> s-polynomial
   //       q should be the s-polynomial!!!!
   ////////////////////////////////////////////////////////
+  // create the s-polynomial corresponding to the critical pair cp
 
+  
   /*- compute------------------------------------------- -*/
   p = pCopy(q);
   deleteHC(&p,&o,&j,strat);
-  if (TEST_OPT_PROT) { PrintS("r"); mflush(); }
+  if (TEST_OPT_PROT) 
+  { 
+    PrintS("r"); 
+    mflush(); 
+  }
   if (p!=NULL) p = redMoraNF(p,strat, lazyReduce & KSTD_NF_ECART);
   if ((p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
   {
-    if (TEST_OPT_PROT) { PrintS("t"); mflush(); }
+    if (TEST_OPT_PROT) 
+    { 
+      PrintS("t"); mflush(); 
+    }
+    p = redtail(p,strat->sl,strat);
+  }
+  test=save_test;
+  if (TEST_OPT_PROT) PrintLn();
+  return p;
+}
+
+
+
+poly reduceByRedGBCritPoly( poly q, kStrategy strat, int lazyReduce )
+{
+  poly  p;
+  int   i;
+  int   j;
+  int   o;
+  BITSET save_test=test;
+  ////////////////////////////////////////////////////////
+  // TODO: critical pair -> s-polynomial
+  //       q should be the s-polynomial!!!!
+  ////////////////////////////////////////////////////////
+  
+  /*- compute------------------------------------------- -*/
+  p = pCopy(q);
+  deleteHC(&p,&o,&j,strat);
+  if (TEST_OPT_PROT) 
+  { 
+    PrintS("r"); 
+    mflush(); 
+  }
+  if (p!=NULL) p = redMoraNF(p,strat, lazyReduce & KSTD_NF_ECART);
+  if ((p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
+  {
+    if (TEST_OPT_PROT) 
+    { 
+      PrintS("t"); 
+      mflush(); 
+    }
     p = redtail(p,strat->sl,strat);
   }
   test=save_test;

@@ -28,6 +28,10 @@
 #ifdef HAVE_F5C
 
 
+//------------------------------------------------------------------------------
+//------------------------------ STRUCTURES ------------------------------------
+//------------------------------------------------------------------------------
+
 /// @struct \c F5Rules
 /// \c F5Rules is the structure of an array of rules checked in the F5 criterion
 /// representing a monomial by an integer vector resp a long, the short
@@ -131,6 +135,10 @@ struct CpairDegBound
 };
 
 
+
+//--------------------------------------------------------------------------------
+//--------------------------- FUNCTIONS & PROCEDURES -----------------------------
+//--------------------------------------------------------------------------------
 
 /// @brief \c f5cMain is the main function of the F5 implementation in the
 /// Singular kernel. It starts the computations of a Groebner basis of \c F.
@@ -247,36 +255,36 @@ void insertCritPair (
   long            deg,            ///<[in]      degree of \c critPair
   CpairDegBound*  critPairsBounds ///<[in,out]  first element of the list of 
                                   ///           critical pair degree bounds
-                      );
+                    );
 
 
 
 /// @brief \c criterion1() checks the multiplied label of a generator of a
 /// critical pair by the F5 Criterion
 /// @return 1, if the label is detected by the F5 Criterion; 0, else
-inline bool criterion1 (
+inline bool criterion1  (
   const int*          mLabel1,  ///<[in]  multiplied labeled to be checked
   const unsigned long smLabel1, ///<[in]  corresponding short exponent vector
   const F5Rules&      f5Rules   ///<[in]  rules for F5 Criterion checks
-                );
+                        );
 
 
 
 /// @brief \c criterion2() checks the multiplied label of a generator of a
 /// critical pair by the Rewritten Criterion 
 /// @return 1, if the label is detected by the Rewritten Criterion; 0, else
-inline bool criterion2 (
+inline bool criterion2  (
   const int*          mLabel1,  ///<[in]  multiplied labeled to be checked
   const unsigned long smLabel1, ///<[in]  corresponding short exponent vector
   const RewRules*     rewRules  ///<[in]  rules for Rewritten Criterion checks
-                );
+                        );
 
 
 
 /// @brief \c computeSpols() computes the s-polynomials of critical pairs of 
 /// lowest given degree which are not detected by the Rewritten Criterion.
 /// @sa criticalPairInit, criticalPairPrev, criticalPairCurr
-void computeSpols  (
+void computeSpols (
   CpairDegBound*  critPairs,  ///<[in]  pointer to the first critical pair of 
                               ///       the lowest given degree. Note that this
                               ///       linked list of critical pairs is NOT  
@@ -287,8 +295,12 @@ void computeSpols  (
                               ///           be not const as possibly new rules  
                               ///           are added.
   ideal           redGB,      ///<[in]  reducers of earlier iteration steps
-  Lpoly*          gCurr       ///<[in]  reducers of the current iteration step
-              );
+  Lpoly*          gCurr,      ///<[in]  reducers of the current iteration step
+  int numVariables,           ///<[in] global stuff for faster exponent computations
+  int* shift,                 ///<[in] global stuff for faster exponent computations
+  int* negBitmaskShifted,     ///<[in] global stuff for faster exponent computations
+  int* offsets                ///<[in] global stuff for faster exponent computations
+                  );
 
 
 
@@ -301,7 +313,7 @@ Cpair* sort (
                       ///           pairs which needs to be sorted
   unsigned int length /// <[in]     number of elements in the linked list
                       ///           starting with \c cp
-          );
+            );
 
 
 
@@ -317,6 +329,23 @@ Cpair* merge  (
 
 
 
+/// @brief \c createSpoly() computes the s-polynomial of the critical pair \c
+/// cp . This is different from the standard s-polynomial creation in SINGULAR
+/// as we already know the multipliers of the two generators of \c cp. 
+poly createSpoly  ( 
+  Cpair* cp,              ///<[in] critical pair 
+  int numVariables,       ///<[in] global stuff for faster exponent computations 
+  int* shift,             ///<[in] global stuff for faster exponent computations 
+  int* negBitmaskShifted, ///<[in] global stuff for faster exponent computations
+  int* offsets,           ///<[in] global stuff for faster exponent computations
+  poly spNoether = NULL,  ///<[in] needed for creation of s-polynomial 
+  int use_buckets=0,      ///<[in] needed for creation of s-polynomial
+  ring tailRing=currRing, ///<[in] needed for creation of s-polynomial
+  TObject** R = NULL      ///<[in] needed for creation of s-polynomial
+                  );
+
+
+
 ///////////////////////////////////////////////////////////////////////////
 // INTERREDUCTION STUFF: HANDLED A BIT DIFFERENT FROM SINGULAR KERNEL    //
 ///////////////////////////////////////////////////////////////////////////
@@ -324,7 +353,7 @@ Cpair* merge  (
 /// @brief \c prepRedGBRed() prepares the structure \c strat for all reduction 
 /// steps of newly computed polynomials in this iteration step with elements of
 /// the previous iteration steps, i.e. elements in \c redGB .
-/// sa reduceByRedGB
+/// @sa reduceByRedGB
 void prepRedGBReduction (
   kStrategy strat,      ///<[in,out]  reduction structure for this iteration
                         ///           step
@@ -336,15 +365,32 @@ void prepRedGBReduction (
 
 
 
-/// brief \c reduceByRedGB() takes a critical pair \c cp, computes the 
+/// @brief \c reduceByRedGBCritPair() takes a critical pair \c cp, computes the 
 /// corresponding s-polynomial and reduces it w.r.t. the reduced Groebner
 /// basis \c redGB which was computed in the previous iteration steps. 
 /// For this reduction we use the precomputed strategy \c strat.
-/// return the s-polynomial corresponding to \c cp, reduced w.r.t. \c redGB
-/// sa prepRedGBReduction 
-poly reduceByRedGB  ( 
+/// @return the s-polynomial corresponding to \c cp, reduced w.r.t. \c redGB
+/// @sa prepRedGBReduction 
+poly reduceByRedGBCritPair  ( 
   Cpair*    cp,           ///<[in]  critical pair whose corresponding s-polynomial
                           ///       is reduced w.r.t. \c redGB resp. \c strat
+  kStrategy strat,        ///<[in]  strategy to reduce elements w.r.t. \c redGB
+  int numVariables,       ///<[in] global stuff for faster exponent computations
+  int* shift,             ///<[in] global stuff for faster exponent computations
+  int* negBitmaskShifted, ///<[in] global stuff for faster exponent computations
+  int* offsets,           ///<[in] global stuff for faster exponent computations
+  int       lazyReduce=0  ///<[in]  option to reduce lazy
+                    );
+
+
+
+/// @brief \c reduceByRedGBPoly() takes a polynomial \c q and reduces it w.r.t. 
+/// the reduced Groebner basis \c redGB which was computed in the previous 
+/// iteration steps. For this reduction we use the precomputed strategy \c strat.
+/// @return the polynomial corresponding to \c cp, reduced w.r.t. \c redGB
+/// @sa prepRedGBReduction 
+poly reduceByRedGBPoly  ( 
+  poly      q,            ///<[in]  polynomial which is to be reduced w.r.t. \c redGB 
   kStrategy strat,        ///<[in]  strategy to reduce elements w.r.t. \c redGB
   int       lazyReduce=0  ///<[in]  option to reduce lazy
                     );
@@ -354,7 +400,7 @@ poly reduceByRedGB  (
 /// @brief \c clearStrat() deletes the strategy \c strat which was used in the 
 /// current iteration step to reduce all newly generated s-polynomials by the 
 /// already computed reduced Groebner basis \c redGB .
-/// sa prepRedGBReduction, reduceByRedGB
+/// @sa prepRedGBReduction, reduceByRedGB
 void clearStrat (
   kStrategy strat,          ///<[in]  strategy used for reduction w.r.t. \c redGB
                             ///       in the current iteration step
