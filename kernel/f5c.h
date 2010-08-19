@@ -343,9 +343,10 @@ void prepRedGBReduction (
 /// return the s-polynomial corresponding to \c cp, reduced w.r.t. \c redGB
 /// sa prepRedGBReduction 
 poly reduceByRedGB  ( 
-  Cpair*    cp,   ///<[in]  critical pair whose corresponding s-polynomial
-                  ///       is reduced w.r.t. \c redGB resp. \c strat
-  kStrategy strat ///<[in]  strategy to reduce elements w.r.t. \c redGB
+  Cpair*    cp,           ///<[in]  critical pair whose corresponding s-polynomial
+                          ///       is reduced w.r.t. \c redGB resp. \c strat
+  kStrategy strat,        ///<[in]  strategy to reduce elements w.r.t. \c redGB
+  int       lazyReduce=0  ///<[in]  option to reduce lazy
                     );
 
 
@@ -357,6 +358,8 @@ poly reduceByRedGB  (
 void clearStrat (
   kStrategy strat,          ///<[in]  strategy used for reduction w.r.t. \c redGB
                             ///       in the current iteration step
+  ideal     F,              ///<[in]  reduced Groebner basis for which \c strat was 
+                            ///       computed, i.e. \c redGB
   ideal     Q=currQuotient  ///<[in]  quotient ring
                 );
 

@@ -24,6 +24,7 @@
 #include "mod2.h"
 #ifdef HAVE_F5C
 #include <unistd.h>
+#include "options.h"
 #include "structs.h"
 #include "kutil.h"
 #include "omalloc.h"
@@ -47,7 +48,6 @@
 #define F5EDEBUG  0
 #define setMaxIdeal 64
 #define NUMVARS currRing->ExpL_Size
-BITSET  test=(BITSET)0;
 
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -177,8 +177,8 @@ ideal f5cIter(poly p, ideal redGB, int numVariables, int* shift, int* negBitmask
 
   // delete the reduction strategy strat since the current iteration step is
   // completed right now
-  clearStrat( strat );
-
+  clearStrat( strat, redGB );
+  // next all new elements are added to redGB & redGB is being reduced
   return redGB;
 }
 
@@ -778,8 +778,179 @@ Cpair* merge(Cpair* cp, Cpair* cp2)
 // INTERREDUCTION STUFF: HANDLED A BIT DIFFERENT FROM SINGULAR KERNEL    //
 ///////////////////////////////////////////////////////////////////////////
 
+// from kstd1.cc, strat->enterS points to one of these functions
+void enterSMoraNF (LObject p, int atS,kStrategy strat, int atR = -1);
+
+
+//-----------------------------------------------------------------------------
+// BEGIN static stuff from kstd1.cc 
+// This is needed for the computation of strat, but as it is static in kstd1.cc
+// we need to copy it!
+//-----------------------------------------------------------------------------
+
+static int doRed (LObject* h, TObject* with,BOOLEAN intoT,kStrategy strat)
+{
+  poly hp;
+  int ret;
+#if KDEBUG > 0
+  kTest_L(h);
+  kTest_T(with);
+#endif
+  // Hmmm ... why do we do this -- polys from T should already be normalized
+  if (!TEST_OPT_INTSTRATEGY)
+    with->pNorm();
+#ifdef KDEBUG
+  if (TEST_OPT_DEBUG)
+  {
+    PrintS("reduce ");h->wrp();PrintS(" with ");with->wrp();PrintLn();
+  }
+#endif
+  if (intoT)
+  {
+    // need to do it exacly like this: otherwise
+    // we might get errors
+    LObject L= *h;
+    L.Copy();
+    h->GetP();
+    h->SetLength(strat->length_pLength);
+    ret = ksReducePoly(&L, with, strat->kNoetherTail(), NULL, strat);
+    if (ret)
+    {
+      if (ret < 0) return ret;
+      if (h->tailRing != strat->tailRing)
+        h->ShallowCopyDelete(strat->tailRing,
+                             pGetShallowCopyDeleteProc(h->tailRing,
+                                                       strat->tailRing));
+    }
+    enterT(*h,strat);
+    *h = L;
+  }
+  else
+    ret = ksReducePoly(h, with, strat->kNoetherTail(), NULL, strat);
+#ifdef KDEBUG
+  if (TEST_OPT_DEBUG)
+  {
+    PrintS("to ");h->wrp();PrintLn();
+  }
+#endif
+  return ret;
+}
+
+
+
+/*2
+* reduces h with elements from T choosing first possible
+* element in T with respect to the given ecart
+* used for computing normal forms outside kStd
+*/
+static poly redMoraNF (poly h,kStrategy strat, int flag)
+{
+  LObject H;
+  H.p = h;
+  int j = 0;
+  int z = 10;
+  int o = H.SetpFDeg();
+  H.ecart = pLDeg(H.p,&H.length,currRing)-o;
+  if ((flag & 2) == 0) cancelunit(&H,TRUE);
+  H.sev = pGetShortExpVector(H.p);
+  unsigned long not_sev = ~ H.sev;
+  loop
+  {
+    if (j > strat->tl)
+    {
+      return H.p;
+    }
+    if (TEST_V_DEG_STOP)
+    {
+      if (kModDeg(H.p)>Kstd1_deg) pLmDelete(&H.p);
+      if (H.p==NULL) return NULL;
+    }
+    if (p_LmShortDivisibleBy(strat->T[j].GetLmTailRing(), strat->sevT[j], H.GetLmTailRing(), not_sev, strat->tailRing))
+    {
+      //if (strat->interpt) test_int_std(strat->kIdeal);
+      /*- remember the found T-poly -*/
+      poly pi = strat->T[j].p;
+      int ei = strat->T[j].ecart;
+      int li = strat->T[j].length;
+      int ii = j;
+      /*
+      * the polynomial to reduce with (up to the moment) is;
+      * pi with ecart ei and length li
+      */
+      loop
+      {
+        /*- look for a better one with respect to ecart -*/
+        /*- stop, if the ecart is small enough (<=ecart(H)) -*/
+        j++;
+        if (j > strat->tl) break;
+        if (ei <= H.ecart) break;
+        if (((strat->T[j].ecart < ei)
+          || ((strat->T[j].ecart == ei)
+        && (strat->T[j].length < li)))
+        && pLmShortDivisibleBy(strat->T[j].p,strat->sevT[j], H.p, not_sev))
+        {
+          /*
+          * the polynomial to reduce with is now;
+          */
+          pi = strat->T[j].p;
+          ei = strat->T[j].ecart;
+          li = strat->T[j].length;
+          ii = j;
+        }
+      }
+      /*
+      * end of search: have to reduce with pi
+      */
+      z++;
+      if (z>10)
+      {
+        pNormalize(H.p);
+        z=0;
+      }
+      if ((ei > H.ecart) && (!strat->kHEdgeFound))
+      {
+        /*
+        * It is not possible to reduce h with smaller ecart;
+        * we have to reduce with bad ecart: H has to enter in T
+        */
+        doRed(&H,&(strat->T[ii]),TRUE,strat);
+        if (H.p == NULL)
+          return NULL;
+      }
+      else
+      {
+        /*
+        * we reduce with good ecart, h need not to be put to T
+        */
+        doRed(&H,&(strat->T[ii]),FALSE,strat);
+        if (H.p == NULL)
+          return NULL;
+      }
+      /*- try to reduce the s-polynomial -*/
+      o = H.SetpFDeg();
+      if ((flag &2 ) == 0) cancelunit(&H,TRUE);
+      H.ecart = pLDeg(H.p,&(H.length),currRing)-o;
+      j = 0;
+      H.sev = pGetShortExpVector(H.p);
+      not_sev = ~ H.sev;
+    }
+    else
+    {
+      j++;
+    }
+  }
+}
+//------------------------------------------------------------------------
+// END static stuff from kstd1.cc 
+//------------------------------------------------------------------------
+
+
+
 void prepRedGBReduction(kStrategy strat, ideal F, ideal Q, int lazyReduce)
 {
+  int i;
+  LObject   h;
+
   strat->kHEdgeFound = ppNoether != NULL;
   strat->kNoether=pCopy(ppNoether);
   test|=Sy_bit(OPT_REDTAIL);
@@ -837,11 +1008,6 @@ void prepRedGBReduction(kStrategy strat, ideal F, ideal Q, int lazyReduce)
 //#define KSTD_NF_ECART  2
   // only local: recude even with bad ecart
   //poly   p;
-  int   i;
-  int   j;
-  int   o;
-  LObject   h;
-  BITSET save_test=test;
 
   //if ((idIs0(F))&&(Q==NULL))
   //  return pCopy(q); /*F=0*/
@@ -913,9 +1079,13 @@ void prepRedGBReduction(kStrategy strat, ideal F, ideal Q, int lazyReduce)
 
 
 
-poly reduceByRedGB(Cpair* cp, kStrategy strat)
+poly reduceByRedGB(Cpair* cp, kStrategy strat, int lazyReduce)
 {
   poly p, q;
+  int   i;
+  int   j;
+  int   o;
+  BITSET save_test=test;
   ////////////////////////////////////////////////////////
   // TODO: critical pair -> s-polynomial
   //       q should be the s-polynomial!!!!
@@ -938,8 +1108,9 @@ poly reduceByRedGB(Cpair* cp, kStrategy strat)
 
 
 
-void clearStrat(kStrategy strat, ideal Q)
+void clearStrat(kStrategy strat, ideal F, ideal Q)
 {
+  int i;
   cleanT(strat);
   omFreeSize((ADDRESS)strat->T,strat->tmax*sizeof(TObject));
   omFreeSize((ADDRESS)strat->ecartS,IDELEMS(strat->Shdl)*sizeof(int));
@@ -969,6 +1140,10 @@ void clearStrat(kStrategy strat, ideal Q)
   idDelete(&strat->Shdl);
 
 }
+
+
+
+
 ///////////////////////////////////////////////////////////////////////////
 // MEMORY & INTERNAL EXPONENT VECTOR STUFF: HANDLED A BIT DIFFERENT FROM //
 // SINGULAR KERNEL                                                       //
