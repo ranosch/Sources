@@ -68,7 +68,8 @@ struct RewRules
 /// i.e. elements consisting of a polynomial \c p and a label computed by F5C+ 
 /// The label is defined as an integer vector 
 /// TODO----resp. in a short exponent vector form as a long in \c slabel . 
-/// TODO----\c f5Rules and \c rewRules are an array resp. a list of rules (i.e. int vectors + shortExponentVectors) which are tested by the 
+/// TODO----\c f5Rules and \c rewRules are an array resp. a list of rules (i.e. int 
+/// vectors + shortExponentVectors) which are tested by the 
 /// TODO----criteria of F5 in further computations.
 /// TODO----\c redundant checks if the element is redundant for the gröbner basis. 
 /// TODO----Note that the elements are still non-redundant for F5C+. 
@@ -345,7 +346,8 @@ Cpair* merge  (
 /// @return monomial with exponent vector = \c exp
 /// @sa createSpoly
 inline poly multInit  ( 
-  const int* exp,         ///<[in]  exponent vector we compute a corresponding monomial of
+  const int* exp,         ///<[in]  exponent vector we compute a corresponding 
+                          ///       monomial of
   int numVariables,       ///<[in]  global stuff for faster exponent computations
   int* shift,             ///<[in]  global stuff for faster exponent computations
   int* negBitmaskShifted, ///<[in]  global stuff for faster exponent computations
@@ -417,7 +419,8 @@ poly reduceByRedGBCritPair  (
 /// @return the polynomial corresponding to \c cp, reduced w.r.t. \c redGB
 /// @sa prepRedGBReduction 
 poly reduceByRedGBPoly  ( 
-  poly      q,            ///<[in]  polynomial which is to be reduced w.r.t. \c redGB 
+  poly      q,            ///<[in]  polynomial which is to be reduced w.r.t. 
+                          ///       \c redGB 
   kStrategy strat,        ///<[in]  strategy to reduce elements w.r.t. \c redGB
   int       lazyReduce=0  ///<[in]  option to reduce lazy
                         );
