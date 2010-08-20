@@ -191,7 +191,7 @@ void criticalPairInit (
                           ///       the previous iteration step  
   const F5Rules& f5Rules, ///<[in]  list of exponent vectors to check the F5 
                           ///       Criterion
-  CpairDegBound* bounds,  ///<[in,out]  list of critical pair 
+  CpairDegBound** bounds, ///<[in,out]  list of critical pair 
                           ///           degree bounds               
   int numVariables,       ///<[in] global stuff for faster exponent computations
   int* shift,             ///<[in] global stuff for faster exponent computations
@@ -216,7 +216,7 @@ void criticalPairPrev (
                             ///       Criterion
   const RewRules& reRules,  ///<[in]  list of exponent vectors to check the  
                             ///       Rewritten Criterion
-  CpairDegBound* bounds,    ///<[in,out]  list of critical pair 
+  CpairDegBound** bounds,   ///<[in,out]  list of critical pair 
                             ///           degree bounds               
   int numVariables,         ///<[in] global stuff for faster exponent computations
   int* shift,               ///<[in] global stuff for faster exponent computations
@@ -241,7 +241,7 @@ void criticalPairCurr (
                             ///       Criterion
   const RewRules& rewRules, ///<[in]  list of exponent vectors to check the  
                             ///       Rewritten Criterion
-  CpairDegBound* bounds,    ///<[in,out]  list of critical pair 
+  CpairDegBound** bounds,   ///<[in,out]  list of critical pair 
                             ///           degree bounds               
   int numVariables,         ///<[in] global stuff for faster exponent computations
   int* shift,               ///<[in] global stuff for faster exponent computations
@@ -296,16 +296,6 @@ void computeSpols (
                               ///       the lowest given degree. Note that this
                               ///       linked list of critical pairs is NOT  
                               ///       sorted.
-  RewRules*  rewRulesFirst,   ///<[in,out]  note that we need this to be a pointer
-                              ///           and not a reference right now as it
-                              ///           could be NULL! Moreover, it has to
-                              ///           be not const as possibly new rules  
-                              ///           are added.
-  RewRules*   rewRulesLast,   ///<[in,out]  note that we need this to be a pointer
-                              ///           and not a reference right now as it
-                              ///           could be NULL! Moreover, it has to
-                              ///           be not const as possibly new rules  
-                              ///           are added.
   ideal           redGB,      ///<[in]  reducers of earlier iteration steps
   Lpoly*          gCurr,      ///<[in]  reducers of the current iteration step
   int numVariables,           ///<[in]  global stuff for faster exponent computations
