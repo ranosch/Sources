@@ -118,7 +118,9 @@ ideal f5cMain(ideal F, ideal Q)
 
 
 
-ideal f5cIter(poly p, ideal redGB, int numVariables, int* shift, int* negBitmaskShifted, int* offsets)
+ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift, 
+                int* negBitmaskShifted, int* offsets
+              )
 {
   // create the reduction structure "strat" which is needed for all 
   // reductions with redGB in this iteration step
@@ -134,7 +136,8 @@ ideal f5cIter(poly p, ideal redGB, int numVariables, int* shift, int* negBitmask
   RewRules* rewRulesLast  = NULL;
   // malloc memory for slabel
   f5Rules->label  = (int**) omalloc(IDELEMS(redGB)*sizeof(int*));
-  f5Rules->slabel = (unsigned long*) omalloc((currRing->N+1)*sizeof(unsigned long)); 
+  f5Rules->slabel = (unsigned long*) omalloc((currRing->N+1)*
+                    sizeof(unsigned long)); 
   for(i=0; i<IDELEMS(redGB); i++) 
   {
     f5Rules->label[i]  =  (int*) omalloc((currRing->N+1)*sizeof(int));
@@ -172,8 +175,14 @@ ideal f5cIter(poly p, ideal redGB, int numVariables, int* shift, int* negBitmask
   // initializing the list of critical pairs for this iteration step 
   CpairDegBound* critPairsBounds = NULL;
   criticalPairInit( gCurr, redGB, *f5Rules, critPairsBounds, numVariables, shift,
-                    negBitmaskShifted, offsets); 
-
+                    negBitmaskShifted, offsets
+                  ); 
+  if( critPairsBounds )
+  {
+    computeSpols( strat, critPairsBounds, rewRulesFirst, rewRulesLast, redGB, 
+                  &gCurr, numVariables, shift, negBitmaskShifted, offsets
+                );
+  }
   // delete the reduction strategy strat since the current iteration step is
   // completed right now
   clearStrat( strat, redGB );
@@ -183,10 +192,11 @@ ideal f5cIter(poly p, ideal redGB, int numVariables, int* shift, int* negBitmask
 
 
 
-void criticalPairInit(const Lpoly& gCurr, const ideal redGB, 
-                      const F5Rules& f5Rules, CpairDegBound* critPairsBounds, 
-                      int numVariables, int* shift, int* negBitmaskShifted, 
-                      int* offsets)
+void criticalPairInit ( const Lpoly& gCurr, const ideal redGB, 
+                        const F5Rules& f5Rules, CpairDegBound* critPairsBounds, 
+                        int numVariables, int* shift, int* negBitmaskShifted, 
+                        int* offsets
+                      )
 {
   int i, j;
   int* expVecNewElement = (int*) omalloc((currRing->N+1)*sizeof(int));
@@ -230,16 +240,18 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB,
     }
     critPairTemp->smLabel1 = getShortExpVecFromArray(critPairTemp->mLabel1);
     
-    if(!criterion1(critPairTemp->mLabel1, critPairTemp->smLabel1, f5Rules)) // testing the F5 Criterion
+    // testing the F5 Criterion
+    if(!criterion1(critPairTemp->mLabel1, critPairTemp->smLabel1, f5Rules)) 
     {
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       critPairTemp->p2      = redGB->m[i];
       // now we really need the memory for the exp label
-      critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
-      getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, numVariables,
-                          shift, negBitmaskShifted, offsets);
-      insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
+      critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*
+                                sizeof(unsigned long));
+      getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, 
+                          numVariables, shift, negBitmaskShifted, offsets );
+      insertCritPair(critPairTemp, critPairDeg, &critPairsBounds);
       Cpair critPairNew     = {NULL, NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
       critPairTemp          = &critPairNew;
       critPairTemp->mLabel1 = (int*) omalloc((currRing->N+1)*sizeof(int));
@@ -274,16 +286,19 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB,
     }
   }
   critPairTemp->smLabel1 = getShortExpVecFromArray(critPairTemp->mLabel1);
-  if(!criterion1(critPairTemp->mLabel1, critPairTemp->smLabel1, f5Rules)) // testing the F5 Criterion
+  // testing the F5 Criterion
+  if(!criterion1(critPairTemp->mLabel1, critPairTemp->smLabel1, f5Rules)) 
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     critPairTemp->p2  = redGB->m[IDELEMS(redGB)-1];
     // now we really need the memory for the exp label
-    critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
-    getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, numVariables,
-                        shift, negBitmaskShifted, offsets);
-    insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
+    critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*
+                              sizeof(unsigned long));
+    getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, 
+                        numVariables, shift, negBitmaskShifted, offsets
+                      );
+    insertCritPair( critPairTemp, critPairDeg, &critPairsBounds );
   }
   omfree(expVecTemp);
   omfree(expVecNewElement);
@@ -291,9 +306,11 @@ void criticalPairInit(const Lpoly& gCurr, const ideal redGB,
 
 
 
-void criticalPairPrev(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Rules, 
-                      const RewRules& rewRules, CpairDegBound* critPairsBounds,
-                      int numVariables, int* shift, int* negBitmaskShifted, int* offsets)
+void criticalPairPrev ( const Lpoly& gCurr, const ideal redGB, 
+                        const F5Rules& f5Rules, const RewRules& rewRules, 
+                        CpairDegBound* critPairsBounds, int numVariables, 
+                        int* shift, int* negBitmaskShifted, int* offsets
+                      )
 {
   int i, j;
   int* expVecNewElement = (int*) omalloc((currRing->N+1)*sizeof(int));
@@ -345,10 +362,11 @@ void criticalPairPrev(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
       // to the list of critical pairs 
       critPairTemp->p2      = redGB->m[i];
       // now we really need the memory for the exp label
-      critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
-      getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, numVariables,
-                          shift, negBitmaskShifted, offsets);
-      insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
+      critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*
+                                sizeof(unsigned long));
+      getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, 
+                          numVariables, shift, negBitmaskShifted, offsets );
+      insertCritPair(critPairTemp, critPairDeg, &critPairsBounds);
       Cpair critPairNew     = {NULL, NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
       critPairTemp          = &critPairNew;
       critPairTemp->mLabel1 = (int*) omalloc((currRing->N+1)*sizeof(int));
@@ -392,10 +410,12 @@ void criticalPairPrev(const Lpoly& gCurr, const ideal redGB, const F5Rules& f5Ru
     // to the list of critical pairs 
     critPairTemp->p2  = redGB->m[IDELEMS(redGB)-1];
     // now we really need the memory for the exp label
-    critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
-    getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, numVariables,
-                        shift, negBitmaskShifted, offsets);
-    insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
+    critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*
+                              sizeof(unsigned long));
+    getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, 
+                        numVariables, shift, negBitmaskShifted, offsets
+                      );
+    insertCritPair(critPairTemp, critPairDeg, &critPairsBounds);
   }
   omfree(expVecTemp);
   omfree(expVecNewElement);
@@ -474,17 +494,20 @@ void criticalPairCurr(const Lpoly& gCurr, const F5Rules& f5Rules,
       // to the list of critical pairs 
       critPairTemp->p2      = gCurrIter->p;
       // now we really need the memory for the exp label
-      critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
-      getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, numVariables,
-                          shift, negBitmaskShifted, offsets);
+      critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*
+                                sizeof(unsigned long));
+      getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, 
+                          numVariables, shift, negBitmaskShifted, offsets
+                        );
       getExpFromIntArray( critPairTemp->mLabel2, checkExp, numVariables,
-                          shift, negBitmaskShifted, offsets);
+                          shift, negBitmaskShifted, offsets
+                        );
       
       // compare which label is greater and possibly switch the 1st and 2nd 
       // generator in critPairTemp
       expCmp(critPairTemp->mLabelExp, checkExp);
       
-      insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
+      insertCritPair(critPairTemp, critPairDeg, &critPairsBounds);
       
       Cpair critPairNew     = {NULL, NULL, NULL, 0, NULL, gCurr.p, NULL, 0, NULL, NULL};
       critPairTemp          = &critPairNew;
@@ -535,17 +558,20 @@ void criticalPairCurr(const Lpoly& gCurr, const F5Rules& f5Rules,
     // to the list of critical pairs 
     critPairTemp->p2  = gCurrIter->p;
     // now we really need the memory for the exp label
-    critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
-    getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, numVariables,
-                        shift, negBitmaskShifted, offsets);
+    critPairTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*
+                              sizeof(unsigned long));
+    getExpFromIntArray( critPairTemp->mLabel1, critPairTemp->mLabelExp, 
+                        numVariables, shift, negBitmaskShifted, offsets
+                      );
     getExpFromIntArray( critPairTemp->mLabel2, checkExp, numVariables,
-                        shift, negBitmaskShifted, offsets);
+                        shift, negBitmaskShifted, offsets
+                      );
     
     // compare which label is greater and possibly switch the 1st and 2nd 
     // generator in critPairTemp
     expCmp(critPairTemp->mLabelExp, checkExp);
     
-    insertCritPair(critPairTemp, critPairDeg, critPairsBounds);
+    insertCritPair(critPairTemp, critPairDeg, &critPairsBounds);
   }
   omfree(checkExp);
   omfree(expVecTemp);
@@ -554,54 +580,77 @@ void criticalPairCurr(const Lpoly& gCurr, const F5Rules& f5Rules,
 
 
 
-void insertCritPair(Cpair* cp, long deg, CpairDegBound* bound)
+void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
 {
-  if(!bound) // empty list?
+#if F5EDEBUG
+  Print("INSERTCRITPAIR-BEGINNING deg bound%p\n",*bound);
+#endif
+  if( !(*bound) ) // empty list?
   {
-   CpairDegBound boundNew = {NULL, deg, cp, 1};
-   bound                  = &boundNew;
+    CpairDegBound* boundNew = (CpairDegBound*) omalloc(sizeof(CpairDegBound));
+    boundNew->next          = NULL;
+    boundNew->deg           = deg;
+    boundNew->cp            = cp;
+    boundNew->length        = 1;
+    *bound                   = boundNew;
   }
   else
   {
-    if(bound->deg < deg) 
+    if((*bound)->deg < deg) 
     {
-      while(bound->next && (bound->next->deg < deg))
+      while((*bound)->next && ((*bound)->next->deg < deg))
       {
-        bound = bound->next;
+        *bound = (*bound)->next;
       }
-      if(bound->next->deg == deg)
+      if((*bound)->next->deg == deg)
       {
-        cp->next        = bound->next->cp;
-        bound->next->cp = cp;
-        bound->next->length++;
+        cp->next        = (*bound)->next->cp;
+        (*bound)->next->cp = cp;
+        (*bound)->next->length++;
       }
       else
       {
-        CpairDegBound boundNew  = {bound->next, deg, cp, 1};
-        bound->next             = &boundNew;
+        CpairDegBound* boundNew = (CpairDegBound*) omalloc(sizeof(CpairDegBound));
+        boundNew->next          = (*bound)->next;
+        boundNew->deg           = deg;
+        boundNew->cp            = cp;
+        boundNew->length        = 1;
+        (*bound)->next             = boundNew;
       }
     }
     else
     {
-      if(bound->deg == deg) 
+      if((*bound)->deg == deg) 
       {
-        cp->next  = bound->cp;
-        bound->cp = cp;
-        bound->length++;
+        cp->next  = (*bound)->cp;
+        (*bound)->cp = cp;
+        (*bound)->length++;
       }
       else
-      {
-        CpairDegBound boundNew  = {bound, deg, cp, 1};
-        bound                   = &boundNew;
+        {
+        CpairDegBound* boundNew = (CpairDegBound*) omalloc(sizeof(CpairDegBound));
+        boundNew->next          = *bound;
+        boundNew->deg           = deg;
+        boundNew->cp            = cp;
+        boundNew->length        = 1;
+        *bound                   = boundNew;
       }
     }
   }
+#if F5EDEBUG
+  Print("INSERTCRITPAIR-END deg bound%p\n",*bound);
+#endif
 }
 
 
 
-inline bool criterion1(const int* mLabel1, const unsigned long smLabel1, const F5Rules& f5Rules)
+inline bool criterion1( const int* mLabel1, const unsigned long smLabel1, 
+                        const F5Rules& f5Rules
+                      )
 {
+#if F5EDEBUG
+    Print("CRITERION1-BEGINNING \n");
+#endif
   int i = 0;
   int j = currRing->N;
   for( ; i < f5Rules.size; i++)
@@ -627,6 +676,9 @@ inline bool criterion1(const int* mLabel1, const unsigned long smLabel1, const F
     }
   }
   return false;
+#if F5EDEBUG
+    Print("CRITERION1-END \n");
+#endif
 }
 
 
@@ -635,6 +687,9 @@ inline bool criterion2( const int* mLabel1, const unsigned long smLabel1,
                         const RewRules* rewRules
                       )
 {
+#if F5EDEBUG
+    Print("CRITERION2-BEGINNING \n");
+#endif
   int j = currRing->N;
   const RewRules* temp = rewRules;
   while(temp)
@@ -660,19 +715,22 @@ inline bool criterion2( const int* mLabel1, const unsigned long smLabel1,
     }
   }
   return false;
+#if F5EDEBUG
+    Print("CRITERION2-END \n");
+#endif
 }
 
 
 
-void computeSpols ( CpairDegBound* critPairs, RewRules* rewRulesFirst, 
-                    RewRules* rewRulesLast, ideal redGB, Lpoly* gCurr,
-                    int numVariables, int* shift, int* negBitmaskShifted, 
-                    int* offsets
+void computeSpols ( kStrategy strat, CpairDegBound* critPairs, 
+                    RewRules* rewRulesFirst, RewRules* rewRulesLast, 
+                    ideal redGB, Lpoly* gCurr, int numVariables, 
+                    int* shift, int* negBitmaskShifted, int* offsets
                   )
 {
   Cpair* temp = NULL;
+  poly sp;
   temp  = sort(critPairs->cp, critPairs->length); 
-  
   // The first element cannot be detected by Criterion 2 as there are no new
   // rules added to \c rewRules until now.
   RewRules newRule  = { NULL, temp->mLabel1, temp->smLabel1 };
@@ -687,8 +745,17 @@ void computeSpols ( CpairDegBound* critPairs, RewRules* rewRulesFirst,
   }
   // from this point on, rewRulesLast != NULL, thus we do not need to test this
   // again in the following iteration over the list of critical pairs
-  temp  = temp->next;
-  //kNF1
+  
+  // compute s-polynomial and reduce it w.r.t. redGB
+  sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift, 
+                                negBitmaskShifted, offsets 
+                              );
+  
+  Cpair* tempDel  = temp;
+  temp            = temp->next;
+  //omfree(tempDel);
+  
+
   while( temp!=NULL )
   {
     if(!criterion2(temp->mLabel1, temp->smLabel1, rewRulesFirst))
@@ -697,6 +764,14 @@ void computeSpols ( CpairDegBound* critPairs, RewRules* rewRulesFirst,
       rewRulesLast->next  = &newRule;
       rewRulesLast        = &newRule; 
     }
+    
+    // compute s-polynomial and reduce it w.r.t. redGB
+    sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift,   
+                                  negBitmaskShifted, offsets 
+                                );
+    Cpair* tempDel  = temp;
+    temp            = temp->next;
+    //omfree(tempDel);
   }
 }
 
@@ -782,8 +857,11 @@ inline poly multInit( const int* exp, int numVariables, int* shift,
   poly np;
   omTypeAllocBin( poly, np, currRing->PolyBin );
   p_SetRingOfLm( np, currRing );
-  unsigned long* expTemp  =  (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
-  getExpFromIntArray( exp, expTemp, numVariables, shift, negBitmaskShifted, offsets );
+  unsigned long* expTemp  =   (unsigned long*) omalloc(NUMVARS*
+                              sizeof(unsigned long));
+  getExpFromIntArray( exp, expTemp, numVariables, shift, negBitmaskShifted, 
+                      offsets 
+                    );
   p_MemCopy_LengthGeneral( np->exp, expTemp, NUMVARS );
   pNext(np) = NULL;
   pSetCoeff0(np, NULL);
@@ -801,8 +879,12 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, int* negBitmaskShifte
   Pair.p1  = cp->p1;
   Pair.p2  = cp->p2;
   
-  poly m1 = multInit( cp->mLabel1, numVariables, shift, negBitmaskShifted, offsets );
-  poly m2 = multInit( cp->mLabel2, numVariables, shift, negBitmaskShifted, offsets );
+  poly m1 = multInit( cp->mLabel1, numVariables, shift, 
+                      negBitmaskShifted, offsets 
+                    );
+  poly m2 = multInit( cp->mLabel2, numVariables, shift, 
+                      negBitmaskShifted, offsets 
+                    );
 
 #ifdef KDEBUG
   create_count++;
@@ -869,7 +951,9 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, int* negBitmaskShifte
   if (spNoether != NULL)
   {
     l2 = -1;
-    a2 = tailRing->p_Procs->pp_Mult_mm_Noether(a2, m2, spNoether, l2, tailRing,last);
+    a2 = tailRing->p_Procs->pp_Mult_mm_Noether( a2, m2, spNoether, l2, 
+                                                tailRing,last
+                                              );
     assume(l2 == pLength(a2));
   }
   else
@@ -928,7 +1012,7 @@ static int doRed (LObject* h, TObject* with,BOOLEAN intoT,kStrategy strat)
   kTest_T(with);
 #endif
   // Hmmm ... why do we do this -- polys from T should already be normalized
-  if (!TEST_OPT_INTSTRATEGY)
+  if (!TEST_OPT_INTSTRATEGY)  
     with->pNorm();
 #ifdef KDEBUG
   if (TEST_OPT_DEBUG)
@@ -996,7 +1080,10 @@ static poly redMoraNF (poly h,kStrategy strat, int flag)
       if (kModDeg(H.p)>Kstd1_deg) pLmDelete(&H.p);
       if (H.p==NULL) return NULL;
     }
-    if (p_LmShortDivisibleBy(strat->T[j].GetLmTailRing(), strat->sevT[j], H.GetLmTailRing(), not_sev, strat->tailRing))
+    if  (p_LmShortDivisibleBy ( strat->T[j].GetLmTailRing(), strat->sevT[j], 
+                                H.GetLmTailRing(), not_sev, strat->tailRing
+                              )
+        )
     {
       //if (strat->interpt) test_int_std(strat->kIdeal);
       /*- remember the found T-poly -*/
@@ -1220,10 +1307,6 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
   int   j;
   int   o;
   BITSET save_test=test;
-  ////////////////////////////////////////////////////////
-  // TODO: critical pair -> s-polynomial
-  //       q should be the s-polynomial!!!!
-  ////////////////////////////////////////////////////////
   // create the s-polynomial corresponding to the critical pair cp
   poly q = createSpoly( cp, numVariables, shift, negBitmaskShifted, offsets );
   
@@ -1381,8 +1464,9 @@ unsigned long getShortExpVecFromArray(int* a, ring r)
 
 
 inline void getExpFromIntArray( const int* exp, unsigned long* r, 
-                                int numVariables, int* shift, int* negBitmaskShifted, 
-                                int* offsets)
+                                int numVariables, int* shift, int* 
+                                negBitmaskShifted, int* offsets
+                              )
 {
   register int i = numVariables;
   for( ; i; i--)
@@ -1424,5 +1508,7 @@ inline int expCmp(const unsigned long* a, const unsigned long* b)
     p_MemCmp_LengthGeneral_OrdGeneral(a, b, currRing->CmpL_Size, currRing->ordsgn,
                                       return 0, return 1, return -1);
 }
+
+
 #endif
 // HAVE_F5C

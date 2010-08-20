@@ -254,10 +254,10 @@ void criticalPairCurr (
 /// critical pairs.
 /// @sa criticalPairPrev, criticalPairCurr 
 void insertCritPair (
-  Cpair*          critPair,       ///<[in]      new critical pair to be inserted
-  long            deg,            ///<[in]      degree of \c critPair
-  CpairDegBound*  critPairsBounds ///<[in,out]  first element of the list of 
-                                  ///           critical pair degree bounds
+  Cpair*          critPair, ///<[in]      new critical pair to be inserted
+  long            deg,      ///<[in]      degree of \c critPair
+  CpairDegBound** bound     ///<[in,out]  first element of the list of 
+                            ///           critical pair degree bounds
                     );
 
 
@@ -265,6 +265,7 @@ void insertCritPair (
 /// @brief \c criterion1() checks the multiplied label of a generator of a
 /// critical pair by the F5 Criterion
 /// @return 1, if the label is detected by the F5 Criterion; 0, else
+/// @sa criterion2
 inline bool criterion1  (
   const int*          mLabel1,  ///<[in]  multiplied labeled to be checked
   const unsigned long smLabel1, ///<[in]  corresponding short exponent vector
@@ -276,6 +277,7 @@ inline bool criterion1  (
 /// @brief \c criterion2() checks the multiplied label of a generator of a
 /// critical pair by the Rewritten Criterion 
 /// @return 1, if the label is detected by the Rewritten Criterion; 0, else
+/// @sa criterion1
 inline bool criterion2  (
   const int*          mLabel1,  ///<[in]  multiplied labeled to be checked
   const unsigned long smLabel1, ///<[in]  corresponding short exponent vector
@@ -288,21 +290,27 @@ inline bool criterion2  (
 /// lowest given degree which are not detected by the Rewritten Criterion.
 /// @sa criticalPairInit, criticalPairPrev, criticalPairCurr
 void computeSpols (
+  kStrategy strat,            ///<[in]  strategy to reduce elements w.r.t. \c redGB
   CpairDegBound*  critPairs,  ///<[in]  pointer to the first critical pair of 
                               ///       the lowest given degree. Note that this
                               ///       linked list of critical pairs is NOT  
                               ///       sorted.
-  RewRules*       rewRules,   ///<[in,out]  note that we need this to be a pointer
+  RewRules*  rewRulesFirst,   ///<[in,out]  note that we need this to be a pointer
+                              ///           and not a reference right now as it
+                              ///           could be NULL! Moreover, it has to
+                              ///           be not const as possibly new rules  
+                              ///           are added.
+  RewRules*   rewRulesLast,   ///<[in,out]  note that we need this to be a pointer
                               ///           and not a reference right now as it
                               ///           could be NULL! Moreover, it has to
                               ///           be not const as possibly new rules  
                               ///           are added.
   ideal           redGB,      ///<[in]  reducers of earlier iteration steps
   Lpoly*          gCurr,      ///<[in]  reducers of the current iteration step
-  int numVariables,           ///<[in] global stuff for faster exponent computations
-  int* shift,                 ///<[in] global stuff for faster exponent computations
-  int* negBitmaskShifted,     ///<[in] global stuff for faster exponent computations
-  int* offsets                ///<[in] global stuff for faster exponent computations
+  int numVariables,           ///<[in]  global stuff for faster exponent computations
+  int* shift,                 ///<[in]  global stuff for faster exponent computations
+  int* negBitmaskShifted,     ///<[in]  global stuff for faster exponent computations
+  int* offsets                ///<[in]  global stuff for faster exponent computations
                   );
 
 
@@ -399,7 +407,7 @@ poly reduceByRedGBCritPair  (
   int* negBitmaskShifted, ///<[in]  global stuff for faster exponent computations
   int* offsets,           ///<[in]  global stuff for faster exponent computations
   int  lazyReduce=0       ///<[in]  option to reduce lazy
-                    );
+                            );
 
 
 
@@ -412,7 +420,7 @@ poly reduceByRedGBPoly  (
   poly      q,            ///<[in]  polynomial which is to be reduced w.r.t. \c redGB 
   kStrategy strat,        ///<[in]  strategy to reduce elements w.r.t. \c redGB
   int       lazyReduce=0  ///<[in]  option to reduce lazy
-                    );
+                        );
 
 
 
