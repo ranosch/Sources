@@ -491,7 +491,7 @@ static inline BOOLEAN isDivisibleGetMult (
   unsigned long not_sev_b,  ///<[in] neg short exponent vector of poly \c b 
   int** mult                ///<[in,out] pointer to the possible multiplier
                             ///          for the reduction of \c b by \c a
-                                      )
+                                      );
 #endif
 // HAVE_F5C
 #endif

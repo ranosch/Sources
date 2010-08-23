@@ -28,6 +28,7 @@
 #include "structs.h"
 #include "omalloc.h"
 #include "polys.h"
+#include "timer.h"
 #include "p_polys.h"
 #include "p_Procs.h"
 #include "ideals.h"
@@ -41,7 +42,6 @@
 #include "p_MemCmp.h"
 #include "pInline2.h"
 #include "f5c.h"
-#include "timer.h"
 
 #define F5EDEBUG  0
 #define setMaxIdeal 64
