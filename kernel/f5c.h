@@ -75,10 +75,10 @@ struct RewRules
 /// TODO----Note that the elements are still non-redundant for F5C+. 
 struct Lpoly 
 {
-  Lpoly*  next;         ///< pointer to the next element in the linked list
-  poly    p;            ///< polynomial part
-  int*    label;        ///< exponent vector, i.e. the label/signature
-  bool    redundant;    ///< Lpoly redundant?
+  Lpoly*    next;         ///< pointer to the next element in the linked list
+  poly      p;            ///< polynomial part
+  RewRules* rewRule;      ///< exponent vector, i.e. the label/signature
+  BOOLEAN   redundant;    ///< Lpoly redundant?
   // NOTE: You do not need the short exponent vector as you never check
   // with this, but only with multiples of it in the critical pair
   //long    slabel; ///< short exponent vector of the label/signature
@@ -111,12 +111,14 @@ struct Cpair
                               ///   of p1
   unsigned long   smLabel1;   ///<  short exponent vector of \c mLabel1
   int*            mult1;      ///<  multiplier of the 1st poly
-  poly            p1;         ///<  1st poly
+  poly            p1;         ///<  1st labeled poly
+  RewRules*       rewRule1;   ///<  rule for criterion2 checks
   int*            mLabel2;    ///<  exponent vector of the 2nd multiplier * label 
                               ///   of p2
   unsigned long   smLabel2;   ///<  short exponent vector of \c mLabel2
   int*            mult2;      ///<  multiplier of the 2nd poly
-  poly            p2;         ///<  2nd poly
+  poly            p2;         ///<  2nd labeled poly
+  RewRules*       rewRule2;   ///<  rule for criterion2 checks
 };
 
 
@@ -125,7 +127,7 @@ struct Cpair
 /// @brief This is the structure of linked list of linked lists of critical
 /// pairs.
 /// Each node of the linked list is a linked list of critical pairs of degree
-/// \c deg. This is a pre-sorting for the computation of the s-polynomials
+/// \c deg. Thi
 /// whereas the deg-lists themselves are not sorted at this point. This will 
 /// be done by a merge sort in \c computeSpols.
 /// @sa computeSpols
@@ -185,18 +187,18 @@ ideal f5cIter (
 /// point no rewrite rule exists, thus we do not need \c RewRules .
 /// @sa insertCritPair, criticalPairCurr, criticalPairPrev
 void criticalPairInit ( 
-  const Lpoly& gCurr,     ///<[in]  essentially this is the labeled 
-                          ///       polynomial of p at this point
-  const ideal redGB,      ///<[in]  reduced Groebner basis computed in 
-                          ///       the previous iteration step  
-  const F5Rules& f5Rules, ///<[in]  list of exponent vectors to check the F5 
-                          ///       Criterion
-  CpairDegBound** bounds, ///<[in,out]  list of critical pair 
-                          ///           degree bounds               
-  int numVariables,       ///<[in] global stuff for faster exponent computations
-  int* shift,             ///<[in] global stuff for faster exponent computations
-  int* negBitmaskShifted, ///<[in] global stuff for faster exponent computations
-  int* offsets            ///<[in] global stuff for faster exponent computations
+  Lpoly* gCurr,               ///<[in]  this is the labeled 
+                              ///       polynomial of p at this point
+  const ideal redGB,          ///<[in]  reduced Groebner basis computed in 
+                              ///       the previous iteration step  
+  const F5Rules& f5Rules,     ///<[in]  list of exponent vectors to check the F5 
+                              ///       Criterion, i.e. Criterion 1
+  CpairDegBound** bounds,     ///<[in,out]  list of critical pair 
+                              ///           degree bounds               
+  int numVariables,           ///<[in] global stuff for faster exponent computations
+  int* shift,                 ///<[in] global stuff for faster exponent computations
+  int* negBitmaskShifted,     ///<[in] global stuff for faster exponent computations
+  int* offsets                ///<[in] global stuff for faster exponent computations
                       );
 
 
@@ -208,14 +210,12 @@ void criticalPairInit (
 /// point no rewrite rule exists, thus we do not need \c RewRules .
 /// @sa insertCritPair, criticalPairCurr, criticalPairInit
 void criticalPairPrev ( 
-  const Lpoly& gCurr,       ///<[in]  essentially this is the labeled 
+  Lpoly* gCurr,             ///<[in]  essentially this is the labeled 
                             ///       polynomial of p at this point
   const ideal redGB,        ///<[in]  reduced Groebner basis computed in 
                             ///       the previous iteration step  
   const F5Rules& f5Rules,   ///<[in]  list of exponent vectors to check the F5 
                             ///       Criterion
-  const RewRules& reRules,  ///<[in]  list of exponent vectors to check the  
-                            ///       Rewritten Criterion
   CpairDegBound** bounds,   ///<[in,out]  list of critical pair 
                             ///           degree bounds               
   int numVariables,         ///<[in] global stuff for faster exponent computations
@@ -233,14 +233,12 @@ void criticalPairPrev (
 /// point no rewrite rule exists, thus we do not need \c RewRules .
 /// @sa insertCritPair, criticalPairPrev, criticalPairInit
 void criticalPairCurr ( 
-  const Lpoly& gCurr,       ///<[in]  essentially this is the labeled 
+  Lpoly* gCurr,             ///<[in]  essentially this is the labeled 
                             ///       polynomial of p at this point
   const ideal redGB,        ///<[in]  reduced Groebner basis computed in 
                             ///       the previous iteration step  
   const F5Rules& f5Rules,   ///<[in]  list of exponent vectors to check the F5 
                             ///       Criterion
-  const RewRules& rewRules, ///<[in]  list of exponent vectors to check the  
-                            ///       Rewritten Criterion
   CpairDegBound** bounds,   ///<[in,out]  list of critical pair 
                             ///           degree bounds               
   int numVariables,         ///<[in] global stuff for faster exponent computations
@@ -267,11 +265,11 @@ void insertCritPair (
 /// critical pair by the F5 Criterion
 /// @return 1, if the label is detected by the F5 Criterion; 0, else
 /// @sa criterion2
-inline bool criterion1  (
+inline BOOLEAN criterion1 (
   const int*          mLabel1,  ///<[in]  multiplied labeled to be checked
   const unsigned long smLabel1, ///<[in]  corresponding short exponent vector
   const F5Rules&      f5Rules   ///<[in]  rules for F5 Criterion checks
-                        );
+                          );
 
 
 
@@ -279,11 +277,11 @@ inline bool criterion1  (
 /// critical pair by the Rewritten Criterion 
 /// @return 1, if the label is detected by the Rewritten Criterion; 0, else
 /// @sa criterion1
-inline bool criterion2  (
+inline BOOLEAN criterion2 (
   const int*          mLabel1,  ///<[in]  multiplied labeled to be checked
   const unsigned long smLabel1, ///<[in]  corresponding short exponent vector
-  const RewRules*     rewRules  ///<[in]  rules for Rewritten Criterion checks
-                        );
+  RewRules*     rewRules        ///<[in]  rules for Rewritten Criterion checks
+                          );
 
 
 
