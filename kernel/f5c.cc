@@ -1653,5 +1653,40 @@ inline int expCmp(const unsigned long* a, const unsigned long* b)
 }
 
 
+static inline BOOLEAN isDivisibleGetMult ( poly a, unsigned long sev_a, poly b, 
+                                        unsigned long not_sev_b, int** mult
+                                      )
+{
+  p_LmCheckPolyRing1(a, currRing);
+  p_LmCheckPolyRing1(b, currRing);
+  
+  if (sev_a & not_sev_b)
+  {
+    pAssume1(_p_LmDivisibleByNoComp(a, currRing, b, currRing) == FALSE);
+    return FALSE;
+  }
+  if (p_GetComp(a, currRing) == 0 || p_GetComp(a,currRing) == p_GetComp(b,currRing))
+  {
+    int i=currRing->N;
+    pAssume1(currRing->N == currRing->N);
+
+    do
+    {
+      if (p_GetExp(a,i,currRing) > p_GetExp(b,i,currRing))
+      {
+        return FALSE;
+      }
+      *mult[i] = p_GetExp(b,i,currRing) - p_GetExp(a,i,currRing); 
+      i--;
+    }
+    while (i);
+#ifdef HAVE_RINGS
+    return nDivBy(p_GetCoeff(b, r), p_GetCoeff(a, r));
+#else
+    return TRUE;
+#endif
+  }
+  return FALSE;
+}
 #endif
 // HAVE_F5C

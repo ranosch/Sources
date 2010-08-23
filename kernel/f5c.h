@@ -478,6 +478,20 @@ inline int expCmp (
                   );
 
 
+
+/// @brief \c isDivisibleGetMult() is a special version of SINGULAR's internal
+/// \c pLmShortDivisibleBy which does not only test for divisibility, but also 
+/// stores the possible result of the division in an integer exponent vector.
+/// @return 1 if the \c a divides \c b, 0 otherwise
+/// @sa pLmShortDivisbleBy, multInit
+static inline BOOLEAN isDivisibleGetMult ( 
+  poly a,                   ///<[in] possible reducer of poly \c b
+  unsigned long sev_a,      ///<[in] short exponent vector of poly \c a
+  poly b,                   ///<[in] poly to be reduced
+  unsigned long not_sev_b,  ///<[in] neg short exponent vector of poly \c b 
+  int** mult                ///<[in,out] pointer to the possible multiplier
+                            ///          for the reduction of \c b by \c a
+                                      )
 #endif
 // HAVE_F5C
 #endif
