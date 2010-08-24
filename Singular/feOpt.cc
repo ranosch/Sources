@@ -69,20 +69,18 @@ struct fe_option feOptSpec[] =
    "FILE",      "Load FILE on emacs start-up, instead of default",     feOptString, 0,   0},
 #else
   {"xterm",         required_argument,      LONG_OPTION_RETURN,
-   "XTERM",     "Use XTERM as terminal program to run Singular",          feOptString, 0,   0},
+   "XTERM",     "Use XTERM as terminal program to run Singular",       feOptString, 0,   0},
 #endif
 
   {"singular",          required_argument,  LONG_OPTION_RETURN,
    "PROG",      "Start PROG as Singular program within emacs",         feOptString, 0,   0},
 
   {"no-call",     no_argument,        LONG_OPTION_RETURN,
-   0,          "Do not start program. Print call to stdout",       feOptBool,   0,   0},
+   0,          "Do not start program. Print call to stdout",           feOptBool,   0,   0},
 #endif
 
-#ifdef HAVE_MPSR
   {"batch",             no_argument,        'b',
-   0,          "Run in MP batch mode",                                 feOptBool,    0,     0},
-#endif
+   0,          "Run in batch mode",                                    feOptBool,    0,     0},
 
   {"execute",           required_argument,  'c',
    "STRING",   "Execute STRING on start-up",                           feOptString, 0,   0},
@@ -113,10 +111,6 @@ struct fe_option feOptSpec[] =
   {"version",           no_argument,        'v',
    0,          "Print extended version and configuration info",        feOptUntyped,    0,      0},
 
-#ifdef HAVE_TCL
-  {"tclmode",           no_argument,        'x',
-   0,          "Run in TCL mode, i.e., with TCL user interface",       feOptBool,    0,      0},
-#endif
 
   {"allow-net",         no_argument,        LONG_OPTION_RETURN,
    0,          "Allow to fetch (html) help pages from the net",                feOptBool,    0,      0},
@@ -144,15 +138,18 @@ struct fe_option feOptSpec[] =
   {"min-time",          required_argument,  LONG_OPTION_RETURN,
   "SECS",     "Do not display times smaller than SECS (in seconds)",   feOptString, (void*) "0.5",  0},
 
-#ifdef HAVE_MPSR
   {"MPport",           required_argument,   LONG_OPTION_RETURN,
-   "PORT",     "Use PORT number for MP conections",                    feOptString,    0,      0},
+   "PORT",     "Use PORT number for conections",                       feOptString,    0,      0},
 
   {"MPhost",           required_argument,   LONG_OPTION_RETURN,
-   "HOST",     "Use HOST for MP connections",                          feOptString,    0,   0},
+   "HOST",     "Use HOST for connections",                             feOptString,    0,   0},
 
+  {"link",           required_argument,   LONG_OPTION_RETURN,
+   "LINK",     "Use LINK for connections",                             feOptString,    0,   0},
+
+#ifdef HAVE_MPSR
   {"MPrsh",           required_argument,   LONG_OPTION_RETURN,
-   "RSH",     "Use RSH for MP connections",                          feOptString,    0,   0},
+   "RSH",     "Use RSH for MP connections",                            feOptString,    0,   0},
 #endif
 
   {"ticks-per-sec",     required_argument,  LONG_OPTION_RETURN,
@@ -356,12 +353,10 @@ static const char* feOptAction(feOptIndex opt)
   // do some special actions
   switch(opt)
   {
-#ifdef HAVE_MPSR
       case FE_OPT_BATCH:
         if (feOptSpec[FE_OPT_BATCH].value)
           fe_fgets_stdin=fe_fgets_dummy;
         return NULL;
-#endif
 
       case FE_OPT_HELP:
         feOptHelp(feArgv0);
@@ -393,17 +388,6 @@ static const char* feOptAction(feOptIndex opt)
       case FE_OPT_VERSION:
         printf("%s",versionString());
         return NULL;
-
-#ifdef HAVE_TCL
-      case FE_OPT_TCLMODE:
-        if (feOptSpec[FE_OPT_TCLMODE].value)
-        {
-          tclmode = TRUE;
-          fe_fgets_stdin=fe_fgets_tcl;
-          verbose|=Sy_bit(V_SHOW_MEM);
-        }
-        return NULL;
-#endif
 
       case FE_OPT_ECHO:
         si_echo = (int) ((long)(feOptSpec[FE_OPT_ECHO].value));

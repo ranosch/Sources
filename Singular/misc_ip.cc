@@ -399,7 +399,7 @@ S4:
 
     mpz_div (n, n, g);        /* divide by g, before g is overwritten */
 
-    if (!mpz_probab_prime_p (g, 3))
+    if (!mpz_probab_prime_p (g, 10))
     {
       do
       {
@@ -423,13 +423,18 @@ S4:
     mpz_mod (x, x, n);
     mpz_mod (x1, x1, n);
     mpz_mod (y, y, n);
-    if (mpz_probab_prime_p (n, 3))
+    if (mpz_probab_prime_p (n, 10))
     {
-      if ((L_ind>0) && (mpz_cmp_si(n,L[L_ind-1])==0)) ex[L_ind-1]++;
-      else
+      int te=mpz_get_si(n);
+      if (mpz_cmp_si(n,te)==0) /* does it fit into an int ? */
       {
-        L[L_ind]=mpz_get_si(n);
-        L_ind++;
+        if ((L_ind>0) && (mpz_cmp_si(n,L[L_ind-1])==0)) ex[L_ind-1]++;
+        else
+        {
+          L[L_ind]=mpz_get_si(n);
+          L_ind++;
+        }
+        mpz_set_si(n,1); // add n itself the list of divisors, rest is 1
       }
       break;
     }
@@ -755,6 +760,7 @@ struct soptionStruct verboseStruct[]=
   {"findMonomials",Sy_bit(V_FINDMONOM),~Sy_bit(V_FINDMONOM)},
   {"coefStrat",Sy_bit(V_COEFSTRAT), ~Sy_bit(V_COEFSTRAT)},
   {"qringNF",  Sy_bit(V_QRING),     ~Sy_bit(V_QRING)},
+  {"warn",     Sy_bit(V_ALLWARN),   ~Sy_bit(V_ALLWARN)},
 /*special for "none" and also end marker for showOption:*/
   {"ne",         0,          0 }
 };
@@ -896,50 +902,9 @@ BOOLEAN setOption(leftv res, leftv v)
     omFree((ADDRESS)n);
     v=v->next;
   } while (v!=NULL);
-  #ifdef HAVE_TCL
-    if (tclmode)
-    {
-      BITSET tmp;
-      int i;
-      StringSetS("");
-      if ((test!=0)||(verbose!=0))
-      {
-        tmp=test;
-        if(tmp)
-        {
-          for (i=0; optionStruct[i].setval!=0; i++)
-          {
-            if (optionStruct[i].setval & test)
-            {
-              StringAppend(" %s",optionStruct[i].name);
-              tmp &=optionStruct[i].resetval;
-            }
-          }
-        }
-        tmp=verbose;
-        if (tmp)
-        {
-          for (i=0; verboseStruct[i].setval!=0; i++)
-          {
-            if (verboseStruct[i].setval & tmp)
-            {
-              StringAppend(" %s",verboseStruct[i].name);
-              tmp &=verboseStruct[i].resetval;
-            }
-          }
-        }
-        PrintTCLS('O',StringAppendS(""));
-        StringSetS("");
-      }
-      else
-      {
-        PrintTCLS('O'," ");
-      }
-    }
-  #endif
-    // set global variable to show memory usage
-    if (BVERBOSE(V_SHOW_MEM)) om_sing_opt_show_mem = 1;
-    else om_sing_opt_show_mem = 0;
+  // set global variable to show memory usage
+  if (BVERBOSE(V_SHOW_MEM)) om_sing_opt_show_mem = 1;
+  else om_sing_opt_show_mem = 0;
   return FALSE;
 }
 
@@ -992,7 +957,7 @@ char * showOption()
 char * versionString()
 {
   char* str = StringSetS("");
-  StringAppend("Singular for %s version %s (%d-%lu)  %s\nwith\n",
+  StringAppend("Singular for %s version %s (%d-%s)  %s\nwith\n",
                S_UNAME, S_VERSION1, SINGULAR_VERSION,
                feVersionId,singular_date);
   StringAppendS("\t");
@@ -1260,12 +1225,6 @@ void m2_end(int i)
   #ifdef PAGE_TEST
   mmEndStat();
   #endif
-  #ifdef HAVE_TCL
-  if (tclmode)
-  {
-    PrintTCL('Q',0,NULL);
-  }
-  #endif
   fe_reset_input_mode();
   idhdl h = IDROOT;
   while(h != NULL)
@@ -1283,9 +1242,6 @@ void m2_end(int i)
   }
   if (i<=0)
   {
-    #ifdef HAVE_TCL
-    if (!tclmode)
-    #endif
       if (TEST_V_QUIET)
       {
         if (i==0)
@@ -1303,9 +1259,6 @@ void m2_end(int i)
   }
   else
   {
-    #ifdef HAVE_TCL
-    if (!tclmode)
-    #endif
       printf("\nhalt %d\n",i);
   }
   #ifdef HAVE_MPSR

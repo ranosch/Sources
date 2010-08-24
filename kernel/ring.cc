@@ -1535,7 +1535,7 @@ ring rCopy0(const ring r, BOOLEAN copy_qideal, BOOLEAN copy_ordering)
   //memset: res->VarOffset=NULL;
   //memset: res->firstwv=NULL;
 
-  //struct omBin_s*   PolyBin; /* Bin from where monoms are allocated */
+  //struct omBin   PolyBin; /* Bin from where monoms are allocated */
   //memset: res->PolyBin=NULL; // rComplete
   res->ch=r->ch;     /* characteristic */
 #ifdef HAVE_RINGS
@@ -3071,13 +3071,6 @@ static void rSetOutParams(ring r)
 {
   r->VectorOut = (r->order[0] == ringorder_c);
   r->ShortOut = TRUE;
-#ifdef HAVE_TCL
-  if (tcllmode)
-  {
-    r->ShortOut = FALSE;
-  }
-  else
-#endif
   {
     int i;
     if ((r->parameter!=NULL) && (r->ch<2))
@@ -3216,7 +3209,7 @@ static void rOptimizeLDeg(ring r)
     if (r->pLDeg == pLDeg1c)
       r->pLDeg = pLDeg1c_Deg;
   }
-  else if (r->pFDeg == pTotaldegree)
+  else if (r->pFDeg == p_Totaldegree)
   {
     if (r->pLDeg == pLDeg1)
       r->pLDeg = pLDeg1_Totaldegree;
@@ -3250,7 +3243,7 @@ static void rSetDegStuff(ring r)
   r->LexOrder = FALSE;
   r->MixedOrder = FALSE;
   r->ComponentOrder = 1;
-  r->pFDeg = pTotaldegree;
+  r->pFDeg = p_Totaldegree;
   r->pLDeg = (r->OrdSgn == 1 ? pLDegb : pLDeg0);
 
   /*======== ordering type is (_,c) =========================*/
@@ -3275,7 +3268,7 @@ static void rSetDegStuff(ring r)
     {
       r->LexOrder=TRUE;
       r->pLDeg = pLDeg1c;
-      r->pFDeg = pTotaldegree;
+      r->pFDeg = p_Totaldegree;
     }
     if ((order[0] == ringorder_a)
     || (order[0] == ringorder_wp)
@@ -3304,7 +3297,7 @@ static void rSetDegStuff(ring r)
     {
       r->LexOrder=TRUE;
       r->pLDeg = pLDeg1c;
-      r->pFDeg = pTotaldegree;
+      r->pFDeg = p_Totaldegree;
     }
     r->firstBlockEnds=block1[1];
     r->firstwv = wvhdl[1];
@@ -3346,7 +3339,7 @@ static void rSetDegStuff(ring r)
     {
       r->pLDeg = pLDeg1;
     }
-    r->pFDeg = pWTotaldegree; // may be improved: pTotaldegree for lp/dp/ls/.. blocks
+    r->pFDeg = pWTotaldegree; // may be improved: p_Totaldegree for lp/dp/ls/.. blocks
   }
   if (rOrd_is_Totaldegree_Ordering(r) || rOrd_is_WeightedDegree_Ordering(r))
     r->pFDeg = pDeg;

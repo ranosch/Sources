@@ -173,7 +173,7 @@ CXXSOURCES=grammar.cc scanner.cc attrib.cc \
     lists.cc \
     sdb.cc \
     fglm.cc interpolation.cc\
-    silink.cc \
+    silink.cc ssiLink.cc \
     subexpr.cc \
     janet.cc wrapper.cc\
     libparse.cc sing_win.cc\
@@ -225,7 +225,7 @@ HEADERS=lists.h attrib.h \
 	subexpr.h ipid.h \
 	cntrlc.h ipprint.h sdb.h \
 	ipshell.h tok.h \
-	silink.h \
+	silink.h ssiLink.h \
 	sing_dbm.h maps_ip.h interpolation.h \
 	mpsr.h mpsr_sl.h\
 	mpsr_Get.h janet.h\
@@ -277,9 +277,9 @@ endif
 include singular-libs
 
 ifdef HAVE_PLURAL
-SLIBS = COPYING ${SLIB0} ${PLIBS} all.lib help.cnf
+SLIBS = COPYING ${SLIB0} ${SLIB1} ${PLIBS} all.lib help.cnf
 else
-SLIBS = COPYING ${SLIB0} all.lib help.cnf
+SLIBS = COPYING ${SLIB0} ${SLIB1} all.lib help.cnf
 endif
 
 SLIBS_FILES = $(addprefix LIB/,${SLIBS})
@@ -377,7 +377,7 @@ misc_ip.o emacs.o tesths.o: version.h
 claptmpl.o: claptmpl.cc mod2.h
 	${CXX} ${CXXFLAGS}  ${CPPFLAGS} ${DEFS} -c $<
 
-iparith.inc: claptmpl.o iparith.cc \
+iparith.inc: ${OBJS} claptmpl.o iparith.cc \
                           ipconv.cc tok.h mpsr_Tok.cc grammar.h mod2.h
 	${CXX} ${CXXFLAGS} ${CPPFLAGS} ${CXXTEMPLFLAGS} ${DEFS} -DGENTABLE \
 	     -o gentable1 claptmpl.o iparith.cc tesths.cc mpsr_Tok.cc \
@@ -385,7 +385,7 @@ iparith.inc: claptmpl.o iparith.cc \
 	./gentable1
 	/bin/rm -f gentable1 gentable1.exe
 
-mpsr_Tok.inc: claptmpl.o iparith.cc \
+mpsr_Tok.inc: ${OBJS} claptmpl.o iparith.cc \
                           ipconv.cc tok.h mpsr_Tok.cc grammar.h mod2.h
 	${CXX} ${CXXFLAGS} ${CPPFLAGS} ${CXXTEMPLFLAGS} ${DEFS} -DGENTABLE \
 	     -o gentable2 claptmpl.o iparith.cc tesths.cc mpsr_Tok.cc \
@@ -394,9 +394,12 @@ mpsr_Tok.inc: claptmpl.o iparith.cc \
 	/bin/rm -f gentable2 gentable2.exe
 
 
+svnver: 
+	svnversion >svnver
+
 version.h: ${SOURCES} ${HEADERS} Makefile.in mod2.h.in \
-           configure.in
-	echo "#define feVersionId "  `date '+%Y%m%d%H'` >version.h
+           configure.in svnver
+	echo "#define feVersionId \""  `cat svnver` "\"" >version.h
 	echo "#define CC \"" ${CC} ${CFLAGS} ${DEFS}"\"" >>version.h
 	echo "#define CXX \"" ${CXX} ${CXXFLAGS} ${DEFS} "\"" >>version.h
 

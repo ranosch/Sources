@@ -10,6 +10,7 @@
 #include <Singular/tok.h>
 #include <Singular/ipid.h>
 #include <kernel/intvec.h>
+#include <kernel/options.h>
 #include <omalloc.h>
 #include <kernel/febase.h>
 #include <kernel/polys.h>
@@ -29,6 +30,7 @@
 #include <kernel/syz.h>
 #include <Singular/attrib.h>
 #include <kernel/ring.h>
+#include <Singular/ipshell.h>
 #include <Singular/ipconv.h>
 
 typedef void *   (*iiConvertProc)(void * data);
@@ -356,7 +358,7 @@ BOOLEAN iiConvert (int inputType, int outputType, int index, leftv input, leftv 
               char *tmp=(char *)omAlloc(4);
               sprintf(tmp,"%c%d",*(currRing->names[nr-1]),
                 (int)pGetExp((poly)input->data,nr));
-	      output->name=tmp;
+              output->name=tmp;
             }
           }
           else if(pIsConstant((poly)input->data))
@@ -394,6 +396,11 @@ BOOLEAN iiConvert (int inputType, int outputType, int index, leftv input, leftv 
     if((dConvertTypes[index].i_typ==inputType)
     &&(dConvertTypes[index].o_typ==outputType))
     {
+      if(TEST_V_ALLWARN)
+      {
+        Print("automatic  conversion %s -> %s\n",
+        Tok2Cmdname(inputType),Tok2Cmdname(outputType));
+      }
       if ((currRing==NULL) && (outputType>BEGIN_RING) && (outputType<END_RING))
         return TRUE;
       output->rtyp=outputType;
@@ -406,11 +413,10 @@ BOOLEAN iiConvert (int inputType, int outputType, int index, leftv input, leftv 
         dConvertTypes[index].pl(output,input);
       }
       if ((output->data==NULL)
-      && ((outputType==IDEAL_CMD)
-        ||(outputType==MODUL_CMD)
-        ||(outputType==MATRIX_CMD)
-        ||(outputType==INTMAT_CMD)
-        ||(outputType==INTVEC_CMD)))
+      && ((outputType!=INT_CMD)
+        &&(outputType!=POLY_CMD)
+        &&(outputType!=VECTOR_CMD)
+        &&(outputType!=NUMBER_CMD)))
       {
         return TRUE;
       }
