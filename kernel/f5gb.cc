@@ -60,10 +60,10 @@ void qsortDegree(poly* left, poly* right) {
     poly p1,p2;
     p2 = *(left + (right - left >> 1));
     do {
-            while(pTotaldegree(*ptr1, currRing) < pTotaldegree(p2, currRing)) {
+            while(pTotaldegree(*ptr1) < pTotaldegree(p2)) {
                     ptr1++;
             } 
-            while(pTotaldegree(*ptr2, currRing) > pTotaldegree(p2,currRing)) {
+            while(pTotaldegree(*ptr2) > pTotaldegree(p2)) {
                     ptr2--;
             }
             if(ptr1 > ptr2) {

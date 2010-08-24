@@ -2801,7 +2801,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
           return TRUE;
         }
 
-        ring r = currRing;
+        ideal r = currQuotient;
         ideal G = (ideal) h->Data();
         res->rtyp=IDEAL_CMD;
         res->data=(ideal) f5cMain(G,r);
