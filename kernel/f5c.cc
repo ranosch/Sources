@@ -166,7 +166,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   RewRules firstRule  = { NULL, NULL, 0 };
   // reduce and initialize the list of Lpolys with the current ideal generator p
   p = (redGB, currQuotient, p);  
-  Lpoly gCurr = {NULL, p, &firstRule, false};  
+  Lpoly gCurr = {NULL, p, pGetShortExpVector(p), &firstRule, false};  
   
   // initializing the list of critical pairs for this iteration step 
   CpairDegBound* cpBounds = NULL;
@@ -882,6 +882,8 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp,
     temp            = temp->next;
     omfree(tempDel);
     
+    int* multTemp = (int*) omalloc((currRing->N+1)*sizeof(int));
+    //if(isDivisibleGetMult( 
     //------------------------------------------------
     // TODO: CURRENT ITERATION REDUCTION
     //------------------------------------------------

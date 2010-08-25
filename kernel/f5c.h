@@ -75,10 +75,11 @@ struct RewRules
 /// TODO----Note that the elements are still non-redundant for F5C+. 
 struct Lpoly 
 {
-  Lpoly*    next;         ///< pointer to the next element in the linked list
-  poly      p;            ///< polynomial part
-  RewRules* rewRule;      ///< exponent vector, i.e. the label/signature
-  BOOLEAN   redundant;    ///< Lpoly redundant?
+  Lpoly*        next;   ///< pointer to the next element in the linked list
+  poly          p;      ///< polynomial part
+  unsigned long sExp;   ///< short exponent vector of \c p
+  RewRules* rewRule;    ///< exponent vector, i.e. the label/signature
+  BOOLEAN   redundant;  ///< Lpoly redundant?
   // NOTE: You do not need the short exponent vector as you never check
   // with this, but only with multiples of it in the critical pair
   //long    slabel; ///< short exponent vector of the label/signature
@@ -483,7 +484,7 @@ inline int expCmp (
 /// \c pLmShortDivisibleBy which does not only test for divisibility, but also 
 /// stores the possible result of the division in an integer exponent vector.
 /// @return 1 if the \c a divides \c b, 0 otherwise
-/// @sa pLmShortDivisbleBy, multInit
+/// @sa pLmShortDivisibleBy, multInit
 static inline BOOLEAN isDivisibleGetMult ( 
   poly a,                   ///<[in] possible reducer of poly \c b
   unsigned long sev_a,      ///<[in] short exponent vector of poly \c a
