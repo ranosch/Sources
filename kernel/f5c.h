@@ -267,9 +267,9 @@ void insertCritPair (
 /// @return 1, if the label is detected by the F5 Criterion; 0, else
 /// @sa criterion2
 inline BOOLEAN criterion1 (
-  const int*          mLabel1,  ///<[in]  multiplied labeled to be checked
-  const unsigned long smLabel1, ///<[in]  corresponding short exponent vector
-  const F5Rules&      f5Rules   ///<[in]  rules for F5 Criterion checks
+  const int*          mLabel,  ///<[in]  multiplied labeled to be checked
+  const unsigned long smLabel, ///<[in]  corresponding short exponent vector
+  const F5Rules*      f5Rules  ///<[in]  rules for F5 Criterion checks
                           );
 
 
@@ -279,9 +279,9 @@ inline BOOLEAN criterion1 (
 /// @return 1, if the label is detected by the Rewritten Criterion; 0, else
 /// @sa criterion1
 inline BOOLEAN criterion2 (
-  const int*          mLabel1,  ///<[in]  multiplied labeled to be checked
-  const unsigned long smLabel1, ///<[in]  corresponding short exponent vector
-  RewRules*     rewRules        ///<[in]  rules for Rewritten Criterion checks
+  const int*          mLabel,  ///<[in]  multiplied labeled to be checked
+  const unsigned long smLabel, ///<[in]  corresponding short exponent vector
+  RewRules*     rewRules       ///<[in]  rules for Rewritten Criterion checks
                           );
 
 
@@ -297,11 +297,27 @@ void computeSpols (
                               ///       sorted.
   ideal           redGB,      ///<[in]  reducers of earlier iteration steps
   Lpoly*          gCurr,      ///<[in]  reducers of the current iteration step
+  const F5Rules*  f5Rules,    ///<[in]  rules for F5 Criterion checks
   int numVariables,           ///<[in]  global stuff for faster exponent computations
   int* shift,                 ///<[in]  global stuff for faster exponent computations
   int* negBitmaskShifted,     ///<[in]  global stuff for faster exponent computations
   int* offsets                ///<[in]  global stuff for faster exponent computations
                   );
+
+
+
+/// @brief \c currReduction() reduces the s-polynomial \c sp by those labeled
+/// polynomials computed in the current iteration step, whose multiples are not
+/// detected by any of F5's criteria.
+/// @return the reduced s-polynomial
+/// @sa computeSpols, reducedByRedGBCritPair
+poly currReduction  ( 
+  poly sp,                ///<[in,out]  s-polynomial to be reduced
+  Lpoly* gCurr,           ///<[in]      reducers of the current iteration step
+  const F5Rules* f5Rules, ///<[in]      rules for F5 Criterion checks
+  int*  multTemp          ///<[in]      integer exponent vector for the mulitples
+                          ///           of the reducers
+                    );
 
 
 
@@ -490,8 +506,11 @@ static inline BOOLEAN isDivisibleGetMult (
   unsigned long sev_a,      ///<[in] short exponent vector of poly \c a
   poly b,                   ///<[in] poly to be reduced
   unsigned long not_sev_b,  ///<[in] neg short exponent vector of poly \c b 
-  int** mult                ///<[in,out] pointer to the possible multiplier
+  int** mult,               ///<[in,out] pointer to the possible multiplier
                             ///          for the reduction of \c b by \c a
+  BOOLEAN* isMult           ///<[in,out]  pointer to boolean which checks when
+                            ///           lm(a) | lm(b) if lm(a) < lm(b)
+                            ///           (isMult=1) or lm(a)=lm(b) (isMult=0)
                                       );
 #endif
 // HAVE_F5C

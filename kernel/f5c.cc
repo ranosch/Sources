@@ -163,7 +163,13 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   f5Rules->size = i++;
   // initialize a first (dummy) rewrite rule for the initial polynomial of this
   // iteration step
-  RewRules firstRule  = { NULL, NULL, 0 };
+  int* firstRuleLabel = (int*) omalloc( (currRing->N+1)*sizeof(int) );
+  firstRuleLabel[0]   = pGetExp( p, 0 );
+  for( i=1;i<(currRing->N+1);i++ ) 
+  {
+    firstRuleLabel[i] = 0;
+  }
+  RewRules firstRule  = { NULL, firstRuleLabel, 0 };
   // reduce and initialize the list of Lpolys with the current ideal generator p
   p = (redGB, currQuotient, p);  
   Lpoly gCurr = {NULL, p, pGetShortExpVector(p), &firstRule, false};  
@@ -173,7 +179,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   criticalPairInit( &gCurr, redGB, *f5Rules, &cpBounds, numVariables, shift,
                     negBitmaskShifted, offsets
                   ); 
-  computeSpols( strat, cpBounds, redGB, &gCurr, numVariables, shift, 
+  computeSpols( strat, cpBounds, redGB, &gCurr, f5Rules, numVariables, shift, 
                 negBitmaskShifted, offsets
               );
   // delete the reduction strategy strat since the current iteration step is
@@ -248,7 +254,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
     cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
     
     // testing the F5 Criterion
-    if(!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, f5Rules)) 
+    if(!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules)) 
     {
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
@@ -309,7 +315,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
   }
   cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
   // testing the F5 Criterion
-  if(!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, f5Rules)) 
+  if(!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules)) 
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
@@ -389,7 +395,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
     cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
     
     // testing the F5 Criterion
-    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, f5Rules) && 
+    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) && 
         !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, cpTemp->rewRule1) ) 
     {
       // completing the construction of the new critical pair and inserting it
@@ -450,7 +456,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
   cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
   
   // testing the F5 Criterion
-  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, f5Rules) && 
+  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) && 
       !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, cpTemp->rewRule1) ) 
   {
     // completing the construction of the new critical pair and inserting it
@@ -544,8 +550,8 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
     cpTemp->smLabel2 = getShortExpVecFromArray(cpTemp->mLabel2);
     
     // testing the F5 Criterion
-    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, f5Rules) 
-        && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, f5Rules) 
+    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+        && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
         && !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, cpTemp->rewRule1)   
         && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, cpTemp->rewRule2)
       ) 
@@ -621,8 +627,8 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
   cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
   
   // testing the F5 Criterion
-  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, f5Rules) 
-      && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, f5Rules) 
+  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+      && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
       && !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, cpTemp->rewRule1)   
       && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, cpTemp->rewRule2)
     ) 
@@ -718,8 +724,8 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
 
 
 
-inline BOOLEAN criterion1 ( const int* mLabel1, const unsigned long smLabel1, 
-                            const F5Rules& f5Rules
+inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel, 
+                            const F5Rules* f5Rules
                           )
 {
 #if F5EDEBUG
@@ -731,29 +737,29 @@ inline BOOLEAN criterion1 ( const int* mLabel1, const unsigned long smLabel1,
     Print("Tested Element: ");
     while( j )
     {
-      Print("%d ",mLabel1[(currRing->N)-j]);
+      Print("%d ",mLabel[(currRing->N)-j]);
       j--;
     }
     j = currRing->N;
     Print("\n");
 #endif
-  for( ; i < f5Rules.size; i++)
+  for( ; i < f5Rules->size; i++)
   {
 #if F5EDEBUG
     Print("F5 Rule: ");
     while( j )
     {
-      Print("%d ",f5Rules.label[i][(currRing->N)-j]);
+      Print("%d ",f5Rules->label[i][(currRing->N)-j]);
       j--;
     }
     j = currRing->N;
     Print("\n");
 #endif
-    if(!(smLabel1 & f5Rules.slabel[i]))
+    if(!(smLabel & f5Rules->slabel[i]))
     {
       while(j)
       {
-        if(mLabel1[j] > f5Rules.label[i][j])
+        if(mLabel[j] > f5Rules->label[i][j])
         {
          break;
         }
@@ -780,7 +786,7 @@ inline BOOLEAN criterion1 ( const int* mLabel1, const unsigned long smLabel1,
 
 
 
-inline BOOLEAN criterion2 ( const int* mLabel1, const unsigned long smLabel1, 
+inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel, 
                             RewRules* rewRules
                           )
 {
@@ -793,7 +799,7 @@ inline BOOLEAN criterion2 ( const int* mLabel1, const unsigned long smLabel1,
     Print("Tested Element: ");
     while( j )
     {
-      Print("%d ",mLabel1[(currRing->N)-j]);
+      Print("%d ",mLabel[(currRing->N)-j]);
       j--;
     }
     j = currRing->N;
@@ -811,11 +817,11 @@ inline BOOLEAN criterion2 ( const int* mLabel1, const unsigned long smLabel1,
     j = currRing->N;
     Print("\n");
 #endif
-    if(!(smLabel1 & temp->slabel))
+    if(!(smLabel & temp->slabel))
     {
       while(j)
       {
-        if(mLabel1[j] > temp->label[j])
+        if(mLabel[j] > temp->label[j])
         {
          break;
         }
@@ -842,8 +848,8 @@ inline BOOLEAN criterion2 ( const int* mLabel1, const unsigned long smLabel1,
 
 
 
-void computeSpols ( kStrategy strat, CpairDegBound* cp, 
-                    ideal redGB, Lpoly* gCurr, int numVariables, 
+void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCurr, 
+                    const F5Rules* f5Rules, int numVariables, 
                     int* shift, int* negBitmaskShifted, int* offsets
                   )
 {
@@ -861,6 +867,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp,
   rewRulesLast        = gCurr->rewRule;
   // this will go on for the complete current iteration step!
   // => after computeSpols() terminates this iteration step is done!
+  int* multTemp = (int*) omalloc( (currRing->N+1)*sizeof(int) );
   while( cp )
   {
     poly sp;
@@ -882,8 +889,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp,
     temp            = temp->next;
     omfree(tempDel);
     
-    int* multTemp = (int*) omalloc((currRing->N+1)*sizeof(int));
-    //if(isDivisibleGetMult( 
+    sp = currReduction( sp, gCurr, f5Rules, multTemp );
     //------------------------------------------------
     // TODO: CURRENT ITERATION REDUCTION
     //------------------------------------------------
@@ -915,9 +921,55 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp,
     cp    = cp->next;
     omfree( cpDel );
   }
+  omfree( multTemp );
 #if F5EDEBUG
   Print("COMPUTESPOLS-END\n");
 #endif
+}
+
+
+
+poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTemp )
+{
+  BOOLEAN isMult;
+  int i;
+  unsigned long multShortExp;
+  Lpoly* temp         = gCurr;
+  unsigned long spExp = ~ pGetShortExpVector( sp );
+  // search for reducers in the list gCurr
+  while ( temp )
+  {
+    if( isDivisibleGetMult( sp, spExp, temp->p, temp->sExp, &multTemp, &isMult) )
+    {
+      // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
+      // multTemp and check this multiple by both criteria
+      if( isMult )
+      {
+        // compute the multiple of the rule of temp & multTemp
+        for( i=1; i<(currRing->N)+1; i++ )
+        {
+          multTemp[i] +=  temp->rewRule->label[i];
+        }
+        
+        multShortExp  = getShortExpVecFromArray( multTemp );
+        
+        // test the multiplied label by both criteria 
+        if( !criterion1( multTemp, multShortExp, f5Rules ) && 
+            !criterion2( multTemp, multShortExp, temp->rewRule )
+          )
+        { 
+          isMult  = false;
+        }
+      }
+      // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
+      // criterion again => go on with reduction steps
+      else
+      {
+      } 
+    }
+    temp  = temp->next;
+  }
+  return sp;
 }
 
 
@@ -1478,8 +1530,8 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
 }
 
 
-
-poly reduceByRedGBCritPoly( poly q, kStrategy strat, int lazyReduce )
+// NEEDED AT ALL?
+poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
 {
   poly  p;
   int   i;
@@ -1655,16 +1707,17 @@ inline int expCmp(const unsigned long* a, const unsigned long* b)
 }
 
 
-static inline BOOLEAN isDivisibleGetMult ( poly a, unsigned long sev_a, poly b, 
-                                        unsigned long not_sev_b, int** mult
-                                      )
+static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b, 
+                                            unsigned long not_sev_b, int** mult,
+                                            BOOLEAN* isMult
+                                          )
 {
   p_LmCheckPolyRing1(a, currRing);
   p_LmCheckPolyRing1(b, currRing);
-  
   if (sev_a & not_sev_b)
   {
     pAssume1(_p_LmDivisibleByNoComp(a, currRing, b, currRing) == FALSE);
+    *isMult = false;
     return FALSE;
   }
   if (p_GetComp(a, currRing) == 0 || p_GetComp(a,currRing) == p_GetComp(b,currRing))
@@ -1676,10 +1729,15 @@ static inline BOOLEAN isDivisibleGetMult ( poly a, unsigned long sev_a, poly b,
     {
       if (p_GetExp(a,i,currRing) > p_GetExp(b,i,currRing))
       {
+        *isMult = false;
         return FALSE;
       }
-      *mult[i] = p_GetExp(b,i,currRing) - p_GetExp(a,i,currRing); 
+      (*mult)[i] = p_GetExp(b,i,currRing) - p_GetExp(a,i,currRing); 
       i--;
+      if( (*mult)[i]>0 )
+      {
+        *isMult = true;
+      }
     }
     while (i);
 #ifdef HAVE_RINGS
