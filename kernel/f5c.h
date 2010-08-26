@@ -315,8 +315,12 @@ poly currReduction  (
   poly sp,                ///<[in,out]  s-polynomial to be reduced
   Lpoly* gCurr,           ///<[in]      reducers of the current iteration step
   const F5Rules* f5Rules, ///<[in]      rules for F5 Criterion checks
-  int*  multTemp          ///<[in]      integer exponent vector for the mulitples
+  int*  multTemp,         ///<[in]      integer exponent vector for the mulitples
                           ///           of the reducers
+  int numVariables,       ///<[in]  global stuff for faster exponent computations
+  int* shift,             ///<[in]  global stuff for faster exponent computations
+  int* negBitmaskShifted, ///<[in]  global stuff for faster exponent computations
+  int* offsets            ///<[in]  global stuff for faster exponent computations
                     );
 
 

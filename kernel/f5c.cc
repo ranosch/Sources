@@ -185,6 +185,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   // delete the reduction strategy strat since the current iteration step is
   // completed right now
   clearStrat( strat, redGB );
+  omfree( firstRuleLabel );
   // next all new elements are added to redGB & redGB is being reduced
   return redGB;
 }
@@ -889,7 +890,9 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
     temp            = temp->next;
     omfree(tempDel);
     
-    sp = currReduction( sp, gCurr, f5Rules, multTemp );
+    sp = currReduction( sp, gCurr, f5Rules, multTemp, numVariables, shift,
+                        negBitmaskShifted, offsets 
+                      );
     //------------------------------------------------
     // TODO: CURRENT ITERATION REDUCTION
     //------------------------------------------------
@@ -929,17 +932,28 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
 
 
 
-poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTemp )
+poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTemp,
+                      int numVariables, int* shift, int* negBitmaskShifted, 
+                      int* offsets
+                    )
+
 {
   BOOLEAN isMult;
   int i;
   unsigned long multShortExp;
-  Lpoly* temp         = gCurr;
-  unsigned long spExp = ~ pGetShortExpVector( sp );
+  static int tempLength           = 0;
+  unsigned short int canonicalize = 0; 
+  Lpoly* temp                     = gCurr;
+  unsigned long bucketExp         = ~ pGetShortExpVector( sp );
+  kBucket* bucket                 = kBucketCreate();
+  kBucketInit( bucket, sp, 0 );
   // search for reducers in the list gCurr
   while ( temp )
   {
-    if( isDivisibleGetMult( sp, spExp, temp->p, temp->sExp, &multTemp, &isMult) )
+    if( isDivisibleGetMult( kBucketExtractLm( bucket ), bucketExp, temp->p, temp->sExp, 
+                            &multTemp, &isMult
+                          ) 
+      )
     {
       // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
       // multTemp and check this multiple by both criteria
@@ -958,6 +972,17 @@ poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTe
             !criterion2( multTemp, multShortExp, temp->rewRule )
           )
         { 
+          poly multiplier = pOne();
+          getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                              negBitmaskShifted, offsets
+                            );
+          tempLength = pLength( temp->p );
+          kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p, &tempLength ); 
+          if( canonicalize++ % 40 )
+          {
+            kBucketCanonicalize( bucket );
+            canonicalize = 0;
+          }
           isMult  = false;
         }
       }
@@ -965,6 +990,15 @@ poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTe
       // criterion again => go on with reduction steps
       else
       {
+        poly tempNeg  = pInit();
+        tempNeg       = pCopy( temp->p );
+        tempLength    = pLength( tempNeg );
+        kBucket_Add_q( bucket, pNeg(tempNeg), &tempLength ); 
+        if( canonicalize++ % 40 )
+        {
+          kBucketCanonicalize( bucket );
+          canonicalize = 0;
+        }
       } 
     }
     temp  = temp->next;
