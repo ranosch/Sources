@@ -313,6 +313,8 @@ void computeSpols (
 /// @sa computeSpols, reducedByRedGBCritPair
 poly currReduction  ( 
   poly sp,                ///<[in,out]  s-polynomial to be reduced
+  unsigned long* exp,     ///<[in]      exponent vector of label of sp for checks 
+                          ///           for higher label reductions 
   Lpoly* gCurr,           ///<[in]      reducers of the current iteration step
   const F5Rules* f5Rules, ///<[in]      rules for F5 Criterion checks
   int*  multTemp,         ///<[in]      integer exponent vector for the mulitples

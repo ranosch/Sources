@@ -861,6 +861,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
   Cpair* tempDel          = NULL;
   CpairDegBound* cpDel    = NULL;
   RewRules* rewRulesLast  = NULL; 
+  Lpoly* higherLabel      = NULL;
   Lpoly*    gCurrLast     = gCurr;
   BOOLEAN redundant       = false;
   // start the rewriter rules list with a NULL element for the recent,
@@ -886,13 +887,15 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
                                   negBitmaskShifted, offsets 
                                 );
 
+    sp = currReduction( sp, temp->mLabelExp, gCurr, f5Rules, multTemp, 
+                        numVariables, shift, negBitmaskShifted, offsets, 
+                        &redundant
+                      );
+
     Cpair* tempDel  = temp;
     temp            = temp->next;
     omfree(tempDel);
     
-    sp = currReduction( sp, gCurr, f5Rules, multTemp, numVariables, shift,
-                        negBitmaskShifted, offsets, &redundant
-                      );
     // otherwise sp is reduced to zero and we do not need to add it to gCurr
     // Note that even in this case the corresponding rule is already added to
     // rewRules list!
@@ -926,13 +929,13 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
       sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift,   
                                     negBitmaskShifted, offsets 
                                   );
-      tempDel = temp;
-      temp    = temp->next;
-      omfree( tempDel );
     
     //------------------------------------------------
     // TODO: CURRENT ITERATION REDUCTION
     //------------------------------------------------
+      tempDel = temp;
+      temp    = temp->next;
+      omfree( tempDel );
 
     }
 
@@ -948,9 +951,10 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
 
 
 
-poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTemp,
-                      int numVariables, int* shift, int* negBitmaskShifted, 
-                      int* offsets, BOOLEAN* redundant
+poly currReduction  ( poly sp, unsigned long* cpLabelExp, Lpoly* gCurr, 
+                      const F5Rules* f5Rules, int* multTemp, int numVariables, 
+                      int* shift, int* negBitmaskShifted, int* offsets, 
+                      BOOLEAN* redundant
                     )
 
 {
@@ -994,12 +998,37 @@ poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTe
         }
         
         multShortExp  = getShortExpVecFromArray( multTemp );
-        
+         
         // test the multiplied label by both criteria 
         if( !criterion1( multTemp, multShortExp, f5Rules ) && 
             !criterion2( multTemp, multShortExp, temp->rewRule )
           )
         { 
+          unsigned long* multTempExp = (unsigned long*) 
+             omalloc( NUMVARS*sizeof(unsigned long) );
+          getExpFromIntArray( multTemp, multTempExp, numVariables,
+                              shift, negBitmaskShifted, offsets
+                            );   
+          // if a higher label reduction takes place we need to create
+          // a new Lpoly with the higher label and store it in a different 
+          // linked list for later reductions
+          if( expCmp( multTempExp, cpLabelExp ) == 1 )
+          {            
+            poly newPoly  = pInit();
+            poly oldPoly  = pInit();
+            int length;
+            kBucketClear( bucket, &newPoly, &length );
+            
+            // get back on track for the old poly which has to be checked for 
+            // reductionby by the following element in gCurr
+            oldPoly = pCopy( newPoly );
+            kBucketInit( bucket, oldPoly, 0 );
+            pDelete( &oldPoly );
+            isMult  = false;
+            temp    = temp->next;
+            goto startagainTop;
+          }
+          // else we can go on and reduce sp
           poly multiplier = pOne();
           getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
                               negBitmaskShifted, offsets
