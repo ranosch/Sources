@@ -1061,7 +1061,6 @@ poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTe
                             ) 
         )
       {
-
         // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
         // multTemp and check this multiple by both criteria
         if( isMult )
@@ -1078,7 +1077,7 @@ poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTe
           if( !criterion1( multTemp, multShortExp, f5Rules ) && 
               !criterion2( multTemp, multShortExp, temp->rewRule )
             )
-          { 
+          {  
             poly multiplier = pOne();
             getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
                                 negBitmaskShifted, offsets
@@ -1161,7 +1160,7 @@ Cpair* merge(Cpair* cp, Cpair* cp2)
 {
   // initialize new, sorted list of critical pairs
   Cpair* cpNew = NULL;
-  if( expCmp(cp->mLabelExp, cp2->mLabelExp) == 1 )
+  if( expCmp(cp->mLabelExp, cp2->mLabelExp) == -1 )
   {
     cpNew = cp;
     cp    = cp->next;
@@ -1174,7 +1173,7 @@ Cpair* merge(Cpair* cp, Cpair* cp2)
   Cpair* temp = cpNew;
   while(cp!=NULL && cp2!=NULL)
   {
-    if( expCmp(cp->mLabelExp, cp2->mLabelExp) == 1 )
+    if( expCmp(cp->mLabelExp, cp2->mLabelExp) == -1 )
     {
       temp->next  = cp;
       temp        = cp;
