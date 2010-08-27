@@ -320,7 +320,12 @@ poly currReduction  (
   int numVariables,       ///<[in]  global stuff for faster exponent computations
   int* shift,             ///<[in]  global stuff for faster exponent computations
   int* negBitmaskShifted, ///<[in]  global stuff for faster exponent computations
-  int* offsets            ///<[in]  global stuff for faster exponent computations
+  int* offsets,           ///<[in]  global stuff for faster exponent computations
+  BOOLEAN* redundant      ///<[in,out]  states if the returned polynomial is 
+                          ///           redundant for the Groebner basis or not;
+                          ///           note that this information is needed for
+                          ///           ensuring termination of F5 (see F5+
+                          ///           paper)
                     );
 
 

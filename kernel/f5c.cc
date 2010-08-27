@@ -857,12 +857,12 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
 #if F5EDEBUG
   Print("COMPUTESPOLS-BEGINNING\n");
 #endif
-  Cpair* temp            = NULL;
-  Cpair* tempDel         = NULL;
-  CpairDegBound* cpDel   = NULL;
-  RewRules* rewRulesLast = NULL; 
-  Lpoly*    gCurrFirst   = NULL;
-  Lpoly*    gCurrLast    = NULL;
+  Cpair* temp             = NULL;
+  Cpair* tempDel          = NULL;
+  CpairDegBound* cpDel    = NULL;
+  RewRules* rewRulesLast  = NULL; 
+  Lpoly*    gCurrLast     = gCurr;
+  BOOLEAN redundant       = false;
   // start the rewriter rules list with a NULL element for the recent,
   // i.e. initial element in \c gCurr
   rewRulesLast        = gCurr->rewRule;
@@ -891,8 +891,24 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
     omfree(tempDel);
     
     sp = currReduction( sp, gCurr, f5Rules, multTemp, numVariables, shift,
-                        negBitmaskShifted, offsets 
+                        negBitmaskShifted, offsets, &redundant
                       );
+    // otherwise sp is reduced to zero and we do not need to add it to gCurr
+    // Note that even in this case the corresponding rule is already added to
+    // rewRules list!
+    if( sp )
+    {
+      // add sp together with rewRulesLast to gCurr!!!
+      Lpoly* newElement     = (Lpoly*) omalloc( sizeof(Lpoly) );
+      newElement->next      = NULL;
+      newElement->p         = sp; 
+      newElement->sExp      = pGetShortExpVector(sp); 
+      newElement->rewRule   = rewRulesLast; 
+      newElement->redundant = redundant;
+      // update pointer to last element in gCurr list
+      gCurrLast->next       = newElement;
+      gCurrLast             = newElement;
+    }
     //------------------------------------------------
     // TODO: CURRENT ITERATION REDUCTION
     //------------------------------------------------
@@ -934,7 +950,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
 
 poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTemp,
                       int numVariables, int* shift, int* negBitmaskShifted, 
-                      int* offsets
+                      int* offsets, BOOLEAN* redundant
                     )
 
 {
@@ -950,16 +966,102 @@ poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTe
   // data of sp no longer needed, they are stored in bucket and given
   // back to sp at the end of the reduction process
   pDelete( &sp );
+  
+  //----------------------------------------
+  // reduction of the leading monomial of sp
+  //----------------------------------------
+  // Note that we need to make this top reduction explicit to be able to decide
+  // if the returned polynomial is redundant or not!
   // search for reducers in the list gCurr
+  *redundant  = false;
+  while ( temp )
+  {
+    startagainTop:
+    if( isDivisibleGetMult( kBucketGetLm( bucket ), bucketExp, temp->p, 
+                            temp->sExp, &multTemp, &isMult
+                          ) 
+      )
+    {
+      *redundant = true;
+      // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
+      // multTemp and check this multiple by both criteria
+      if( isMult )
+      {
+        // compute the multiple of the rule of temp & multTemp
+        for( i=1; i<(currRing->N)+1; i++ )
+        {
+          multTemp[i] +=  temp->rewRule->label[i];
+        }
+        
+        multShortExp  = getShortExpVecFromArray( multTemp );
+        
+        // test the multiplied label by both criteria 
+        if( !criterion1( multTemp, multShortExp, f5Rules ) && 
+            !criterion2( multTemp, multShortExp, temp->rewRule )
+          )
+        { 
+          poly multiplier = pOne();
+          getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                              negBitmaskShifted, offsets
+                            );
+          // throw away the leading monomials of reducer and bucket
+          tempLength = pLength( temp->p->next );
+          kBucketExtractLm(bucket);
+          kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p->next, 
+                                  &tempLength 
+                                ); 
+          if( canonicalize++ % 40 )
+          {
+            kBucketCanonicalize( bucket );
+            canonicalize = 0;
+          }
+          isMult      = false;
+          *redundant  = false;
+          temp        = gCurr;
+          goto startagainTop;
+        }
+      }
+      // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
+      // criterion again => go on with reduction steps
+      else
+      {
+        poly tempNeg  = pInit();
+        // throw away the leading monomials of reducer and bucket
+        tempNeg       = pCopy( temp->p );
+        tempLength    = pLength( tempNeg->next );
+        kBucketExtractLm(bucket);
+        kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
+        if( canonicalize++ % 40 )
+        {
+          kBucketCanonicalize( bucket );
+          canonicalize = 0;
+        }
+        *redundant  = false;
+        temp        = gCurr;
+        goto startagainTop;
+      } 
+    }
+    temp  = temp->next;
+  }
+  // we know that sp = 0 at this point!
+  sp  = kBucketExtractLm( bucket );
+  
+  //-------------------------------------------
+  // now the reduction of the tail of sp starts
+  //-------------------------------------------
+  // reduce sp completely (Faugere does only top reductions!)
   while ( kBucketGetLm( bucket ) )
   {
+    // search for reducers in the list gCurr
     while ( temp )
     {
+      startagainTail:
       if( isDivisibleGetMult( kBucketGetLm( bucket ), bucketExp, temp->p, 
                               temp->sExp, &multTemp, &isMult
                             ) 
         )
       {
+
         // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
         // multTemp and check this multiple by both criteria
         if( isMult )
@@ -994,7 +1096,7 @@ poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTe
             }
             isMult  = false;
             temp  = gCurr;
-            continue;
+            goto startagainTail;
           }
         }
         // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
@@ -1013,19 +1115,13 @@ poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTe
             canonicalize = 0;
           }
           temp  = gCurr;
-          continue;
+          goto startagainTail;
         } 
       }
       temp  = temp->next;
     }
-    if( NULL == sp )
-    {
-      sp  = kBucketExtractLm( bucket );
-    }
-    else
-    {
-      sp =  p_Merge_q( sp, kBucketExtractLm(bucket), currRing );
-    }
+    // here we know that 
+    sp =  p_Merge_q( sp, kBucketExtractLm(bucket), currRing );
   }
   return sp;
 }
