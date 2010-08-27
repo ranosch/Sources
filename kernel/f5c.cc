@@ -947,61 +947,85 @@ poly currReduction  ( poly sp, Lpoly* gCurr, const F5Rules* f5Rules, int* multTe
   unsigned long bucketExp         = ~ pGetShortExpVector( sp );
   kBucket* bucket                 = kBucketCreate();
   kBucketInit( bucket, sp, 0 );
+  // data of sp no longer needed, they are stored in bucket and given
+  // back to sp at the end of the reduction process
+  pDelete( &sp );
   // search for reducers in the list gCurr
-  while ( temp )
+  while ( kBucketGetLm( bucket ) )
   {
-    if( isDivisibleGetMult( kBucketExtractLm( bucket ), bucketExp, temp->p, temp->sExp, 
-                            &multTemp, &isMult
-                          ) 
-      )
+    while ( temp )
     {
-      // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
-      // multTemp and check this multiple by both criteria
-      if( isMult )
+      if( isDivisibleGetMult( kBucketGetLm( bucket ), bucketExp, temp->p, 
+                              temp->sExp, &multTemp, &isMult
+                            ) 
+        )
       {
-        // compute the multiple of the rule of temp & multTemp
-        for( i=1; i<(currRing->N)+1; i++ )
+        // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
+        // multTemp and check this multiple by both criteria
+        if( isMult )
         {
-          multTemp[i] +=  temp->rewRule->label[i];
+          // compute the multiple of the rule of temp & multTemp
+          for( i=1; i<(currRing->N)+1; i++ )
+          {
+            multTemp[i] +=  temp->rewRule->label[i];
+          }
+          
+          multShortExp  = getShortExpVecFromArray( multTemp );
+          
+          // test the multiplied label by both criteria 
+          if( !criterion1( multTemp, multShortExp, f5Rules ) && 
+              !criterion2( multTemp, multShortExp, temp->rewRule )
+            )
+          { 
+            poly multiplier = pOne();
+            getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                                negBitmaskShifted, offsets
+                              );
+            // throw away the leading monomials of reducer and bucket
+            tempLength = pLength( temp->p->next );
+            kBucketExtractLm(bucket);
+            kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p->next, 
+                                    &tempLength 
+                                  ); 
+            if( canonicalize++ % 40 )
+            {
+              kBucketCanonicalize( bucket );
+              canonicalize = 0;
+            }
+            isMult  = false;
+            temp  = gCurr;
+            continue;
+          }
         }
-        
-        multShortExp  = getShortExpVecFromArray( multTemp );
-        
-        // test the multiplied label by both criteria 
-        if( !criterion1( multTemp, multShortExp, f5Rules ) && 
-            !criterion2( multTemp, multShortExp, temp->rewRule )
-          )
-        { 
-          poly multiplier = pOne();
-          getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
-                              negBitmaskShifted, offsets
-                            );
-          tempLength = pLength( temp->p );
-          kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p, &tempLength ); 
+        // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
+        // criterion again => go on with reduction steps
+        else
+        {
+          poly tempNeg  = pInit();
+          // throw away the leading monomials of reducer and bucket
+          tempNeg       = pCopy( temp->p );
+          tempLength    = pLength( tempNeg->next );
+          kBucketExtractLm(bucket);
+          kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
           if( canonicalize++ % 40 )
           {
             kBucketCanonicalize( bucket );
             canonicalize = 0;
           }
-          isMult  = false;
-        }
+          temp  = gCurr;
+          continue;
+        } 
       }
-      // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
-      // criterion again => go on with reduction steps
-      else
-      {
-        poly tempNeg  = pInit();
-        tempNeg       = pCopy( temp->p );
-        tempLength    = pLength( tempNeg );
-        kBucket_Add_q( bucket, pNeg(tempNeg), &tempLength ); 
-        if( canonicalize++ % 40 )
-        {
-          kBucketCanonicalize( bucket );
-          canonicalize = 0;
-        }
-      } 
+      temp  = temp->next;
     }
-    temp  = temp->next;
+    if( NULL == sp )
+    {
+      sp  = kBucketExtractLm( bucket );
+    }
+    else
+    {
+      sp =  p_Merge_q( sp, kBucketExtractLm(bucket), currRing );
+    }
   }
   return sp;
 }
