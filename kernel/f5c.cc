@@ -1146,6 +1146,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
                               negBitmaskShifted, offsets
                             );
           // throw away the leading monomials of reducer and bucket
+          p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
           tempLength = pLength( temp->p->next );
           kBucketExtractLm(bucket);
           kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p->next, 
@@ -1170,6 +1171,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
         // throw away the leading monomials of reducer and bucket
         tempNeg       = pCopy( temp->p );
         tempLength    = pLength( tempNeg->next );
+        p_Mult_nn( tempNeg, pGetCoeff(kBucketGetLm(bucket)), currRing );
         kBucketExtractLm(bucket);
         kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
         if( canonicalize++ % 40 )
