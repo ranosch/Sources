@@ -313,8 +313,14 @@ void computeSpols (
 /// @sa computeSpols, reducedByRedGBCritPair
 poly currReduction  ( 
   poly sp,                ///<[in,out]  s-polynomial to be reduced
-  unsigned long* exp,     ///<[in]      exponent vector of label of sp for checks 
-                          ///           for higher label reductions 
+  Cpair** cp,             ///<[in,out]  corresponding critical pair: if a new 
+                          ///           polynomial is added due to a higher
+                          ///           this address is needed to insert the new
+                          ///           critical pair into the corresponding
+                          ///           list  
+  RewRules* rewRuleLast,  ///<[in,out]  list of rewrite rules, possibly added by 
+                          ///           some elements if higher label reductions 
+                          ///           take place
   Lpoly* gCurr,           ///<[in]      reducers of the current iteration step
   const F5Rules* f5Rules, ///<[in]      rules for F5 Criterion checks
   int*  multTemp,         ///<[in]      integer exponent vector for the mulitples

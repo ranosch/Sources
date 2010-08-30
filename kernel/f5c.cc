@@ -887,7 +887,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
                                   negBitmaskShifted, offsets 
                                 );
 
-    sp = currReduction( sp, temp->mLabelExp, gCurr, f5Rules, multTemp, 
+    sp = currReduction( sp, &temp, rewRulesLast, gCurr, f5Rules, multTemp, 
                         numVariables, shift, negBitmaskShifted, offsets, 
                         &redundant
                       );
@@ -951,7 +951,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
 
 
 
-poly currReduction  ( poly sp, unsigned long* cpLabelExp, Lpoly* gCurr, 
+poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr, 
                       const F5Rules* f5Rules, int* multTemp, int numVariables, 
                       int* shift, int* negBitmaskShifted, int* offsets, 
                       BOOLEAN* redundant
@@ -1004,20 +1004,94 @@ poly currReduction  ( poly sp, unsigned long* cpLabelExp, Lpoly* gCurr,
             !criterion2( multTemp, multShortExp, temp->rewRule )
           )
         { 
-          unsigned long* multTempExp = (unsigned long*) 
-             omalloc( NUMVARS*sizeof(unsigned long) );
+          static unsigned long* multTempExp = (unsigned long*) 
+                          omalloc( NUMVARS*sizeof(unsigned long) );
           getExpFromIntArray( multTemp, multTempExp, numVariables,
                               shift, negBitmaskShifted, offsets
                             );   
           // if a higher label reduction takes place we need to create
           // a new Lpoly with the higher label and store it in a different 
           // linked list for later reductions
-          if( expCmp( multTempExp, cpLabelExp ) == 1 )
+          if( expCmp( multTempExp, (*cp)->mLabelExp ) == 1 )
           {            
             poly newPoly  = pInit();
             poly oldPoly  = pInit();
             int length;
             kBucketClear( bucket, &newPoly, &length );
+            // add new rule to RewRules
+            RewRules* newRule = (RewRules*) omalloc( sizeof(RewRules) );
+            newRule->label    = (int*) omalloc( (currRing->N+1)*
+                                                sizeof(int) 
+                                              );
+            newRule->next       =  NULL;
+            newRule->label      = multTemp;
+            newRule->slabel     = multShortExp;
+            rewRulesLast->next  = newRule;
+            rewRulesLast        = newRule; 
+            
+            // generate a new critical for further reduction steps
+            // note: this will be a "trivial" critical pair, as the 2nd
+            // generator will be 1
+            Cpair* newPair      = (Cpair*) omalloc( sizeof(Cpair) );
+            newPair->mLabelExp  = (unsigned long*) omalloc( NUMVARS*
+                                    sizeof(unsigned long) );
+            newPair->mLabel1  = (int*) omalloc( (currRing->N+1)*sizeof(int) );
+            newPair->mult1    = (int*) omalloc( (currRing->N+1)*sizeof(int) );
+            newPair->mult2    = (int*) omalloc( (currRing->N+1)*sizeof(int) );
+            int j = 0;
+            for( j=0;j<(currRing->N+1);j++ )
+            {
+              newPair->mLabel1[j]  = multTemp[j];
+            } 
+            for( j=0;j<NUMVARS;j++ )
+            {
+              newPair->mLabelExp[j] = multTempExp[j];
+              newPair->mult1[j]     = 0;
+              newPair->mult2[j]     = 0;
+            }
+            newPair->smLabel1   = multShortExp;
+            newPair->rewRule1   = temp->rewRule;
+            newPair->mLabel2    = NULL;
+            newPair->smLabel2   = 0;
+            newPair->mult2      = NULL;
+            newPair->p2         = pOne();
+            // this is ok since p2 is never tested by the 2nd criterion
+            newPair->rewRule2   = NULL;
+            
+            static poly multiplier = pOne();
+            // initialize the new bucket
+            kBucketInit( bucket, newPoly, 0 );
+            getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                                negBitmaskShifted, offsets
+                              );
+            // throw away the leading monomials of reducer and bucket
+            tempLength = pLength( temp->p->next );
+            kBucketExtractLm(bucket);
+            kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p->next, 
+                                    &tempLength 
+                                  ); 
+            newPair->p1 =  kBucketExtractLm( bucket );
+            newPair->p1 =  p_Merge_q ( newPair->p1, kBucketExtractLm(bucket), 
+                                        currRing 
+                                      );
+            
+            // insertion sort of newPair to the list of critical pairs waiting
+            // to be reduced, sorted by increasing labels
+            Cpair* temp = (*cp)->next;
+            if( temp && (expCmp(newPair->mLabelExp, temp->mLabelExp) == -1) )
+            {
+              (*cp)->next = newPair;
+              newPair->next = temp;
+            }
+            else
+            {
+              while ( temp->next && (expCmp(newPair->mLabelExp, temp->next->mLabelExp) == 1) )
+              {
+                temp  = temp->next;
+              }
+              newPair->next = temp->next;
+              temp->next    = newPair;
+            }
             
             // get back on track for the old poly which has to be checked for 
             // reductionby by the following element in gCurr
@@ -1029,7 +1103,7 @@ poly currReduction  ( poly sp, unsigned long* cpLabelExp, Lpoly* gCurr,
             goto startagainTop;
           }
           // else we can go on and reduce sp
-          poly multiplier = pOne();
+          static poly multiplier = pOne();
           getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
                               negBitmaskShifted, offsets
                             );
@@ -1862,8 +1936,9 @@ inline void getExpFromIntArray( const int* exp, unsigned long* r,
 
 /// my own GetBitFields
 /// @sa GetBitFields
-inline unsigned long GetBitFieldsF5e(int e,
-                                         unsigned int s, unsigned int n)
+inline unsigned long GetBitFieldsF5e( int e, unsigned int s, 
+                                      unsigned int n
+                                    )
 {
 #define Sy_bit_L(x)     (((unsigned long)1L)<<(x))
   unsigned int i = 0;
@@ -1884,7 +1959,7 @@ inline unsigned long GetBitFieldsF5e(int e,
 
 inline int expCmp(const unsigned long* a, const unsigned long* b)
 {
-    p_MemCmp_LengthGeneral_OrdGeneral(a, b, currRing->CmpL_Size, currRing->ordsgn,
+  p_MemCmp_LengthGeneral_OrdGeneral(a, b, currRing->CmpL_Size, currRing->ordsgn,
                                       return 0, return 1, return -1);
 }
 
