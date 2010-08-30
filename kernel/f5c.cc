@@ -43,7 +43,7 @@
 #include "pInline2.h"
 #include "f5c.h"
 
-#define F5EDEBUG  0
+#define F5EDEBUG  1
 #define setMaxIdeal 64
 #define NUMVARS currRing->ExpL_Size
 int create_count = 0; // for KDEBUG option in reduceByRedGBCritPair
@@ -792,10 +792,13 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
                           )
 {
 #if F5EDEBUG
-    Print("CRITERION2-BEGINNING \n");
+    Print("CRITERION2-BEGINNING %p\n", rewRules);
 #endif
   int j = currRing->N;
-  RewRules* temp = rewRules->next;
+  if( rewRules->next )
+  {
+    RewRules* temp = rewRules->next;
+    Print("%p\n", temp);
 #if F5EDEBUG
     Print("Tested Element: ");
     while( j )
@@ -806,8 +809,8 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
     j = currRing->N;
     Print("\n");
 #endif
-  while(temp)
-  {
+    while( NULL != temp )
+    {
 #if F5EDEBUG
     Print("Rew Rule: ");
     while( j )
@@ -818,27 +821,29 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
     j = currRing->N;
     Print("\n");
 #endif
-    if(!(smLabel & temp->slabel))
-    {
-      while(j)
+      if(!(smLabel & temp->slabel))
       {
-        if(mLabel[j] > temp->label[j])
+        while(j)
         {
-         break;
+          if(mLabel[j] > temp->label[j])
+          {
+          break;
+          }
+          j--;
         }
-        j--;
-      }
-      if(!j)
-      {
+        if(!j)
+        {
 #if F5EDEBUG
         Print("CRITERION2-END \n");
 #endif
-        return true;
+          return true;
+        }
+        else 
+        {
+          j = currRing->N; 
+        }
       }
-      else 
-      {
-        j = currRing->N; 
-      }
+      temp  = temp->next;
     }
   }
 #if F5EDEBUG
@@ -870,15 +875,17 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
   // this will go on for the complete current iteration step!
   // => after computeSpols() terminates this iteration step is done!
   int* multTemp = (int*) omalloc( (currRing->N+1)*sizeof(int) );
-  while( cp )
-  {
-    poly sp;
-    temp  = sort(cp->cp, cp->length); 
-    // The first element cannot be detected by Criterion 2 as there are no new
-    // rules added to \c rewRules until now.
-    RewRules newRule  = { NULL, temp->mLabel1, temp->smLabel1 };
-    rewRulesLast->next  = &newRule;
-    rewRulesLast        = &newRule; 
+  poly sp;
+  temp  = sort(cp->cp, cp->length); 
+  // The first element cannot be detected by Criterion 2 as there are no new
+  // rules added to \c rewRules until now.
+  RewRules newRule  = { NULL, temp->mLabel1, temp->smLabel1 };
+  rewRulesLast->next  = &newRule;
+  rewRulesLast        = &newRule; 
+#if F5EDEBUG
+  Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
+#endif
+
     // from this point on, rewRulesLast != NULL, thus we do not need to test this
     // again in the following iteration over the list of critical pairs
     
@@ -886,14 +893,16 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
     sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift, 
                                   negBitmaskShifted, offsets 
                                 );
-
+    pNorm( sp ); 
     sp = currReduction( sp, &temp, rewRulesLast, gCurr, f5Rules, multTemp, 
                         numVariables, shift, negBitmaskShifted, offsets, 
                         &redundant
                       );
+    Print("AFTER:  ");
+    pWrite(sp);
 
-    Cpair* tempDel  = temp;
-    temp            = temp->next;
+    tempDel  = temp;
+    temp     = temp->next;
     omfree(tempDel);
     
     // otherwise sp is reduced to zero and we do not need to add it to gCurr
@@ -901,6 +910,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
     // rewRules list!
     if( sp )
     {
+      pNorm( sp ); 
       // add sp together with rewRulesLast to gCurr!!!
       Lpoly* newElement     = (Lpoly*) omalloc( sizeof(Lpoly) );
       newElement->next      = NULL;
@@ -915,7 +925,6 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
     //------------------------------------------------
     // TODO: CURRENT ITERATION REDUCTION
     //------------------------------------------------
-
     while( temp!=NULL )
     {
       if(!criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1))
@@ -929,20 +938,41 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
       sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift,   
                                     negBitmaskShifted, offsets 
                                   );
+    pNorm( sp ); 
     
-    //------------------------------------------------
-    // TODO: CURRENT ITERATION REDUCTION
-    //------------------------------------------------
+
+    sp = currReduction( sp, &temp, rewRulesLast, gCurr, f5Rules, multTemp, 
+                        numVariables, shift, negBitmaskShifted, offsets, 
+                        &redundant
+                      );
+
+    tempDel  = temp;
+    temp     = temp->next;
+    omfree(tempDel);
+    
+    // otherwise sp is reduced to zero and we do not need to add it to gCurr
+    // Note that even in this case the corresponding rule is already added to
+    // rewRules list!
+    if( sp )
+    {
+      pNorm( sp ); 
+      // add sp together with rewRulesLast to gCurr!!!
+      Lpoly* newElement     = (Lpoly*) omalloc( sizeof(Lpoly) );
+      newElement->next      = NULL;
+      newElement->p         = sp; 
+      newElement->sExp      = pGetShortExpVector(sp); 
+      newElement->rewRule   = rewRulesLast; 
+      newElement->redundant = redundant;
+      // update pointer to last element in gCurr list
+      gCurrLast->next       = newElement;
+      gCurrLast             = newElement;
+    }
       tempDel = temp;
       temp    = temp->next;
       omfree( tempDel );
 
     }
 
-    cpDel = cp;
-    cp    = cp->next;
-    omfree( cpDel );
-  }
   omfree( multTemp );
 #if F5EDEBUG
   Print("COMPUTESPOLS-END\n");
@@ -958,7 +988,10 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
                     )
 
 {
-  BOOLEAN isMult;
+#if F5EDEBUG
+    Print("CURRREDUCTION-BEGINNING \n");
+#endif
+  BOOLEAN isMult  = false;
   int i;
   unsigned long multShortExp;
   static int tempLength           = 0;
@@ -981,22 +1014,23 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
   while ( temp )
   {
     startagainTop:
-    if( isDivisibleGetMult( kBucketGetLm( bucket ), bucketExp, temp->p, 
-                            temp->sExp, &multTemp, &isMult
+      Print("ISMULT %d\n",isMult);
+    if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
+                            bucketExp, &multTemp, &isMult
                           ) 
       )
     {
       *redundant = true;
       // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
       // multTemp and check this multiple by both criteria
+      Print("ISMULT %d\n",isMult);
       if( isMult )
       {
         // compute the multiple of the rule of temp & multTemp
-        for( i=1; i<(currRing->N)+1; i++ )
+        for( i=0;i<(currRing->N)+1; i++ )
         {
           multTemp[i] +=  temp->rewRule->label[i];
         }
-        
         multShortExp  = getShortExpVecFromArray( multTemp );
          
         // test the multiplied label by both criteria 
@@ -1014,6 +1048,9 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
           // linked list for later reductions
           if( expCmp( multTempExp, (*cp)->mLabelExp ) == 1 )
           {            
+#if F5EDEBUG
+    Print("HIGHER LABEL REDUCTION \n");
+#endif
             poly newPoly  = pInit();
             poly oldPoly  = pInit();
             int length;
@@ -1098,7 +1135,8 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
             oldPoly = pCopy( newPoly );
             kBucketInit( bucket, oldPoly, 0 );
             pDelete( &oldPoly );
-            isMult  = false;
+            isMult      = false;
+            *redundant  = true;
             temp    = temp->next;
             goto startagainTop;
           }
@@ -1144,6 +1182,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
         goto startagainTop;
       } 
     }
+    Print("HERE\n");
     temp  = temp->next;
   }
   // we know that sp = 0 at this point!
@@ -1166,6 +1205,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
       {
         // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
         // multTemp and check this multiple by both criteria
+        Print("ISMULT: %d\n",isMult);
         if( isMult )
         {
           // compute the multiple of the rule of temp & multTemp
@@ -1181,6 +1221,20 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
               !criterion2( multTemp, multShortExp, temp->rewRule )
             )
           {  
+            static unsigned long* multTempExp = (unsigned long*) 
+                            omalloc( NUMVARS*sizeof(unsigned long) );
+            getExpFromIntArray( multTemp, multTempExp, numVariables,
+                                shift, negBitmaskShifted, offsets
+                              );   
+            // if a higher label reduction should be done we do NOT reduce at all
+            // we want to be fast in the tail reduction part
+            if( expCmp( multTempExp, (*cp)->mLabelExp ) == 1 )
+            {            
+              isMult      = false;
+              *redundant  = true;
+              temp        = temp->next;
+              goto startagainTail;
+            }
             poly multiplier = pOne();
             getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
                                 negBitmaskShifted, offsets
@@ -1197,7 +1251,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
               canonicalize = 0;
             }
             isMult  = false;
-            temp  = gCurr;
+            temp    = gCurr;
             goto startagainTail;
           }
         }
@@ -1225,6 +1279,9 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
     // here we know that 
     sp =  p_Merge_q( sp, kBucketExtractLm(bucket), currRing );
   }
+#if F5EDEBUG
+    Print("CURRREDUCTION-END \n");
+#endif
   return sp;
 }
 
@@ -1969,6 +2026,8 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
                                             BOOLEAN* isMult
                                           )
 {
+  pWrite(a);
+  pWrite(b);
   p_LmCheckPolyRing1(a, currRing);
   p_LmCheckPolyRing1(b, currRing);
   if (sev_a & not_sev_b)
@@ -1981,7 +2040,7 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
   {
     int i=currRing->N;
     pAssume1(currRing->N == currRing->N);
-
+    *mult[0]  = p_GetComp(a,currRing);
     do
     {
       if (p_GetExp(a,i,currRing) > p_GetExp(b,i,currRing))
@@ -1989,12 +2048,12 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
         *isMult = false;
         return FALSE;
       }
-      (*mult)[i] = p_GetExp(b,i,currRing) - p_GetExp(a,i,currRing); 
-      i--;
-      if( (*mult)[i]>0 )
+      (*mult)[i] = (p_GetExp(b,i,currRing) - p_GetExp(a,i,currRing)); 
+      if( ((*mult)[i])>0 )
       {
         *isMult = true;
       }
+      i--;
     }
     while (i);
 #ifdef HAVE_RINGS
