@@ -8,7 +8,13 @@ katsura9();
 //ring r = 32003,(x(1..11)),dp;
 //ideal i = katsura(11);
 //ideal g = system("f5",i,2,1);
-f5e(i);
-//ideal g = f5e(i);
+//f5e(i);
+memory(0);
+memory(1);
+memory(2);
+ideal g = f5e(i);
+memory(0);
+memory(1);
+memory(2);
 //reduce(std(i),g);
 

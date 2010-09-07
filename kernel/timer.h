@@ -7,7 +7,6 @@
 *  ABSTRACT - get the computing time
 */
 /* $Id$ */
-
 extern int timerv;
 void startTimer(void);
 void writeTime(const char* s);

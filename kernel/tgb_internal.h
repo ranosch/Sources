@@ -8,7 +8,7 @@
 /*
  * ABSTRACT: tgb internal .h file
 */
-#include <omalloc/omalloc.h>
+#include <omalloc.h>
 #include <kernel/p_polys.h>
 
 #include <kernel/ideals.h>
@@ -238,7 +238,7 @@ class slimgb_alg
 
   //end for F4
 #ifdef HEAD_BIN
-  struct omBin_s*   HeadBin;
+  omBin   HeadBin;
 #endif
   unsigned int reduction_steps;
   int n;
@@ -272,8 +272,8 @@ class slimgb_alg
   unsigned long pTotaldegree(poly p)
   {
       pTest(p);
-      //assume(pDeg(p,r)==::pTotaldegree(p,r));
-      assume(((unsigned long)::pTotaldegree(p,r))==p->exp[deg_pos]);
+      //assume(pDeg(p,r)==::p_Totaldegree(p,r));
+      assume(((unsigned long)::p_Totaldegree(p,r))==p->exp[deg_pos]);
       return p->exp[deg_pos];
       //return ::pTotaldegree(p,this->r);
   }

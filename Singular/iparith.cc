@@ -62,9 +62,9 @@
 #include <kernel/clapsing.h>
 #include <kernel/kstdfac.h>
 #endif /* HAVE_FACTORY */
-#ifdef HAVE_FGLM
+#ifdef HAVE_FACTORY
 #include <kernel/fglm.h>
-#endif /* HAVE_FGLM */
+#endif /* HAVE_FACTORY */
 #define HAVE_INTERPOLATION
 #ifdef HAVE_INTERPOLATION
 #include <Singular/interpolation.h>
@@ -761,9 +761,9 @@ static BOOLEAN jjPOWER_P(leftv res, leftv u, leftv v)
   if ((u_p!=NULL)
   && (pTotaldegree(u_p)*(signed long)v_i > (signed long)currRing->bitmask))
   {
-    pDelete(&u_p);
     Werror("OVERFLOW in power(d=%ld, e=%d, max=%ld)",
                                     pTotaldegree(u_p),v_i,currRing->bitmask);
+    pDelete(&u_p);
     return TRUE;
   }
   res->data = (char *)pPower(u_p,v_i);
@@ -1193,7 +1193,7 @@ static BOOLEAN jjGE_I(leftv res, leftv u, leftv v)
 }
 static BOOLEAN jjGE_N(leftv res, leftv u, leftv v)
 {
-  res->data = (char *) (nGreater((number)u->Data(),(number)v->Data()) 
+  res->data = (char *) (nGreater((number)u->Data(),(number)v->Data())
                        || nEqual((number)u->Data(),(number)v->Data()));
   return FALSE;
 }
@@ -2457,7 +2457,7 @@ static BOOLEAN jjHOMOG_ID(leftv res, leftv u, leftv v)
   }
   pFDegProc deg;
   if (pLexOrder && (currRing->order[0]==ringorder_lp))
-    deg=pTotaldegree;
+    deg=p_Totaldegree;
    else
     deg=pFDeg;
   poly p=pOne(); pSetExp(p,i,1); pSetm(p);
@@ -3293,6 +3293,48 @@ static BOOLEAN jjSTD_HILB(leftv res, leftv u, leftv v)
   if (w!=NULL) atSet(res,omStrDup("isHomog"),w,INTVEC_CMD);
   return FALSE;
 }
+static BOOLEAN jjSTD_1(leftv res, leftv u, leftv v);
+static void jjSTD_1_ID(leftv res, ideal i0, int t0, ideal p0, attr a)
+/* destroys i0, p0 */
+/* result (with attributes) in res */
+/* i0: SB*/
+/* t0: type of p0*/
+/* p0 new elements*/
+/* a attributes of i0*/
+{
+  int tp;
+  if (t0==IDEAL_CMD) tp=POLY_CMD;
+  else               tp=VECTOR_CMD;
+  for (int i=IDELEMS(p0)-1; i>=0; i--)
+  {
+    poly p=p0->m[i];
+    p0->m[i]=NULL;
+    if (p!=NULL)
+    {
+      sleftv u0,v0;
+      memset(&u0,0,sizeof(sleftv));
+      memset(&v0,0,sizeof(sleftv));
+      v0.rtyp=tp;
+      v0.data=(void*)p;
+      u0.rtyp=t0;
+      u0.data=i0;
+      u0.attribute=a;
+      setFlag(&u0,FLAG_STD);
+      jjSTD_1(res,&u0,&v0);
+      i0=(ideal)res->data;
+      res->data=NULL;
+      a=res->attribute;
+      res->attribute=NULL;
+      u0.CleanUp();
+      v0.CleanUp();
+      res->CleanUp();
+    }
+  }
+  idDelete(&p0);
+  res->attribute=a;
+  res->data=(void *)i0;
+  res->rtyp=t0;
+}
 static BOOLEAN jjSTD_1(leftv res, leftv u, leftv v)
 {
   ideal result;
@@ -3304,44 +3346,45 @@ static BOOLEAN jjSTD_1(leftv res, leftv u, leftv v)
   {
     i0=idInit(1,i1->rank); // TODO: rank is wrong (if v is a vector!)
     i0->m[0]=(poly)v->Data();
-  }
-  else /*IDEAL*/
-  {
-    i0=(ideal)v->CopyD(); // TODO: memory leak? !
-  }
-  int ii0=idElem(i0); /* size of i0 */
-  int ii1=idElem(i1); /* size of i1 */
-  i1=idSimpleAdd(i1,i0); //
-  memset(i0->m,0,sizeof(poly)*IDELEMS(i0)); // TODO: memory leak? !!
-  idDelete(&i0);
-  intvec *w=(intvec *)atGet(u,"isHomog",INTVEC_CMD);
-  tHomog hom=testHomog;
+    int ii0=idElem(i0); /* size of i0 */
+    i1=idSimpleAdd(i1,i0); //
+    memset(i0->m,0,sizeof(poly)*IDELEMS(i0));
+    idDelete(&i0);
+    intvec *w=(intvec *)atGet(u,"isHomog",INTVEC_CMD);
+    tHomog hom=testHomog;
 
-  if (w!=NULL)
-  {
-    if (!idTestHomModule(i1,currQuotient,w))
+    if (w!=NULL)
     {
-      // no warnung: this is legal, if i in std(i,p)
-      // is homogeneous, but p not
-      w=NULL;
+      if (!idTestHomModule(i1,currQuotient,w))
+      {
+        // no warnung: this is legal, if i in std(i,p)
+        // is homogeneous, but p not
+        w=NULL;
+      }
+      else
+      {
+        w=ivCopy(w);
+        hom=isHomog;
+      }
     }
-    else
-    {
-      w=ivCopy(w);
-      hom=isHomog;
-    }
+    BITSET save_test=test;
+    test|=Sy_bit(OPT_SB_1);
+    /* ii0 appears to be the position of the first element of il that
+       does not belong to the old SB ideal */
+    result=kStd(i1,currQuotient,hom,&w,NULL,0,ii0);
+    test=save_test;
+    idDelete(&i1);
+    idSkipZeroes(result);
+    if (w!=NULL) atSet(res,omStrDup("isHomog"),w,INTVEC_CMD);
+    res->data = (char *)result;
   }
-  BITSET save_test=test;
-  test|=Sy_bit(OPT_SB_1);
-  /* ii0 appears to be the position of the first element of il that
-     does not belong to the old SB ideal */
-  result=kStd(i1,currQuotient,hom,&w,NULL,0,ii0);
-  test=save_test;
-  idDelete(&i1);
-  idSkipZeroes(result);
-  res->data = (char *)result;
+  else /*IDEAL/MODULE*/
+  {
+    attr a=NULL;
+    if (u->attribute!=NULL) a=u->attribute->Copy();
+    jjSTD_1_ID(res,(ideal)u->CopyD(),r,(ideal)v->CopyD(),a);
+  }
   if(!TEST_OPT_DEGBOUND) setFlag(res,FLAG_STD);
-  if (w!=NULL) atSet(res,omStrDup("isHomog"),w,INTVEC_CMD);
   return FALSE;
 }
 static BOOLEAN jjVARSTR2(leftv res, leftv u, leftv v)
@@ -3606,7 +3649,7 @@ struct sValCmd2 dArith2[]=
 ,{jjFAREY_ID,   FAREY_CMD,     ANY_TYPE/*set by p*/,MATRIX_CMD,BIGINT_CMD, ALLOW_PLURAL |NO_RING}
 ,{jjFETCH,     FETCH_CMD,      ANY_TYPE/*set by p*/,RING_CMD,  ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
 ,{jjFETCH,     FETCH_CMD,      ANY_TYPE/*set by p*/,QRING_CMD, ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FGLM
+#ifdef HAVE_FACTORY
 ,{fglmProc,    FGLM_CMD,       IDEAL_CMD,      RING_CMD,   DEF_CMD, NO_PLURAL |NO_RING}
 ,{fglmProc,    FGLM_CMD,       IDEAL_CMD,      QRING_CMD,  DEF_CMD, NO_PLURAL |NO_RING}
 ,{fglmQuotProc,FGLMQUOT_CMD,   IDEAL_CMD,      IDEAL_CMD,  POLY_CMD, NO_PLURAL |NO_RING}
@@ -5358,7 +5401,6 @@ static BOOLEAN jjnlInt(leftv res, leftv u)
   res->data=(char *)(long)nlInt(n,NULL /*dummy for nlInt*/);
   return FALSE;
 }
-#define s short
 struct sValCmd1 dArith1[]=
 {
 // operations:
@@ -5444,7 +5486,7 @@ struct sValCmd1 dArith1[]=
 #else
 ,{jjWRONG,      FAC_CMD,         LIST_CMD,       POLY_CMD      , NO_PLURAL |NO_RING}
 #endif
-#ifdef HAVE_FGLM
+#ifdef HAVE_FACTORY
 ,{findUniProc,  FINDUNI_CMD,     IDEAL_CMD,      IDEAL_CMD     , NO_PLURAL |NO_RING}
 #else
 ,{jjWRONG,      FINDUNI_CMD,     IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
@@ -5621,7 +5663,6 @@ struct sValCmd1 dArith1[]=
 ,{loNewtonP,    NEWTONPOLY_CMD,  IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{NULL,         0,               0,              0             , NO_PLURAL |NO_RING}
 };
-#undef s
 /*=================== operations with 3 args.: static proc =================*/
 static BOOLEAN jjBRACK_S(leftv res, leftv u, leftv v,leftv w)
 {
@@ -6149,7 +6190,7 @@ static BOOLEAN jjMINOR_M(leftv res, leftv v)
     if (ii>0) bo=iiConvert(v_typ,MATRIX_CMD,ii,v,&tmp);
     else bo=TRUE;
     if (bo)
-    { 
+    {
       Werror("cannot convert %s to matrix",Tok2Cmdname(v_typ));
       return TRUE;
     }
@@ -6159,7 +6200,7 @@ static BOOLEAN jjMINOR_M(leftv res, leftv v)
   bool noIdeal = true; bool noK = true; bool noAlgorithm = true;
   bool noCacheMinors = true; bool noCacheMonomials = true;
   ideal IasSB; int k; char* algorithm; int cacheMinors; int cacheMonomials;
-  
+
   /* here come the different cases of correct argument sets */
   if ((u->next != NULL) && (u->next->Typ() == IDEAL_CMD))
   {
@@ -6223,7 +6264,7 @@ static BOOLEAN jjMINOR_M(leftv res, leftv v)
       }
     }
   }
-  
+
   /* upper case conversion for the algorithm if present */
   if (!noAlgorithm)
   {
@@ -6414,16 +6455,23 @@ static BOOLEAN jjSUBST_P(leftv res, leftv u, leftv v,leftv w)
   poly monomexpr;
   BOOLEAN nok=jjSUBST_Test(v,w,ringvar,monomexpr);
   if (nok) return TRUE;
+  poly p=(poly)u->Data();
   if (ringvar>0)
   {
+    if ((monomexpr!=NULL) && (p!=NULL) && (pTotaldegree(p)!=0) &&
+    ((unsigned long)pTotaldegree(monomexpr) > (currRing->bitmask / (unsigned long)pTotaldegree(p))))
+    {
+      Warn("possible OVERFLOW in subst, max exponent is %ld",currRing->bitmask);
+      //return TRUE;
+    }
     if ((monomexpr==NULL)||(pNext(monomexpr)==NULL))
       res->data = pSubst((poly)u->CopyD(res->rtyp),ringvar,monomexpr);
     else
-      res->data= pSubstPoly((poly)u->Data(),ringvar,monomexpr);
+      res->data= pSubstPoly(p,ringvar,monomexpr);
   }
   else
   {
-    res->data=pSubstPar((poly)u->Data(),-ringvar,monomexpr);
+    res->data=pSubstPar(p,-ringvar,monomexpr);
   }
   return FALSE;
 }
@@ -8444,6 +8492,8 @@ BOOLEAN iiExprArith2(leftv res, leftv a, int op, leftv b, BOOLEAN proccall)
           }
           #endif
         }
+        if (TEST_V_ALLWARN)
+          Print("call %s(%s,%s)\n",Tok2Cmdname(iiOp),Tok2Cmdname(at),Tok2Cmdname(bt));
         if ((call_failed=dArith2[i].p(res,a,b)))
         {
           break;// leave loop, goto error handling
@@ -8502,6 +8552,9 @@ BOOLEAN iiExprArith2(leftv res, leftv a, int op, leftv b, BOOLEAN proccall)
               }
               #endif
             }
+            if (TEST_V_ALLWARN)
+              Print("call %s(%s,%s)\n",Tok2Cmdname(iiOp),
+              Tok2Cmdname(an->rtyp),Tok2Cmdname(bn->rtyp));
             failed= ((iiConvert(at,dArith2[i].arg1,ai,a,an))
             || (iiConvert(bt,dArith2[i].arg2,bi,b,bn))
             || (call_failed=dArith2[i].p(res,an,bn)));
@@ -8622,21 +8675,37 @@ BOOLEAN iiExprArith1(leftv res, leftv a, int op)
       if (at==dArith1[i].arg)
       {
         int r=res->rtyp=dArith1[i].res;
-        #ifdef HAVE_PLURAL
-        if ((currRing!=NULL) && (rIsPluralRing(currRing)))
+        if (currRing!=NULL)
         {
-          if ((dArith1[i].valid_for &PLURAL_MASK)==0 /*NO_PLURAL*/)
+          #ifdef HAVE_PLURAL
+          if ((currRing!=NULL) && (rIsPluralRing(currRing)))
           {
-            WerrorS(ii_not_for_plural);
-            break;
+            if ((dArith1[i].valid_for &PLURAL_MASK)==0 /*NO_PLURAL*/)
+            {
+              WerrorS(ii_not_for_plural);
+              break;
+            }
+            else if ((dArith1[i].valid_for &PLURAL_MASK)==2 /*, COMM_PLURAL */)
+            {
+              Warn("assume commutative subalgebra for cmd `%s`",Tok2Cmdname(i));
+            }
+            /* else, ALLOW_PLURAL */
           }
-          else if ((dArith1[i].valid_for &PLURAL_MASK)==2 /*, COMM_PLURAL */)
+          #endif
+          #ifdef HAVE_RINGS
+          if (rField_is_Ring(currRing))
           {
-            Warn("assume commutative subalgebra for cmd `%s`",Tok2Cmdname(i));
+            if ((dArith1[i].valid_for & RING_MASK)==0 /*NO_RING*/)
+            {
+              WerrorS(ii_not_for_ring);
+              break;
+            }
+            /* else ALLOW_RING */
           }
-          /* else, ALLOW_PLURAL */
+          #endif
         }
-        #endif
+        if (TEST_V_ALLWARN)
+          Print("call %s(%s)\n",Tok2Cmdname(iiOp),Tok2Cmdname(at));
         if (r<0)
         {
           res->rtyp=-r;
@@ -8714,6 +8783,8 @@ BOOLEAN iiExprArith1(leftv res, leftv a, int op)
           }
           else
           {
+            if (TEST_V_ALLWARN)
+              Print("call %s(%s)\n",Tok2Cmdname(iiOp),Tok2Cmdname(an->rtyp));
             if (an->Next() != NULL)
             {
               res->next = (leftv)omAllocBin(sleftv_bin);
@@ -8806,9 +8877,11 @@ BOOLEAN iiExprArith3(leftv res, int op, leftv a, leftv b, leftv c)
       && (ct==dArith3[i].arg3))
       {
         res->rtyp=dArith3[i].res;
-        #ifdef HAVE_PLURAL
-        if ((currRing!=NULL) && (rIsPluralRing(currRing)))
+        if (currRing!=NULL)
         {
+          #ifdef HAVE_PLURAL
+          if (rIsPluralRing(currRing))
+          {
             if ((dArith3[i].valid_for &PLURAL_MASK)==0 /*NO_PLURAL*/)
             {
               WerrorS(ii_not_for_plural);
@@ -8819,8 +8892,23 @@ BOOLEAN iiExprArith3(leftv res, int op, leftv a, leftv b, leftv c)
               Warn("assume commutative subalgebra for cmd `%s`",Tok2Cmdname(i));
             }
             /* else, ALLOW_PLURAL */
+          }
+          #endif
+          #ifdef HAVE_RINGS
+          if (rField_is_Ring(currRing))
+          {
+            if ((dArith3[i].valid_for & RING_MASK)==0 /*NO_RING*/)
+            {
+              WerrorS(ii_not_for_ring);
+              break;
+            }
+            /* else ALLOW_RING */
+          }
+          #endif
         }
-        #endif
+        if (TEST_V_ALLWARN)
+          Print("call %s(%s,%s,%s)\n",
+            Tok2Cmdname(iiOp),Tok2Cmdname(at),Tok2Cmdname(bt),Tok2Cmdname(ct));
         if ((call_failed=dArith3[i].p(res,a,b,c)))
         {
           break;// leave loop, goto error handling
@@ -8867,6 +8955,10 @@ BOOLEAN iiExprArith3(leftv res, int op, leftv a, leftv b, leftv c)
                  /* else, ALLOW_PLURAL */
               }
               #endif
+              if (TEST_V_ALLWARN)
+                Print("call %s(%s,%s,%s)\n",
+                  Tok2Cmdname(iiOp),Tok2Cmdname(an->rtyp),
+                  Tok2Cmdname(bn->rtyp),Tok2Cmdname(cn->rtyp));
               failed= ((iiConvert(at,dArith3[i].arg1,ai,a,an))
                 || (iiConvert(bt,dArith3[i].arg2,bi,b,bn))
                 || (iiConvert(ct,dArith3[i].arg3,ci,c,cn))
@@ -9036,22 +9128,37 @@ BOOLEAN iiExprArithM(leftv res, leftv a, int op)
       || ((dArithM[i].number_of_args==-2)&&(args>0)))
       {
         res->rtyp=dArithM[i].res;
-        #ifdef HAVE_PLURAL
-        if ((currRing!=NULL)
-        && (rIsPluralRing(currRing)))
+        if (currRing!=NULL)
         {
-          if ((dArithM[i].valid_for &PLURAL_MASK)==0 /*NO_PLURAL*/)
+          #ifdef HAVE_PLURAL
+          if (rIsPluralRing(currRing))
           {
-            WerrorS(ii_not_for_plural);
-            break;
+            if ((dArithM[i].valid_for &PLURAL_MASK)==0 /*NO_PLURAL*/)
+            {
+              WerrorS(ii_not_for_plural);
+              break;
+            }
+            else if ((dArithM[i].valid_for &PLURAL_MASK)==2 /*, COMM_PLURAL */)
+            {
+              Warn("assume commutative subalgebra for cmd `%s`",Tok2Cmdname(i));
+            }
+            /* else ALLOW_PLURAL */
           }
-          else if ((dArithM[i].valid_for &PLURAL_MASK)==2 /*, COMM_PLURAL */)
+          #endif
+          #ifdef HAVE_RINGS
+          if (rField_is_Ring(currRing))
           {
-            Warn("assume commutative subalgebra for cmd `%s`",Tok2Cmdname(i));
+            if ((dArithM[i].valid_for & RING_MASK)==0 /*NO_RING*/)
+            {
+              WerrorS(ii_not_for_ring);
+              break;
+            }
+            /* else ALLOW_RING */
           }
-          /* else ALLOW_PLURAL */
+          #endif
         }
-        #endif
+        if (TEST_V_ALLWARN)
+          Print("call %s(... (%d args))\n", Tok2Cmdname(iiOp),args);
         if (dArithM[i].p(res,a))
         {
           break;// leave loop, goto error handling

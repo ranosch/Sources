@@ -167,10 +167,10 @@ PINLINE2 unsigned long BitMask(unsigned long bitmask, int twobits)
 PINLINE2 long p_GetExp(const poly p, const unsigned long iBitmask, const int VarOffset)
 {
   int pos  =(VarOffset & 0xffffff);
+
   int hbyte= (VarOffset >> 24); // the highest byte
   int bitpos = hbyte & 0x3f; // last 6 bits
   long bitmask = BitMask(iBitmask, hbyte >> 6);
-
   long exp=(p->exp[pos] >> bitpos) & bitmask;
   return exp;
 

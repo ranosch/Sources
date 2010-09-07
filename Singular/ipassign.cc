@@ -185,6 +185,13 @@ static BOOLEAN jjMINPOLY(leftv res, leftv a)
     nNormalize(p);
     currRing->minpoly=p;
     naMinimalPoly=((lnumber)currRing->minpoly)->z;
+    if (p_GetExp(((lnumber)currRing->minpoly)->z,1,currRing->algring)==0)
+    {
+      Werror("minpoly must not be constant");
+      currRing->minpoly=NULL;
+      naMinimalPoly=NULL;
+      nDelete(&p);
+    }
     // and now, normalize all already defined objects in this ring
     idhdl h=currRing->idroot;
     while(h!=NULL)
@@ -362,13 +369,39 @@ static BOOLEAN jiA_POLY(leftv res, leftv a,Subexpr e)
   //if ((TEST_V_QRING) && (currQuotient!=NULL)) jjNormalizeQRingP(res);
   return FALSE;
 }
+static BOOLEAN jiA_1x1INTMAT(leftv res, leftv a,Subexpr e)
+{
+  if ((res->rtyp!=INTMAT_CMD) /*|| (e!=NULL) - TRUE because of type int */)
+  {
+    // no error message: assignment simply fails
+    return TRUE;
+  }
+  intvec* am=(intvec*)a->CopyD(INTMAT_CMD);
+  if ((am->rows()!=1) || (am->cols()!=1))
+  {
+    WerrorS("must be 1x1 intmat");
+    delete am;
+    return TRUE;
+  }
+  intvec* m=(intvec *)res->data;
+  // indices are correct (see ipExprArith3(..,'['..) )
+  int i=e->start;
+  int j=e->next->start;
+  IMATELEM(*m,i,j)=IMATELEM(*am,1,1);
+  delete am;
+  return FALSE;
+}
 static BOOLEAN jiA_1x1MATRIX(leftv res, leftv a,Subexpr e)
 {
   if ((res->rtyp!=MATRIX_CMD) /*|| (e!=NULL) - TRUE because of type poly */)
-     return TRUE;
+  {
+    // no error message: assignment simply fails
+    return TRUE;
+  }
   matrix am=(matrix)a->CopyD(MATRIX_CMD);
   if ((MATROWS(am)!=1) || (MATCOLS(am)!=1))
   {
+    WerrorS("must be 1x1 matrix");
     idDelete((ideal *)&am);
     return TRUE;
   }
@@ -644,6 +677,7 @@ struct sValAssign dAssign[]=
 ,{jiA_IDEAL_M,  IDEAL_CMD,      MATRIX_CMD }
 ,{jiA_RESOLUTION,RESOLUTION_CMD,RESOLUTION_CMD }
 ,{jiA_INT,      INT_CMD,        INT_CMD }
+,{jiA_1x1INTMAT, INT_CMD,       INTMAT_CMD }
 ,{jiA_IDEAL,    MATRIX_CMD,     MATRIX_CMD }
 ,{jiA_MAP_ID,   MAP_CMD,        IDEAL_CMD }
 ,{jiA_MAP,      MAP_CMD,        MAP_CMD }
@@ -751,6 +785,7 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
     && (dAssign[i].res!=0)) i++;
   if (dAssign[i].res!=0)
   {
+    if (TEST_V_ALLWARN) Print("assign %s=%s\n",Tok2Cmdname(lt),Tok2Cmdname(rt));
     BOOLEAN b;
     b=dAssign[i].p(ld,r,l->e);
     if(l!=ld) /* i.e. l is IDHDL, l->data is ld */
@@ -777,6 +812,8 @@ static BOOLEAN jiAssign_1(leftv l, leftv r)
         if(!failed)
         {
           failed= dAssign[i].p(ld,rn,l->e);
+          if (TEST_V_ALLWARN)
+	    Print("assign %s=%s ok? %d\n",Tok2Cmdname(lt),Tok2Cmdname(rn->rtyp),!failed);
         }
         // everything done, clean up temp. variables
         rn->CleanUp();
@@ -1349,6 +1386,7 @@ BOOLEAN iiAssign(leftv l, leftv r)
     && (((l->rtyp==IDHDL) && (IDTYP((idhdl)l->data)==LIST_CMD))
       || (l->rtyp==LIST_CMD)))
     {
+       if (TEST_V_ALLWARN) PrintS("assign list[..]=...\n");
        b=jiAssign_list(l,r);
        if(!b)
        {
@@ -1627,7 +1665,7 @@ void jjNormalizeQRingId(leftv I)
       ideal I0=(ideal)I->Data();
       ideal II=kNF(F,currQuotient,I0);
       idDelete(&F);
-      if ((I->rtyp==IDEAL_CMD) 
+      if ((I->rtyp==IDEAL_CMD)
       || (I->rtyp==MODUL_CMD)
       )
       {
@@ -1658,7 +1696,7 @@ void jjNormalizeQRingP(leftv I)
       ideal F=idInit(1,1);
       poly II=kNF(F,currQuotient,(poly)I->Data());
       idDelete(&F);
-      if ((I->rtyp==POLY_CMD) 
+      if ((I->rtyp==POLY_CMD)
       || (I->rtyp==VECTOR_CMD))
       {
         pDelete((poly*)&(I->data));
@@ -1668,7 +1706,7 @@ void jjNormalizeQRingP(leftv I)
       {
         idhdl h=(idhdl)I->data;
         pDelete((poly*)&IDPOLY(h));
-	IDPOLY(h)=II;
+        IDPOLY(h)=II;
         setFlag(h,FLAG_QRING);
       }
       else

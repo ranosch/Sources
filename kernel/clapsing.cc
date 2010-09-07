@@ -31,9 +31,16 @@ poly singclap_gcd_r ( poly f, poly g, const ring r )
   // assume f!=0, g!=0
   poly res=NULL;
 
-  if (p_IsConstantPoly(f,r) || p_IsConstantPoly(g,r))
+  assume(f!=NULL);
+  assume(g!=NULL);
+
+  if((pNext(f)==NULL) && (pNext(g)==NULL))
   {
-    return p_One(r);
+    poly p=pOne();
+    for(int i=rVar(r);i>0;i--)
+      p_SetExp(p,i,si_min(p_GetExp(f,i,r),p_GetExp(g,i,r)),r);
+    p_Setm(p,r);
+    return p;
   }
 
   // for now there is only the possibility to handle polynomials over
@@ -41,16 +48,9 @@ poly singclap_gcd_r ( poly f, poly g, const ring r )
   Off(SW_RATIONAL);
   if (rField_is_Q(r) || (rField_is_Zp(r)))
   {
-    CanonicalForm newGCD(const CanonicalForm & A, const CanonicalForm & B);
     setCharacteristic( n_GetChar(r) );
     CanonicalForm F( convSingPFactoryP( f,r ) ), G( convSingPFactoryP( g, r ) );
-    //if (nGetChar() > 1 )
-    //{
-    //  res=convFactoryPSingP( newGCD( F,G ));
-    //  if (!nGreaterZero(pGetCoeff(res))) res=pNeg(res);
-    //}
-    //else
-      res=convFactoryPSingP( gcd( F, G ) , r);
+    res=convFactoryPSingP( gcd( F, G ) , r);
   }
   // and over Q(a) / Fp(a)
   else if ( rField_is_Extension(r))
@@ -709,7 +709,7 @@ ideal singclap_factorize ( poly f, intvec ** v , int with_exps)
 {
   pTest(f);
 #ifdef FACTORIZE2_DEBUG
-  printf("singclap_factorize, degree %d\n",pTotaldegree(f));
+  printf("singclap_factorize, degree %ld\n",pTotaldegree(f));
 #endif
   // with_exps: 3,1 return only true factors, no exponents
   //            2 return true factors and exponents
@@ -1548,6 +1548,77 @@ int singclap_det_i( intvec * m )
   Off(SW_RATIONAL);
   return res;
 }
+matrix singntl_HNF(matrix  m )
+{  
+  int r=m->rows();
+  if (r!=m->cols())
+  {
+    Werror("HNF of %d x %d matrix",r,m->cols());
+    return NULL;
+  }
+  matrix res=mpNew(r,r);
+  if (rField_is_Q(currRing))
+  {
+   
+    CFMatrix M(r,r);
+    int i,j;
+    for(i=r;i>0;i--)
+    {
+      for(j=r;j>0;j--)
+      {
+        M(i,j)=convSingPFactoryP(MATELEM(m,i,j));
+      }
+    }
+    for(i=r;i>0;i--)
+    {
+      for(j=r;j>0;j--)
+      {
+        M(i,j)=convSingPFactoryP(MATELEM(m,i,j));
+      }
+    }
+    CFMatrix *MM=cf_HNF(M);
+    for(i=r;i>0;i--)
+    {
+      for(j=r;j>0;j--)
+      {  
+        MATELEM(res,i,j)=convFactoryPSingP((*MM)(i,j));
+      }
+    }
+    delete MM;
+  }
+  return res;
+}
+intvec* singntl_HNF(intvec*  m )
+{
+  int r=m->rows();
+  if (r!=m->cols())
+  {
+    Werror("HNF of %d x %d matrix",r,m->cols());
+    return NULL;
+  }
+  setCharacteristic( 0 );
+  CFMatrix M(r,r);
+  int i,j;
+  for(i=r;i>0;i--)
+  {
+    for(j=r;j>0;j--)
+    {
+      M(i,j)=IMATELEM(*m,i,j);
+    }
+  }
+  CFMatrix *MM=cf_HNF(M);
+  intvec *mm=ivCopy(m);
+  for(i=r;i>0;i--)
+  {
+    for(j=r;j>0;j--)
+    {
+      IMATELEM(*mm,i,j)=convFactoryISingI((*MM)(i,j));
+    }
+  }
+  delete MM;
+  return mm;
+}
+
 napoly singclap_alglcm ( napoly f, napoly g )
 {
 
