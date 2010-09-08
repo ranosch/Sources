@@ -230,7 +230,9 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
   pGetExpV(gCurr->p, expVecNewElement); 
   // this must be changed for parallelizing the generation process of critical
   // pairs
-  Cpair* cpTemp     = (Cpair*) omalloc( sizeof(Cpair) );
+  Cpair* cpTemp;
+  Cpair* cp = (Cpair*) omalloc( sizeof(Cpair) );
+  cpTemp    = cp;
   cpTemp->next      = NULL;
   cpTemp->mLabelExp = NULL;
   cpTemp->mLabel1   = NULL;
@@ -249,7 +251,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
   cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
   cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
   int temp;
-  long critPairDeg = 0;
+  long critPairDeg = pDeg(gCurr->p);
   for(i=0; i<IDELEMS(redGB)-1; i++)
   {
     pGetExpV(redGB->m[i], expVecTemp); 
@@ -276,7 +278,6 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
         cpTemp->mult1[j]    =   0;  
         cpTemp->mult2[j]    =   temp;  
         cpTemp->mLabel1[j]  =   0;
-        critPairDeg         +=  temp; 
       }
     }
     cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
@@ -293,7 +294,8 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets );
       insertCritPair(cpTemp, critPairDeg, cpBounds);
-      Cpair* cpTemp     = (Cpair*) omalloc( sizeof(Cpair) );
+      Cpair* cp = (Cpair*) omalloc( sizeof(Cpair) );
+      cpTemp    = cp;
       cpTemp->next      = NULL;
       cpTemp->mLabelExp = NULL;
       cpTemp->mLabel1   = NULL;
@@ -310,7 +312,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
     }
-    critPairDeg = 0;
+    critPairDeg = pDeg(gCurr->p);
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -339,7 +341,6 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mult1[j]    =   0;  
       cpTemp->mult2[j]    =   temp;  
       cpTemp->mLabel1[j]  =   0;
-      critPairDeg         +=  temp; 
     }
   }
   cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
@@ -375,7 +376,9 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
   pGetExpV(gCurr->p, expVecNewElement); 
   // this must be changed for parallelizing the generation process of critical
   // pairs
-  Cpair* cpTemp     = (Cpair*) omalloc( sizeof(Cpair) );
+  Cpair* cpTemp;
+  Cpair* cp         = (Cpair*) omalloc( sizeof(Cpair) );
+  cpTemp            = cp;
   cpTemp->next      = NULL;
   cpTemp->mLabelExp = NULL;
   cpTemp->mLabel1   = NULL;
@@ -394,7 +397,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
   cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
   cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
   int temp;
-  long critPairDeg = 0;
+  long critPairDeg = pDeg(gCurr->p);
   for(i=0; i<IDELEMS(redGB)-1; i++)
   {
     pGetExpV(redGB->m[i], expVecTemp); 
@@ -418,7 +421,6 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
         cpTemp->mult1[j]    =   0;  
         cpTemp->mult2[j]    =   temp;  
         cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
-        critPairDeg         +=  cpTemp->rewRule1->label[j]; 
       }
     }
     cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
@@ -436,7 +438,8 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets );
       insertCritPair(cpTemp, critPairDeg, cpBounds);
-      Cpair* cpTemp     = (Cpair*) omalloc( sizeof(Cpair) );
+      Cpair* cp         = (Cpair*) omalloc( sizeof(Cpair) );
+      cpTemp            = cp;
       cpTemp->next      = NULL;
       cpTemp->mLabelExp = NULL;
       cpTemp->mLabel1   = NULL;
@@ -453,7 +456,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
     }
-    critPairDeg = 0;
+    critPairDeg = pDeg(gCurr->p);
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -479,7 +482,6 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mult1[j]    =   0;  
       cpTemp->mult2[j]    =   temp;  
       cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
-      critPairDeg         +=  cpTemp->rewRule1->label[j];
     }
   }
   cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
@@ -518,7 +520,9 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
   Lpoly* gCurrIter  = gCurr->next;
   // this must be changed for parallelizing the generation process of critical
   // pairs
-  Cpair* cpTemp     = (Cpair*) omalloc( sizeof(Cpair) );
+  Cpair* cpTemp;
+  Cpair* cp         = (Cpair*) omalloc( sizeof(Cpair) );
+  cpTemp            = cp;
   cpTemp->next      = NULL;
   cpTemp->mLabelExp = NULL;
   cpTemp->mLabel1   = NULL;
@@ -546,7 +550,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
   // memory is freed before the end of criticalPairCurr()
   unsigned long* checkExp = (unsigned long*) omalloc(NUMVARS*sizeof(unsigned long));
   int temp;
-  long critPairDeg = 0;
+  long critPairDeg = pDeg(gCurr->p);
   while(gCurrIter->next)
   {
     pGetExpV(gCurrIter->p, expVecTemp); 
@@ -572,7 +576,6 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
         cpTemp->mult2[j]    =   temp;  
         cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
         cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j] + temp;
-        critPairDeg         +=  cpTemp->rewRule1->label[j]; 
       }
     }
     cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
@@ -604,7 +607,8 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       
       insertCritPair(cpTemp, critPairDeg, cpBounds);
       
-      Cpair* cpTemp     = (Cpair*) omalloc( sizeof(Cpair) );
+      Cpair* cp         = (Cpair*) omalloc( sizeof(Cpair) );
+      cpTemp            = cp;
       cpTemp->next      = NULL;
       cpTemp->mLabelExp = NULL;
       cpTemp->mLabel1   = NULL;
@@ -621,7 +625,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
     }
-    critPairDeg = 0;
+    critPairDeg = pDeg(gCurr->p);
     gCurrIter = gCurrIter->next;
   }
   // same critical pair processing for the last element in gCurr
@@ -650,7 +654,6 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       cpTemp->mult2[j]    =   temp;  
       cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
       cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j] + temp;
-      critPairDeg         +=  cpTemp->rewRule1->label[j];
     }
   }
   cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
@@ -693,6 +696,8 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
 {
 #if F5EDEBUG
   Print("INSERTCRITPAIR-BEGINNING deg bound %p\n",*bound);
+  Print("ADDRESS NEW CRITPAIR: %p\n",cp);
+  if( (*bound) ) Print("ADDRESS BOUND CRITPAIR: %p -- deg %d -- length %d\n",(*bound)->cp,(*bound)->deg, (*bound)->length);
 #endif
   if( !(*bound) ) // empty list?
   {
@@ -707,24 +712,25 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
   {
     if((*bound)->deg < deg) 
     {
-      while((*bound)->next && ((*bound)->next->deg < deg))
+      CpairDegBound** temp = bound;
+      while((*temp)->next && ((*temp)->next->deg < deg))
       {
-        *bound = (*bound)->next;
+        *temp = (*temp)->next;
       }
-      if((*bound)->next->deg == deg)
+      if( (*temp)->next && (*temp)->next->deg == deg )
       {
-        cp->next           = (*bound)->next->cp;
-        (*bound)->next->cp = cp;
-        (*bound)->next->length++;
+        cp->next          = (*temp)->next->cp;
+        (*temp)->next->cp = cp;
+        (*temp)->next->length++;
       }
       else
       {
         CpairDegBound* boundNew = (CpairDegBound*) omalloc(sizeof(CpairDegBound));
-        boundNew->next          = (*bound)->next;
+        boundNew->next          = (*temp)->next;
         boundNew->deg           = deg;
         boundNew->cp            = cp;
         boundNew->length        = 1;
-        (*bound)->next          = boundNew;
+        (*temp)->next           = boundNew;
       }
     }
     else
@@ -747,6 +753,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
     }
   }
 #if F5EDEBUG
+  pWrite( (*bound)->cp->p2 );
   Print("INSERTCRITPAIR-END deg bound %p\n",*bound);
 #endif
 }
@@ -881,6 +888,9 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
 {
 #if F5EDEBUG
   Print("COMPUTESPOLS-BEGINNING\n");
+  if( cp->next ) Print("ADDRESS DEGBOUND: %p->%p\n",cp->cp,(cp->next)->cp);
+  pWrite(cp->cp->p2);
+  if( cp->next ) pWrite((cp->next)->cp->p2);
 #endif
   Cpair* temp             = NULL;
   Cpair* tempDel          = NULL;
@@ -1071,10 +1081,23 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
           // if a higher label reduction takes place we need to create
           // a new Lpoly with the higher label and store it in a different 
           // linked list for later reductions
-          if( expCmp( multTempExp, (*cp)->mLabelExp ) == 1 )
+
+          Print("TEST EXP VEC: \n");
+          for( i=0; i<(currRing->N+1); i++ )
+          {
+            long test = (long) ((multTempExp[offsets[i]] >> (currRing->VarOffset[i] >> 24)) & currRing->bitmask);
+            long test2 = (long) (((*cp)->mLabelExp[offsets[i]] >> (currRing->VarOffset[i] >> 24)) & currRing->bitmask);
+            Print("%ld -- %ld\n", test, test2);
+          }
+
+          if( expCmp( multTempExp, (*cp)->mLabelExp ) == -1 )
           {            
 #if F5EDEBUG
     Print("HIGHER LABEL REDUCTION \n");
+          for( i=0; i<(currRing->N)+1; i++ )
+          {
+            Print("%dth exp: %d -- %d \n",i,multTemp[i],(*cp)->mLabel1[i]);
+          }
 #endif
             poly newPoly  = pInit();
             poly oldPoly  = pInit();
@@ -2050,7 +2073,7 @@ inline void getExpFromIntArray( const int* exp, unsigned long* r,
     Print("EXPONENT CREATION %d\n",exp[i]);
     unsigned long ee      =   exp[i];
     ee                    =   ee << shiftL;
-    register int offsetL  =   (currRing->VarOffset[i] & 0xffffff);
+    register int offsetL  =   offsets[i];
     r[offsetL]            &=  negBitmaskShifted[i];
     r[offsetL]            |=  ee;
   }
