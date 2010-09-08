@@ -603,6 +603,9 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       
       // compare which label is greater and possibly switch the 1st and 2nd 
       // generator in cpTemp
+    //-----------------------------------------------------------------
+    // TODO: CHANGE GENERATORS OF CPAIR IF LABEL STUFF HAPPENS!!!
+    //-----------------------------------------------------------------
       expCmp(cpTemp->mLabelExp, checkExp);
       
       insertCritPair(cpTemp, critPairDeg, cpBounds);
@@ -680,6 +683,9 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
     
     // compare which label is greater and possibly switch the 1st and 2nd 
     // generator in cpTemp
+    //-----------------------------------------------------------------
+    // TODO: CHANGE GENERATORS OF CPAIR IF LABEL STUFF HAPPENS!!!
+    //-----------------------------------------------------------------
     expCmp(cpTemp->mLabelExp, checkExp);
       
     insertCritPair(cpTemp, critPairDeg, cpBounds);
@@ -696,7 +702,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
 {
 #if F5EDEBUG
   Print("INSERTCRITPAIR-BEGINNING deg bound %p\n",*bound);
-  Print("ADDRESS NEW CRITPAIR: %p\n",cp);
+  Print("ADDRESS NEW CRITPAIR: %p -- degree %d\n",cp, deg);
   if( (*bound) ) Print("ADDRESS BOUND CRITPAIR: %p -- deg %d -- length %d\n",(*bound)->cp,(*bound)->deg, (*bound)->length);
 #endif
   if( !(*bound) ) // empty list?
@@ -888,9 +894,6 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
 {
 #if F5EDEBUG
   Print("COMPUTESPOLS-BEGINNING\n");
-  if( cp->next ) Print("ADDRESS DEGBOUND: %p->%p\n",cp->cp,(cp->next)->cp);
-  pWrite(cp->cp->p2);
-  if( cp->next ) pWrite((cp->next)->cp->p2);
 #endif
   Cpair* temp             = NULL;
   Cpair* tempDel          = NULL;
@@ -1090,7 +1093,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
             Print("%ld -- %ld\n", test, test2);
           }
 
-          if( expCmp( multTempExp, (*cp)->mLabelExp ) == -1 )
+          if( expCmp( multTempExp, (*cp)->mLabelExp ) == 1 )
           {            
 #if F5EDEBUG
     Print("HIGHER LABEL REDUCTION \n");
@@ -1455,6 +1458,7 @@ inline poly multInit( const int* exp, int numVariables, int* shift,
   p_MemCopy_LengthGeneral( np->exp, expTemp, NUMVARS );
   pNext(np) = NULL;
   pSetCoeff0(np, n);
+  pSetComp(np,exp[0]);
   return np;
 }
 
@@ -2070,7 +2074,7 @@ inline void getExpFromIntArray( const int* exp, unsigned long* r,
   for( ; i; i--)
   {
     register int shiftL   =   shift[i];
-    Print("EXPONENT CREATION %d\n",exp[i]);
+    Print("%d. EXPONENT CREATION %d\n",i,exp[i]);
     unsigned long ee      =   exp[i];
     ee                    =   ee << shiftL;
     register int offsetL  =   offsets[i];
