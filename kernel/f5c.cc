@@ -964,6 +964,8 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
       // update pointer to last element in gCurr list
       gCurrLast->next       = newElement;
       gCurrLast             = newElement;
+      Print("NEW ELEMENT ADDED TO GCURR!\n");
+      Print("SHORT EXP VECTOR: %ld\n", newElement->sExp);
     }
     //------------------------------------------------
     // TODO: CURRENT ITERATION REDUCTION
@@ -989,39 +991,37 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
       sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift,   
                                     negBitmaskShifted, offsets 
                                   );
-    pNorm( sp ); 
-    
-
-    sp = currReduction( sp, &temp, rewRulesLast, gCurr, f5Rules, multTemp, 
-                        numVariables, shift, negBitmaskShifted, offsets, 
-                        &redundant
-                      );
-
-    tempDel  = temp;
-    temp     = temp->next;
-    omfree(tempDel);
-    
-    // otherwise sp is reduced to zero and we do not need to add it to gCurr
-    // Note that even in this case the corresponding rule is already added to
-    // rewRules list!
-    if( sp )
-    {
-      Print("HERE\n");
       pNorm( sp ); 
-      // add sp together with rewRulesLast to gCurr!!!
-      Lpoly* newElement     = (Lpoly*) omalloc( sizeof(Lpoly) );
-      newElement->next      = NULL;
-      newElement->p         = sp; 
-      newElement->sExp      = pGetShortExpVector(sp); 
-      newElement->rewRule   = rewRulesLast; 
-      newElement->redundant = redundant;
-      // update pointer to last element in gCurr list
-      gCurrLast->next       = newElement;
-      gCurrLast             = newElement;
-    }
-      tempDel = temp;
-      temp    = temp->next;
-      omfree( tempDel );
+      
+
+      sp = currReduction( sp, &temp, rewRulesLast, gCurr, f5Rules, multTemp, 
+                          numVariables, shift, negBitmaskShifted, offsets, 
+                          &redundant
+                        );
+
+      tempDel  = temp;
+      temp     = temp->next;
+      omfree(tempDel);
+      
+      // otherwise sp is reduced to zero and we do not need to add it to gCurr
+      // Note that even in this case the corresponding rule is already added to
+      // rewRules list!
+      if( sp )
+      {
+        pNorm( sp ); 
+        // add sp together with rewRulesLast to gCurr!!!
+        Lpoly* newElement     = (Lpoly*) omalloc( sizeof(Lpoly) );
+        newElement->next      = NULL;
+        newElement->p         = sp; 
+        newElement->sExp      = pGetShortExpVector(sp); 
+        newElement->rewRule   = rewRulesLast; 
+        newElement->redundant = redundant;
+        // update pointer to last element in gCurr list
+        gCurrLast->next       = newElement;
+        gCurrLast             = newElement;
+        Print("HERE\n");
+      }
+      Print("HERE2\n");
 
     }
 
@@ -1049,10 +1049,9 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
   static int tempLength           = 0;
   unsigned short int canonicalize = 0; 
   Lpoly* temp                     = gCurr;
-  unsigned long bucketExp         = ~ pGetShortExpVector( sp );
-  kBucket* bucket                 = kBucketCreate();
-  pWrite( sp );
-  kBucketInit( bucket, sp, 0 );
+  static kBucket* bucket          = kBucketCreate();
+  unsigned long bucketExp;
+  kBucketInit( bucket, sp, pLength(sp) );
   // data of sp no longer needed, they are stored in bucket and given
   // back to sp at the end of the reduction process
   pDelete( &sp );
@@ -1068,7 +1067,9 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
   {
     startagainTop:
       pWrite(kBucketGetLm(bucket));
+      pWrite(bucket->buckets[0]);
       Print("%d\n",pGetCoeff(kBucketGetLm(bucket)));
+    bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
     if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
                             bucketExp, &multTemp, &isMult
                           ) 
@@ -1229,7 +1230,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
               (*cp)->next   = newPair;
             }  
             // get back on track for the old poly which has to be checked for 
-            // reductionby by the following element in gCurr
+            // reductionbsy by the following element in gCurr
             pWrite(newPoly);
             Print("Poly copying: ");
             pWrite(newPoly);
@@ -1284,6 +1285,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
           kBucketCanonicalize( bucket );
           canonicalize = 0;
         }
+
         *redundant  = false;
         temp        = gCurr;
         goto startagainTop;
@@ -1292,6 +1294,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
     temp  = temp->next;
   }
   // we know that sp = 0 at this point!
+  pWrite(kBucketGetLm(bucket));
   sp  = kBucketExtractLm( bucket );
   Print("END OF TOP REDUCTION:  ");
   pWrite( sp ); 
@@ -1305,6 +1308,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
     while ( temp )
     {
       startagainTail:
+      bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
       if( isDivisibleGetMult( kBucketGetLm( bucket ), bucketExp, temp->p, 
                               temp->sExp, &multTemp, &isMult
                             ) 
@@ -1386,7 +1390,11 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
       temp  = temp->next;
     }
     // here we know that 
+    Print("HERE\n");
+    pWrite(kBucketGetLm(bucket));
     sp =  p_Merge_q( sp, kBucketExtractLm(bucket), currRing );
+    pWrite( sp );
+    Print("HERE2\n");
   }
 #if F5EDEBUG
     Print("CURRREDUCTION-END \n");
@@ -1484,10 +1492,15 @@ inline poly multInit( const int* exp, int numVariables, int* shift,
   static number n  = nInit(1);
   Print("EXPONENT VECTOR INTERNAL: %d %d %d %d\n", expTemp[0], expTemp[1], expTemp[2], expTemp[3]);
   p_MemCopy_LengthGeneral( np->exp, expTemp, NUMVARS );
+  Print("IN MULTINIT COEFF %d\n",pGetCoeff(np));
   pNext(np) = NULL;
+  Print("IN MULTINIT COEFF %d\n",pGetCoeff(np));
   pSetCoeff0(np, n);
-  pSetComp(np,exp[0]);
+  Print("IN MULTINIT COEFF %d\n",pGetCoeff(np));
+  pSetComp(np,(long) exp[0]);
+  Print("IN MULTINIT COEFF %d\n",pGetCoeff(np));
   pSetm(np);
+  Print("IN MULTINIT COEFF %d\n",nInit(1));
   return np;
 }
 
@@ -1505,18 +1518,18 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   Pair.p2  = cp->p2;
   Print("P2: ");
   pWrite(cp->p2);
-  
   poly m1 = multInit( cp->mult1, numVariables, shift, 
                       negBitmaskShifted, offsets 
                     );
   Print("M1: ");
   pWrite(m1);
+  Print("%ld\n",pGetCoeff(m1));
   poly m2 = multInit( cp->mult2, numVariables, shift, 
                       negBitmaskShifted, offsets 
                     );
   Print("M2: ");
   pWrite(m2);
-
+  Print("%ld\n",pGetCoeff(m2));
 #ifdef KDEBUG
   create_count++;
 #endif
@@ -2104,13 +2117,13 @@ inline void getExpFromIntArray( const int* exp, unsigned long* r,
   {
     register int shiftL   =   shift[i];
     Print("%d. EXPONENT CREATION %d\n",i,exp[i]);
-    unsigned long ee      =   exp[i];
+    unsigned long ee      =   (long) exp[i];
     ee                    =   ee << shiftL;
     register int offsetL  =   offsets[i];
     r[offsetL]            &=  negBitmaskShifted[i];
     r[offsetL]            |=  ee;
   }
-  Print("COMPONENT CREATION: %d\n",exp[0]);
+  Print("COMPONENT CREATION: %d\n",(unsigned long) exp[0]);
   Print("EXPONENT VECTOR INTERNAL AT CREATION: %d %d %d %d\n", r[0], r[1], r[2], r[3]);
 }
 
@@ -2164,7 +2177,7 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
     pAssume1(_p_LmDivisibleByNoComp(a, currRing, b, currRing) == FALSE);
     *isMult = false;
 #if F5EDEBUG
-    Print("ISDIVISIBLE-END \n");
+    Print("ISDIVISIBLE-END1 \n");
 #endif
     return FALSE;
   }
@@ -2179,7 +2192,7 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
       {
         *isMult = false;
 #if F5EDEBUG
-    Print("ISDIVISIBLE-END \n");
+    Print("ISDIVISIBLE-END2 \n");
 #endif
         return FALSE;
       }
@@ -2193,16 +2206,19 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
     while (i);
 #ifdef HAVE_RINGS
 #if F5EDEBUG
-    Print("ISDIVISIBLE-END \n");
+    Print("ISDIVISIBLE-END3 \n");
 #endif
     return nDivBy(p_GetCoeff(b, r), p_GetCoeff(a, r));
 #else
 #if F5EDEBUG
-    Print("ISDIVISIBLE-END \n");
+    Print("ISDIVISIBLE-END4 \n");
 #endif
     return TRUE;
 #endif
   }
+#if F5EDEBUG
+    Print("ISDIVISIBLE-END5 \n");
+#endif
   return FALSE;
 }
 #endif
