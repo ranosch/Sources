@@ -922,6 +922,14 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
     // from this point on, rewRulesLast != NULL, thus we do not need to test this
     // again in the following iteration over the list of critical pairs
     
+#if F5EDEBUG
+  Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
+  Print("GEN1: ");
+  pWrite(temp->p1);
+  Print("GEN2: ");
+  pWrite(temp->p2);
+#endif
+
     // compute s-polynomial and reduce it w.r.t. redGB
     sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift, 
                                   negBitmaskShifted, offsets 
@@ -969,6 +977,14 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
         rewRulesLast        = &newRule; 
       }
       
+#if F5EDEBUG
+  Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
+  Print("GEN1: ");
+  pWrite(temp->p1);
+  Print("GEN2: ");
+  pWrite(temp->p2);
+#endif
+
       // compute s-polynomial and reduce it w.r.t. redGB
       sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift,   
                                     negBitmaskShifted, offsets 
@@ -1088,8 +1104,8 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
           Print("TEST EXP VEC: \n");
           for( i=0; i<(currRing->N+1); i++ )
           {
-            long test = (long) ((multTempExp[offsets[i]] >> (currRing->VarOffset[i] >> 24)) & currRing->bitmask);
-            long test2 = (long) (((*cp)->mLabelExp[offsets[i]] >> (currRing->VarOffset[i] >> 24)) & currRing->bitmask);
+            long test   = (long) ((multTempExp[offsets[i]] >> (currRing->VarOffset[i] >> 24)) & currRing->bitmask);
+            long test2  = (long) (((*cp)->mLabelExp[offsets[i]] >> (currRing->VarOffset[i] >> 24)) & currRing->bitmask);
             Print("%ld -- %ld\n", test, test2);
           }
 
@@ -1101,6 +1117,21 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
           {
             Print("%dth exp: %d -- %d \n",i,multTemp[i],(*cp)->mLabel1[i]);
           }
+            poly pTest1 = pInit();
+            pSetCoeff(pTest1,nInit(1));
+            pSetExp(pTest1,4,1);
+            pWrite(pTest1);
+            int testValue = expCmp( multTempExp, pTest1->exp );
+            Print("TESTVALUE! %d\n",testValue);
+            for( i=0; i<=NUMVARS; i++ )
+            {
+              Print("%ld -- % ld\n", pTest1->exp[i], multTempExp[i]);
+              pTest1->exp[i] = multTempExp[i];
+            }
+            pWrite(pTest1);
+            Print("COMP: %d -- %d\n",pGetComp(pTest1), multTempExp[0]);
+            testValue = expCmp( multTempExp, pTest1->exp );
+            Print("TESTVALUE! %d\n",testValue);
 #endif
             poly newPoly  = pInit();
             poly oldPoly  = pInit();
@@ -1355,10 +1386,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
       temp  = temp->next;
     }
     // here we know that 
-    Print("-----------------\n");
-    pWrite( sp );
     sp =  p_Merge_q( sp, kBucketExtractLm(bucket), currRing );
-    pWrite( sp );
   }
 #if F5EDEBUG
     Print("CURRREDUCTION-END \n");
@@ -1459,6 +1487,7 @@ inline poly multInit( const int* exp, int numVariables, int* shift,
   pNext(np) = NULL;
   pSetCoeff0(np, n);
   pSetComp(np,exp[0]);
+  pSetm(np);
   return np;
 }
 
@@ -2081,6 +2110,7 @@ inline void getExpFromIntArray( const int* exp, unsigned long* r,
     r[offsetL]            &=  negBitmaskShifted[i];
     r[offsetL]            |=  ee;
   }
+  Print("COMPONENT CREATION: %d\n",exp[0]);
   Print("EXPONENT VECTOR INTERNAL AT CREATION: %d %d %d %d\n", r[0], r[1], r[2], r[3]);
 }
 
