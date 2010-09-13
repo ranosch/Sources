@@ -46,7 +46,7 @@
 #define F5EDEBUG  1
 #define setMaxIdeal 64
 #define NUMVARS currRing->ExpL_Size
-int create_count = 0; // for KDEBUG option in reduceByRedGBCritPair
+int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -111,7 +111,16 @@ ideal f5cMain(ideal F, ideal Q)
     // the following interreduction is the essential idea of F5e.
     // NOTE that we do not need the old rules from previous iteration steps
     // => we only interreduce the polynomials and forget about their labels
+#if F5EDEBUG
+    for( k=0; k<IDELEMS(r); k++ )
+    {
+      pTest( r->m[k] );
+      Print("%p\n",r->m[k]);
+    }
+#endif
+    Print("HERE1\n");
     r = kInterRed(r);
+    Print("HERE2\n");
   }
   
   omfree(shift);
@@ -127,6 +136,9 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
                 unsigned long* negBitmaskShifted, int* offsets
               )
 {
+#if F5EDEBUG
+  Print("F5CITER-BEGIN\n");
+#endif  
   // create the reduction structure "strat" which is needed for all 
   // reductions with redGB in this iteration step
   kStrategy strat = new skStrategy;
@@ -207,13 +219,24 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   Lpoly* temp;
   while( gCurr )
   {
+    if( p_GetOrder( gCurr->p, currRing ) == pWTotaldegree( gCurr->p, currRing ) )
+    {
+      Print(" ALLES OK\n");
+    }
+    else 
+    {
+      Print("BEI POLY "); gCurr->p; Print(" stimmt etwas nicht!\n");
+    }
     idInsertPoly( redGB, gCurr->p );
     temp = gCurr;
     gCurr = gCurr->next;
     omfree(temp);
   }
-
-  return kInterRed( redGB );
+  idSkipZeroes( redGB );
+#if F5EDEBUG
+  Print("F5CITER-END\n");
+#endif  
+  return redGB;
 }
 
 
@@ -251,7 +274,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
   cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
   cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
   int temp;
-  long critPairDeg = pDeg(gCurr->p);
+  long critPairDeg = pDeg(gCurr->p, currRing);
   for(i=0; i<IDELEMS(redGB)-1; i++)
   {
     pGetExpV(redGB->m[i], expVecTemp); 
@@ -315,7 +338,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
     }
-    critPairDeg = pDeg(gCurr->p);
+    critPairDeg = pDeg(gCurr->p, currRing);
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -401,7 +424,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
   cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
   cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
   int temp;
-  long critPairDeg = pDeg(gCurr->p);
+  long critPairDeg = pDeg(gCurr->p, currRing);
   for(i=0; i<IDELEMS(redGB)-1; i++)
   {
     pGetExpV(redGB->m[i], expVecTemp); 
@@ -460,7 +483,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
     }
-    critPairDeg = pDeg(gCurr->p);
+    critPairDeg = pDeg(gCurr->p, currRing);
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -554,7 +577,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
   // memory is freed before the end of criticalPairCurr()
   unsigned long* checkExp = (unsigned long*) omalloc0(NUMVARS*sizeof(unsigned long));
   int temp;
-  long critPairDeg = pDeg(gCurr->p);
+  long critPairDeg = pDeg(gCurr->p, currRing);
   while(gCurrIter->next)
   {
     pGetExpV(gCurrIter->p, expVecTemp); 
@@ -632,7 +655,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
     }
-    critPairDeg = pDeg(gCurr->p);
+    critPairDeg = pDeg(gCurr->p, currRing);
     gCurrIter = gCurrIter->next;
   }
   // same critical pair processing for the last element in gCurr
@@ -940,13 +963,13 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
                                 );
     pNorm( sp ); 
     Print("BEFORE:  ");
-    pWrite(sp);
+    pTest(sp);
     sp = currReduction( sp, &temp, rewRulesLast, gCurr, f5Rules, multTemp, 
                         numVariables, shift, negBitmaskShifted, offsets, 
                         &redundant
                       );
     Print("AFTER:  ");
-    pWrite(sp);
+    pTest(sp);
 
     tempDel  = temp;
     temp     = temp->next;
@@ -1037,6 +1060,27 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
 
 
 
+inline void kBucketCopyToPoly(kBucket_pt bucket, poly *p, int *length)
+{
+  int i = kBucketCanonicalize(bucket);
+  if (i > 0)
+  {
+  #ifdef USE_COEF_BUCKETS
+    MULTIPLY_BUCKET(bucket,i);
+    //bucket->coef[i]=NULL;
+  #endif
+    *p = pCopy(bucket->buckets[i]);
+    *length = bucket->buckets_length[i];
+  }
+  else
+  {
+    *p = NULL;
+    *length = 0;
+  }
+}
+
+
+
 poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr, 
                       const F5Rules* f5Rules, int* multTemp, int numVariables, 
                       int* shift, unsigned long* negBitmaskShifted, int* offsets, 
@@ -1053,7 +1097,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
   static int tempLength           = 0;
   unsigned short int canonicalize = 0; 
   Lpoly* temp                     = gCurr;
-  static kBucket* bucket          = kBucketCreate();
+  kBucket* bucket                 = kBucketCreate();
   unsigned long bucketExp;
   kBucketInit( bucket, sp, pLength(sp) );
   
@@ -1104,39 +1148,12 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
           {            
 #if F5EDEBUG
     Print("HIGHER LABEL REDUCTION \n");
-          poly testHere1  = pOne();
-          poly testHere2  = pOne();
-          poly testHere3  = pOne();
-          pSetExp( testHere3,2,1 );
-          pSetComp( testHere3,3);
-          pWrite( testHere1 );
-          pWrite( testHere2 );
-          pWrite( testHere3 );
-          Print("Comps: %d %d, EXP0s: %d %d, LMCMP: %d\n",pGetComp(testHere1),pGetComp(testHere2),pGetExp(testHere1,0),pGetExp(testHere2,0),pLmCmp( testHere1,testHere2 ));
-          for( i=0; i<(currRing->CmpL_Size); i++ )
-          {
-            testHere1->exp[i] = multTempExp[i];
-            testHere2->exp[i] = (*cp)->mLabelExp[i];
-
-            Print("%dth exp: %ld -- %ld -- %ld\n",i,multTempExp[i],(*cp)->mLabelExp[i], testHere3->exp[i]);
-          }
-          for( i=0; i<(currRing->N); i++ )
-          {
-            Print("%dth exp: %d -- %d --%d\n",i,multTemp[i],(*cp)->mLabel1[i],pGetComp(testHere3));
-          }
-          pWrite( testHere1 );
-          pWrite( testHere2 );
-          pWrite( testHere3 );
-          Print("Comps: %d %d, EXP0s: %d %d, LMCMP: %d\n",pGetComp(testHere1),pGetComp(testHere2),pGetExp(testHere1,0),pGetExp(testHere2,0),pLmCmp( testHere1,testHere2 ));
-          pDelete( &testHere1 );
-          pDelete( &testHere2 );
-          pDelete( &testHere3 );
 #endif
             poly newPoly  = pInit();
             poly oldPoly  = pInit();
             int length;
             pWrite(kBucketGetLm(bucket));
-            kBucketClear( bucket, &newPoly, &length );
+            kBucketCopyToPoly( bucket, &newPoly, &length );
             Print("NEW POLYNOMIAL FROM BUCKET: ");
             pWrite(newPoly);
             oldPoly = pCopy( newPoly );
@@ -1398,6 +1415,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
 #if F5EDEBUG
     Print("CURRREDUCTION-END \n");
 #endif
+  kBucketDeleteAndDestroy( &bucket );
   return sp;
 }
 
@@ -1482,6 +1500,7 @@ inline poly multInit( const int* exp, int numVariables, int* shift,
 {
   poly np;
   omTypeAllocBin( poly, np, currRing->PolyBin );
+  Print("POLY ADDRESS %p\n",np);
   p_SetRingOfLm( np, currRing );
   unsigned long* expTemp  =   (unsigned long*) omalloc0(NUMVARS*
                               sizeof(unsigned long));
@@ -1504,6 +1523,9 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
                   TObject** R
                 )
 {
+#if F5EDEBUG 
+  Print("CREATESPOLY - BEGINNING\n");
+#endif
   LObject Pair( currRing );
   Pair.p1  = cp->p1;
   Print("P1: ");
@@ -1514,15 +1536,15 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   poly m1 = multInit( cp->mult1, numVariables, shift, 
                       negBitmaskShifted, offsets 
                     );
-  Print("M1: ");
+  Print("M1: %p ",m1);
   pWrite(m1);
   poly m2 = multInit( cp->mult2, numVariables, shift, 
                       negBitmaskShifted, offsets 
                     );
-  Print("M2: ");
+  Print("M2: %p ",m2);
   pWrite(m2);
 #ifdef KDEBUG
-  create_count++;
+  create_count_f5++;
 #endif
   kTest_L( &Pair );
   poly p1 = Pair.p1;
@@ -1618,6 +1640,10 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
     }
   }
 
+  pTest(Pair.GetLmCurrRing());
+#if F5EDEBUG 
+  Print("CREATESPOLY - BEGINNING\n");
+#endif
   return Pair.GetLmCurrRing();
 }
 
@@ -1792,7 +1818,16 @@ static poly redMoraNF (poly h,kStrategy strat, int flag)
       j++;
     }
     Print("POLY IN REDUCTION:  ");
+    if( p_GetOrder( H.p, currRing ) == pWTotaldegree( H.p, currRing ) )
+    {
+      Print(" ALLES OK\n");
+    }
+    else 
+    {
+      Print("BEI POLY %p",H.p); Print(" stimmt etwas nicht!\n");
+    }
     pWrite( H.p );
+    
   }
 }
 
@@ -1945,8 +1980,6 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
   BITSET save_test=test;
   // create the s-polynomial corresponding to the critical pair cp
   poly q = createSpoly( cp, numVariables, shift, negBitmaskShifted, offsets );
-  Print("IN CREATION  ");
-  pWrite(q);  
   /*- compute------------------------------------------- -*/
   p = pCopy(q);
   deleteHC(&p,&o,&j,strat);
@@ -1956,8 +1989,6 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
     mflush(); 
   }
   if (p!=NULL) p = redMoraNF(p,strat, lazyReduce & KSTD_NF_ECART);
-  Print("Rueckgabe direkt:  ");
-  pWrite( p );
   if ((p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
   {
     if (TEST_OPT_PROT) 
@@ -1965,13 +1996,9 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
       PrintS("t"); mflush(); 
     }
     p = redtail(p,strat->sl,strat);
-  Print("Rueckgabe indirekt:  ");
-  pWrite( p );
   }
   test=save_test;
   if (TEST_OPT_PROT) PrintLn();
-  Print("Rueckgabe:  ");
-  pWrite( p );
   return p;
 }
 

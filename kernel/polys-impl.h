@@ -169,6 +169,7 @@ void p_SetRingOfLeftv(leftv l, ring r);
 #define p_SetRingOfLeftv(l, r) ((void)0)
 #endif
 
+
 #else // ! defined(PDEBUG)
 #define pFalseReturn(cond)           ((void)0)
 #define pAssume(cond)                ((void)0)

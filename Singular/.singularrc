@@ -17,5 +17,7 @@ ideal g = f5e(i);
 memory(0);
 memory(1);
 memory(2);
+g;
+$
 //reduce(std(i),g);
 
