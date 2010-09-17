@@ -1,13 +1,15 @@
 system("--allow-net", 1);
 system("--min-time", "0.001");
 system("--ticks-per-sec", 1000);
-LIB"f5ex2.lib";
+//LIB"f5ex2.lib";
 LIB"poly.lib";
-cyclic_n(6);
+//cyclic_n(6);
 //katsura8();
 //fmtm();
-//ring r = 32003,(x(1..11)),dp;
-//ideal i = katsura(11);
+ring r = 32003,(x(1..7)),dp;
+ideal j = cyclic(6);
+ideal i = homog(j,x(7));
+
 //f5e(i);
 memory(0);
 memory(1);

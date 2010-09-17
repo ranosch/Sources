@@ -4464,6 +4464,7 @@ poly redtail (LObject* L, int pos, kStrategy strat)
 
   while(hn != NULL)
   {
+    pWrite(hn);
     op = strat->tailRing->pFDeg(hn, strat->tailRing);
     if ((Kstd1_deg>0)&&(op>Kstd1_deg)) goto all_done;
     e = strat->tailRing->pLDeg(hn, &l, strat->tailRing) - op;
