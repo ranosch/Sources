@@ -170,7 +170,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
     f5Rules->label[i]  =  (int*) omalloc((currRing->N+1)*sizeof(int));
     pGetExpV(redGB->m[i], f5Rules->label[i]);
     pGetExpV(redGB->m[i], f5Rules->label[i]);
-    f5Rules->slabel[i] =  ~ pGetShortExpVector(redGB->m[i]); // bit complement ~
+    f5Rules->slabel[i] =  pGetShortExpVector(redGB->m[i]); // bit complement ~
   } 
 
 #if F5EDEBUG
@@ -318,7 +318,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
         cpTemp->mLabel1[j]  =   0;
       }
     }
-    cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
+    cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
     
     // testing the F5 Criterion
     if(!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules)) 
@@ -383,7 +383,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mLabel1[j]  =   0;
     }
   }
-  cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
+  cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
   // testing the F5 Criterion
   if(!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules)) 
   {
@@ -469,7 +469,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
         cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
       }
     }
-    cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
+    cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
     
     // testing the F5 Criterion
     if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
@@ -529,7 +529,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
     }
   }
-  cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
+  cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
   
   // testing the F5 Criterion
   if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
@@ -628,8 +628,8 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
         cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j] + temp;
       }
     }
-    cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
-    cpTemp->smLabel2 = getShortExpVecFromArray(cpTemp->mLabel2);
+    cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
+    cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
     
     // testing the F5 Criterion
     if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
@@ -639,7 +639,6 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
     {
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
-      cpTemp->p2      = gCurrIter->p;
       // now we really need the memory for the exp label
       cpTemp->mLabelExp = (unsigned long*) omalloc0(NUMVARS*
                                 sizeof(unsigned long));
@@ -649,13 +648,28 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
                           shift, negBitmaskShifted, offsets
                         );
-      
       // compare which label is greater and possibly switch the 1st and 2nd 
       // generator in cpTemp
-    //-----------------------------------------------------------------
-    // TODO: CHANGE GENERATORS OF CPAIR IF LABEL STUFF HAPPENS!!!
-    //-----------------------------------------------------------------
-      expCmp(cpTemp->mLabelExp, checkExp);
+      // exchange generator 1 and 2 in cpTemp
+      if( expCmp(cpTemp->mLabelExp, checkExp) == 1 )
+      {
+        poly pTempHolder                = cpTemp->p1;
+        int* mLabelTempHolder           = cpTemp->mLabel1;
+        int* multTempHolder             = cpTemp->mult1;
+        unsigned long smLabelTempHolder = cpTemp->smLabel1;  
+        RewRules* rewRuleTempHolder     = cpTemp->rewRule1;
+
+        cpTemp->p1                      = cpTemp->p2;
+        cpTemp->p2                      = pTempHolder;
+        cpTemp->mLabel1                 = cpTemp->mLabel2;
+        cpTemp->mLabel2                 = mLabelTempHolder;
+        cpTemp->mult1                   = cpTemp->mult2;
+        cpTemp->mult2                   = multTempHolder;
+        cpTemp->smLabel1                = cpTemp->smLabel2;
+        cpTemp->smLabel2                = smLabelTempHolder;
+        cpTemp->rewRule1                = cpTemp->rewRule2;
+        cpTemp->rewRule2                = rewRuleTempHolder;
+      }
       
       insertCritPair(cpTemp, critPairDeg, cpBounds);
       
@@ -708,7 +722,8 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j] + temp;
     }
   }
-  cpTemp->smLabel1 = getShortExpVecFromArray(cpTemp->mLabel1);
+  cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
+  cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
   
   // testing the F5 Criterion
   if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
@@ -718,7 +733,6 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
-    cpTemp->p2  = gCurrIter->p;
     // now we really need the memory for the exp label
     cpTemp->mLabelExp = (unsigned long*) omalloc0(NUMVARS*
                               sizeof(unsigned long));
@@ -728,14 +742,29 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
     getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
                         shift, negBitmaskShifted, offsets
                       );
-    
     // compare which label is greater and possibly switch the 1st and 2nd 
     // generator in cpTemp
-    //-----------------------------------------------------------------
-    // TODO: CHANGE GENERATORS OF CPAIR IF LABEL STUFF HAPPENS!!!
-    //-----------------------------------------------------------------
-    expCmp(cpTemp->mLabelExp, checkExp);
-      
+    // exchange generator 1 and 2 in cpTemp
+    if( expCmp(cpTemp->mLabelExp, checkExp) == 1 )
+    {
+      poly pTempHolder                = cpTemp->p1;
+      int* mLabelTempHolder           = cpTemp->mLabel1;
+      int* multTempHolder             = cpTemp->mult1;
+      unsigned long smLabelTempHolder = cpTemp->smLabel1;  
+      RewRules* rewRuleTempHolder     = cpTemp->rewRule1;
+
+      cpTemp->p1                      = cpTemp->p2;
+      cpTemp->p2                      = pTempHolder;
+      cpTemp->mLabel1                 = cpTemp->mLabel2;
+      cpTemp->mLabel2                 = mLabelTempHolder;
+      cpTemp->mult1                   = cpTemp->mult2;
+      cpTemp->mult2                   = multTempHolder;
+      cpTemp->smLabel1                = cpTemp->smLabel2;
+      cpTemp->smLabel2                = smLabelTempHolder;
+      cpTemp->rewRule1                = cpTemp->rewRule2;
+      cpTemp->rewRule2                = rewRuleTempHolder;
+    }
+    
     insertCritPair(cpTemp, critPairDeg, cpBounds);
   } 
 
@@ -828,18 +857,6 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
                             const F5Rules* f5Rules
                           )
 {
-#if F5EDEBUG
-    Print("CRITERION1-BEGINNING \n");
-    poly pTestStuff = pOne();
-    pSetExp(pTestStuff,1,1);
-    pSetm(pTestStuff);
-    pWrite(pTestStuff);
-    Print("%ld\n",pGetShortExpVector(pTestStuff));
-    pSetExp(pTestStuff,2,1);
-    pSetm(pTestStuff);
-    pWrite(pTestStuff);
-    Print("%ld\n",pGetShortExpVector(pTestStuff));
-#endif
   int i = 0;
   int j = currRing->N;
 #if F5EDEBUG
@@ -995,7 +1012,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
     RewRules* newRule   = (RewRules*) omalloc( sizeof(RewRules) );
     newRule->next       = NULL;
     newRule->label      = temp->mLabel1;
-    newRule->slabel     = temp->smLabel1;
+    newRule->slabel     = ~temp->smLabel1;
     rewRulesLast->next  = newRule;
     rewRulesLast        = newRule; 
 #if F5EDEBUG
@@ -1075,7 +1092,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
         RewRules* newRule   = (RewRules*) omalloc( sizeof(RewRules) );
         newRule->next       = NULL;
         newRule->label      = temp->mLabel1;
-        newRule->slabel     = temp->smLabel1;
+        newRule->slabel     = ~temp->smLabel1;
         rewRulesLast->next  = newRule;
         rewRulesLast        = newRule; 
       }
