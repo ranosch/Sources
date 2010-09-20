@@ -304,6 +304,18 @@ void computeSpols (
 
 
 
+/// @brief \c kBucketCopyToPoly copies the data from \c bucket into \c poly and
+/// does NOT destroy \c bucket! This is needed for "higher label reductions" in
+/// F5's top-reduction procedure.
+/// @sa currReduction
+inline void kBucketCopyToPoly (
+  kBucket_pt bucket,  ///[in,out] bucket, still alive after function call
+  poly *p,            ///[in,out] poly that gets the data of the bucket copied
+  int *length         ///[in,out] length of the poly
+                              );
+
+  
+  
 /// @brief \c currReduction() reduces the s-polynomial \c sp by those labeled
 /// polynomials computed in the current iteration step, whose multiples are not
 /// detected by any of F5's criteria.
