@@ -7,11 +7,11 @@
 * ABSTRACT: Windows specific routines
 */
 
-#include <Singular/mod2.h>
+#include <kernel/mod2.h>
 #ifdef ix86_Win
 #include <windows.h>
 #include <winuser.h>
-#include <htmlhelp.h>
+#include <kernel/htmlhelp.h>
 #include <sys/cygwin.h>
 #include <stdio.h>
 #ifndef MAXPATHLEN

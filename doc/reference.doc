@@ -65,7 +65,8 @@ and @code{LIB} no brackets are allowed.
 * close::
 * coef::
 * coeffs::
-* contract::
+* contract:: 
+* datetime::
 * dbprint::
 * defined::
 * deg::
@@ -168,6 +169,7 @@ and @code{LIB} no brackets are allowed.
 * quote::
 * quotient::
 * random::
+* rank::
 * read::
 * reduce::
 * regularity::
@@ -794,7 +796,7 @@ See
 @ref{coeffs}.
 @c ref
 @c ---------------------------------------
-@node coeffs, contract, coef, Functions
+@node coeffs, datetime, coef, Functions
 @subsection coeffs
 @cindex coeffs
 
@@ -1048,7 +1050,7 @@ See
 @ref{kbase}.
 @c ref
 @c ---------------------------------------
-@node contract, dbprint, coeffs, Functions
+@node contract, datetime, coeffs, Functions
 @subsection contract
 @cindex contract
 
@@ -1102,8 +1104,28 @@ x.
 See
 @ref{diff}.
 @c ref
+
 @c ---------------------------------------
-@node dbprint, defined, contract, Functions
+@node datetime, dbprint, contract, Functions
+@subsection datetime
+@cindex datetime
+
+@table @code
+@item @strong{Syntax:}
+@code{datetime}
+@item @strong{Type:}
+string
+@item @strong{Purpose:}
+return the current local date and time as a string;
+@*This string has the format 'DAY MMM DD HH:MM:SS YYYY\n',
+where DAY is a three character string representing the day
+of the week, MMM a three character string representing the
+month, DD a two digit string representing the day, HH:MM:SS
+the current local time, and YYYY the year.
+@*Note that the returned string ends with a linefeed.
+
+@c ---------------------------------------
+@node dbprint, defined, datetime, Functions
 @subsection dbprint
 @cindex dbprint
 @table @code
@@ -5345,22 +5367,24 @@ See
 @cindex primefactors
 @table @code
 @item @strong{Syntax:}
-@code{primefactors (} bigint_expression @code{, [} int_expression @code{] )}
-@item @strong{Syntax:}
-@code{primefactors (} number_expression @code{, [} int_expression @code{] )}
+@code{primefactors (} int/bigint/number_expression @code{, [} int/bigint/number_expression @code{] )}
 @item @strong{Type:}
 list
 @item @strong{Purpose:}
 returns the prime factorisation up to an optionally given bound, b, on the
 prime factors
-@*When called with a bigint, no ring needs to be active.
-@*The method is capable of finding all prime factors <= 2^31 - 1, i.e., it
-finds all prime factors <= min(2^31-1, b). The quotient, q, arising by
-dividing out all found prime factors will also be returned. More concretely,
-a list L with three entries is returned:
-@*L[1] = q,
+@*When called with int(s)/bigint(s), no ring needs to be active.
+@*When called with numbers these are assumed to be integers in a polynomial
+ring over Q.
+@*The method finds all prime factors of a positive integer n. When a bound b
+is given then it is expected to be at least 2. In this case, the implementation
+finds only all prime factors <= b. Then, there may remain a non-factored
+portion n' of n arising by dividing out all found prime factors.
+The returned list contains the following information:
+@*L[1] = n',
 @*L[2][i] = i-th prime factor (in ascending order),
-@*L[3][i] = multiplicity of L[2][i].
+@*L[3][i] = multiplicity of L[2][i],
+@*L[4] = 1 if probabilistic test says that n' is a prime, 0 otherwise.
 @item @strong{Example:}
 @smallexample
 @c example
@@ -5650,7 +5674,7 @@ See
 @ref{module}.
 @c ref
 @c ---------------------------------------
-@node random, read, quotient, Functions
+@node random, rank, quotient, Functions
 @subsection random
 @cindex random
 @table @code
@@ -5695,7 +5719,43 @@ See
 @ref{system}.
 @c ref
 @c ---------------------------------------
-@node read, reduce, random, Functions
+@node rank, read, random, Functions
+@subsection rank
+@cindex rank
+@table @code
+@item @strong{Syntax:}
+@code{rank (} matrix_expression @code{)}
+@item @strong{Type:}
+int
+@item @strong{Purpose:}
+returns the rank of a given matrix which is filled with elements
+of the ground field
+@item @strong{Note:}
+The function works by computing the row echelon form of the matrix using
+the same algorithm as for @code{ludecomp}.
+@item @strong{Example:}
+@smallexample
+@c example
+  ring s = 0, x, dp;
+  matrix A[100][100];
+  int i; int j; int r;
+  for (i = 1; i <= 100; i++)
+  {
+    for (j = 1; j <= 100; j++)
+    {
+      A[i, j] = random(-10, 10);
+    }
+  }
+  r = rank(A); r;
+@c example
+@end smallexample
+@end table
+@c ref
+See
+@ref{ludecomp}.
+@c ref
+@c ---------------------------------------
+@node read, reduce, rank, Functions
 @subsection read
 @cindex read
 @table @code

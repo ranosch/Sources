@@ -12,24 +12,24 @@
  *
  *
  ***************************************************************/
-#include <Singular/mod2.h>
+#include <kernel/mod2.h>
 
 #ifdef HAVE_MPSR
 #include "mylimits.h"
 
 #include <Singular/mpsr_Get.h>
 
-#include <si_gmp.h>
-#include <omalloc.h>
+#include <kernel/si_gmp.h>
+#include <omalloc/omalloc.h>
 #include <Singular/tok.h>
 #include <Singular/ipid.h>
 #include <kernel/ring.h>
-#include "longalg.h"
+#include "kernel/longalg.h"
 #include <kernel/maps.h>
 #include <kernel/ideals.h>
 #include <Singular/grammar.h>
 #include <kernel/febase.h>
-#include "modulop.h"
+#include "kernel/modulop.h"
 
 #include <Singular/mpsr_Tok.h>
 

@@ -14,12 +14,12 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <Singular/mod2.h>
+#include <kernel/mod2.h>
 #include <Singular/tok.h>
 #include <kernel/options.h>
 #include <Singular/ipid.h>
 #include <kernel/intvec.h>
-#include <omalloc.h>
+#include <omalloc/omalloc.h>
 #include <kernel/polys.h>
 #include <kernel/febase.h>
 #include <Singular/sdb.h>
@@ -51,27 +51,31 @@
 #include <kernel/units.h>
 #include <Singular/janet.h>
 #include <kernel/GMPrat.h>
-#include <kernel/f5c.h>
 #include <kernel/tgb.h>
+#include <kernel/f5c.h>
 #include <kernel/walkProc.h>
 #include <kernel/mod_raw.h>
 #include <Singular/MinorInterface.h>
 #include <kernel/linearAlgebra.h>
 #include <Singular/misc_ip.h>
 #ifdef HAVE_FACTORY
-#include <kernel/clapsing.h>
-#include <kernel/kstdfac.h>
+#  include <kernel/clapsing.h>
+#  include <kernel/kstdfac.h>
 #endif /* HAVE_FACTORY */
 #ifdef HAVE_FACTORY
-#include <kernel/fglm.h>
+#  include <kernel/fglm.h>
 #endif /* HAVE_FACTORY */
 #define HAVE_INTERPOLATION
 #ifdef HAVE_INTERPOLATION
-#include <Singular/interpolation.h>
+#  include <Singular/interpolation.h>
 #endif
 
 #include <Singular/ipshell.h>
 #include <kernel/mpr_inout.h>
+#include <Singular/Fan.h>
+#include <Singular/Cone.h>
+
+#include <kernel/timer.h>
 
 #ifdef HAVE_PLURAL
   #include <kernel/gring.h>
@@ -212,6 +216,11 @@ int iiOp; /* the current operation*/
 cmdnames cmds[] =
 {  // name-string alias tokval          toktype
   { "$INVALID$",   0, -1,                 0},
+  #ifdef HAVE_FANS
+  { "addadj",      0, ADDADJ_CMD,         CMD_M},
+  { "addmaxcone",  0, ADDMCONE_CMD,       CMD_2},
+  { "adj",         0, ADJACENCY_CMD,      CMD_13},
+  #endif /* HAVE_FANS */
   { "alias",       0, ALIAS_CMD ,         PARAMETER},
   { "and",         0, '&' ,               LOGIC_OP},
   { "attrib",      0, ATTRIB_CMD ,        CMD_123},
@@ -231,6 +240,9 @@ cmdnames cmds[] =
   { "close",       0, CLOSE_CMD ,         CMD_1},
   { "coef",        0, COEF_CMD ,          CMD_M},
   { "coeffs",      0, COEFFS_CMD ,        CMD_23},
+  #ifdef HAVE_FANS
+  { "cone",        0, CONE_CMD,           ROOT_DECL},
+  #endif /* HAVE_FANS */
   { "continue",    0, CONTINUE_CMD ,      CONTINUE_CMD},
   { "contract",    0, CONTRACT_CMD ,      CMD_2},
   { "convhull",    0, NEWTONPOLY_CMD,     CMD_1},
@@ -240,6 +252,9 @@ cmdnames cmds[] =
   { "deg",         0, DEG_CMD ,           CMD_12},
   { "degree",      0, DEGREE_CMD ,        CMD_1},
   { "delete",      0, DELETE_CMD ,        CMD_2},
+  #ifdef HAVE_FANS
+  { "delmaxcone",  0, DELMCONE_CMD,       CMD_12},
+  #endif /* HAVE_FANS */
   { "det",         0, DET_CMD ,           CMD_1},
   { "diff",        0, DIFF_CMD ,          CMD_2},
   { "dim",         0, DIM_CMD ,           CMD_1},
@@ -258,7 +273,13 @@ cmdnames cmds[] =
   { "execute",     0, EXECUTE_CMD ,       CMD_1},
   { "export",      0, EXPORT_CMD ,        EXPORT_CMD},
   { "exportto",    0, EXPORTTO_CMD ,      CMD_2},
+  #ifdef HAVE_FANS
+  { "facetnormals",0, FACETNS_CMD,        CMD_1},
+  #endif /* HAVE_FANS */
   { "factorize",   0, FAC_CMD ,           CMD_12},
+  #ifdef HAVE_FANS
+  { "fan",         0, FAN_CMD,            ROOT_DECL},
+  #endif /* HAVE_FANS */
   { "farey",       0, FAREY_CMD ,         CMD_2},
   { "fetch",       0, FETCH_CMD ,         CMD_2},
   { "fglm",        0, FGLM_CMD ,          CMD_2},
@@ -271,6 +292,9 @@ cmdnames cmds[] =
   { "frwalk",      0, FWALK_CMD ,         CMD_23},
   { "gen",         0, E_CMD ,             CMD_1},
   { "getdump",     0, GETDUMP_CMD,        CMD_1},
+  #ifdef HAVE_FANS
+  { "getprop",     0, GETPROP_CMD,        CMD_2},
+  #endif /* HAVE_FANS */
   { "gcd",         0, GCD_CMD ,           CMD_2},
   { "GCD",         2, GCD_CMD ,           CMD_2},
   { "hilb",        0, HILBERT_CMD ,       CMD_123},
@@ -311,6 +335,9 @@ cmdnames cmds[] =
   { "lift",        0, LIFT_CMD ,          CMD_23},
   { "liftstd",     0, LIFTSTD_CMD ,       CMD_23},
   { "link",        0, LINK_CMD ,          ROOT_DECL},
+  #ifdef HAVE_FANS
+  { "linspace",    0, LINSPACE_CMD,       CMD_1},
+  #endif /* HAVE_FANS */
   { "listvar",     0, LISTVAR_CMD ,       LISTVAR_CMD},
   { "list",        0, LIST_CMD ,          ROOT_DECL_LIST},
   { "load",        0, LOAD_CMD ,          CMD_12},
@@ -321,6 +348,10 @@ cmdnames cmds[] =
   { "map",         0, MAP_CMD ,           RING_DECL},
   { "matrix",      0, MATRIX_CMD ,        MATRIX_CMD},
   { "maxideal",    0, MAXID_CMD ,         CMD_1},
+  #ifdef HAVE_FANS
+  { "maxcone",     0, MAXCONE_CMD,        CMD_12},
+  { "maxrays",     0, MAXRAYS_CMD,        CMD_1},
+  #endif /* HAVE_FANS */
   { "memory",      0, MEMORY_CMD ,        CMD_1},
   { "minbase",     0, MINBASE_CMD ,       CMD_1},
   { "minor",       0, MINOR_CMD ,         CMD_M},
@@ -381,6 +412,7 @@ cmdnames cmds[] =
   { "quote",       0, QUOTE ,             QUOTE},
   { "quotient",    0, QUOTIENT_CMD ,      CMD_2},
   { "random",      0, RANDOM_CMD ,        CMD_23},
+  { "rank",        0, RANK_CMD ,          CMD_12},
   { "read",        0, READ_CMD ,          CMD_12},
   { "reduce",      0, REDUCE_CMD ,        CMD_M},
   { "regularity",  0, REGULARITY_CMD ,    CMD_1},
@@ -393,6 +425,9 @@ cmdnames cmds[] =
   { "ring",        0, RING_CMD ,          RING_CMD},
   { "ringlist",    0, RINGLIST_CMD ,      CMD_1},
   { "rvar",        0, IS_RINGVAR ,        CMD_1},
+  #ifdef HAVE_FANS
+  { "setprop",     0, SETPROP_CMD,        CMD_3},
+  #endif /* HAVE_FANS */
   { "setring",     0, SETRING_CMD ,       SETRING_CMD},
   { "simplex",     0, SIMPLEX_CMD,        CMD_M},
   { "simplify",    0, SIMPLIFY_CMD ,      CMD_2},
@@ -448,7 +483,6 @@ cmdnames cmds[] =
   { "minpoly",     0, VMINPOLY ,          SYSVAR},
   { "multBound",   0, VMAXMULT ,          SYSVAR},
   { "noether",     0, VNOETHER ,          SYSVAR},
-  { "pagelength",  0, VPAGELENGTH ,       SYSVAR},
   { "pagewidth",   0, VCOLMAX ,           SYSVAR},
   { "printlevel",  0, VPRINTLEVEL ,       SYSVAR},
   { "short",       0, VSHORTOUT ,         SYSVAR},
@@ -1754,6 +1788,7 @@ static BOOLEAN jjCALL2MANY(leftv res, leftv u, leftv v)
   // iiExprArithM did the CleanUp
   return r;
 }
+#ifdef HAVE_FACTORY
 static BOOLEAN jjCHINREM_BI(leftv res, leftv u, leftv v)
 {
   if (rField_is_Q())
@@ -1781,6 +1816,7 @@ static BOOLEAN jjCHINREM_BI(leftv res, leftv u, leftv v)
   }
   else return TRUE;
 }
+#endif
 #if 0
 static BOOLEAN jjCHINREM_P(leftv res, leftv u, leftv v)
 {
@@ -1844,6 +1880,7 @@ static BOOLEAN jjCHINREM_P(leftv res, leftv u, leftv v)
   return FALSE;
 }
 #endif
+#ifdef HAVE_FACTORY
 static BOOLEAN jjCHINREM_ID(leftv res, leftv u, leftv v)
 {
   if (rField_is_Q())
@@ -1922,6 +1959,7 @@ static BOOLEAN jjCHINREM_ID(leftv res, leftv u, leftv v)
   }
   else return TRUE;
 }
+#endif
 static BOOLEAN jjCOEF(leftv res, leftv u, leftv v)
 {
   poly p=(poly)v->Data();
@@ -2926,6 +2964,15 @@ static BOOLEAN jjRANDOM(leftv res, leftv u, leftv v)
 #endif /* buildin_rand */
   return FALSE;
 }
+static BOOLEAN jjRANK2(leftv res, leftv u, leftv v)
+{
+  matrix m =(matrix)u->Data();
+  int isRowEchelon = (int)(long)v->Data();
+  if (isRowEchelon != 1) isRowEchelon = 0;
+  int rank = luRank(m, isRowEchelon);
+  res->data =(char *)(long)rank;
+  return FALSE;
+}
 static BOOLEAN jjREAD2(leftv res, leftv u, leftv v)
 {
   si_link l=(si_link)u->Data();
@@ -3185,24 +3232,45 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
 #endif
 static BOOLEAN jjPFAC2(leftv res, leftv u, leftv v)
 {
-  number m = (number)u->Data();
-  int bound = (int)(long)v->Data();
-  number n;
-  if ((u->Typ() == BIGINT_CMD)
-  || ((u->Typ()==NUMBER_CMD) && rField_is_Q()))
+  number n1; number n2; number temp; int i;
+
+  if ((u->Typ() == BIGINT_CMD) ||
+     ((u->Typ() == NUMBER_CMD) && rField_is_Q()))
   {
-    n = nlCopy(m);
+    temp = (number)u->Data();
+    n1 = nlCopy(temp);
+  }
+  else if (u->Typ() == INT_CMD)
+  {
+    i = (int)(long)u->Data();
+    n1 = nlInit(i, NULL);
   }
   else
   {
-    /* then, we expect some other type of number inside m;
-       it needs to be converted to bigint; we do this via 'int' */
-    int i = n_Int(m, currRing);
-    n = nlInit(i, NULL);
+    WerrorS("wrong type: expected int, bigint, or number as 1st argument");
+    return TRUE;
   }
-  lists l = primeFactorisation(n, bound);
-  nlDelete(&n,NULL);
-  res->data=(char*)l;
+
+  if ((v->Typ() == BIGINT_CMD) ||
+     ((v->Typ() == NUMBER_CMD) && rField_is_Q()))
+  {
+    temp = (number)v->Data();
+    n2 = nlCopy(temp);
+  }
+  else if (v->Typ() == INT_CMD)
+  {
+    i = (int)(long)v->Data();
+    n2 = nlInit(i, NULL);
+  }
+  else
+  {
+    WerrorS("wrong type: expected int, bigint, or number as 2nd argument");
+    return TRUE;
+  }
+
+  lists l = primeFactorisation(n1, n2);
+  nlDelete(&n1, NULL); nlDelete(&n2, NULL);
+  res->data = (char*)l;
   return FALSE;
 }
 static BOOLEAN jjRSUM(leftv res, leftv u, leftv v)
@@ -3253,6 +3321,12 @@ static BOOLEAN jjSIMPL_ID(leftv res, leftv u, leftv v)
 static BOOLEAN jjSTATUS2(leftv res, leftv u, leftv v)
 {
   res->data = omStrDup(slStatus((si_link) u->Data(), (char *) v->Data()));
+  return FALSE;
+}
+static BOOLEAN jjSTATUS2L(leftv res, leftv u, leftv v)
+{
+  res->data = (void *)(long)slStatusSsiL((lists) u->Data(), (int)(long) v->Data());
+  //return (res->data== (void*)(long)-2);
   return FALSE;
 }
 static BOOLEAN jjSIMPL_P(leftv res, leftv u, leftv v)
@@ -3387,6 +3461,172 @@ static BOOLEAN jjSTD_1(leftv res, leftv u, leftv v)
   if(!TEST_OPT_DEGBOUND) setFlag(res,FLAG_STD);
   return FALSE;
 }
+#ifdef HAVE_FANS
+static BOOLEAN jjADDMCONE1(leftv res, leftv u, leftv v)
+{
+  /* method for adding a maximal cone in the given fan;
+     valid parametrizations: (fan, cone),
+     Errors will be invoked in the following cases:
+     - the cone has been generated in the context of a
+       fan which is different from the given one */
+  Fan* f = (Fan*)u->Data();
+  Cone* c = (Cone*)v->Data();
+  if (! f->addMaxCone(c))
+  {
+    WerrorS("cone references a fan which is different from the 1st argument");
+    return TRUE;
+  }
+  else return FALSE;
+}
+static BOOLEAN jjADDMCONE2(leftv res, leftv u, leftv v)
+{
+  /* method for adding numerous maximal cones in the given fan;
+     valid parametrizations: (fan, list),
+     where the list entries are expected to be cones;
+     Errors will be invoked in the following cases:
+     - one of the cones has been generated in the context
+       of a fan which is different from the given one */
+  Fan* f = (Fan*)u->Data();
+  lists L = (lists)v->Data();
+  int index = f->addMaxCones(L);
+  if (index != 0)
+  {
+    Werror("cone at position %d references a fan which %s",
+           index, "is different from the 1st argument");
+    return TRUE;
+  }
+  else return FALSE;
+}
+static BOOLEAN jjDELMCONE2(leftv res, leftv u, leftv v)
+{
+  /* method for deleting a maximal cone from the given fan;
+     valid parametrizations: (fan, int),
+     Errors will be invoked in the following cases:
+     - the given index is out of range [1..m], where m is
+       the number of maximal cones in the given fan */
+  Fan* f = (Fan*)u->Data();
+  int index = (int)(long)v->Data();
+  if (! f->deleteMaxCone(index))
+  {
+    Werror("cone index %d out of range [1..%d]; no cone deleted",
+           index, f->getMaxCones()->nr + 1);
+    return TRUE;
+  }
+  else return FALSE;
+}
+static BOOLEAN jjDELMCONE3(leftv res, leftv u, leftv v)
+{
+  /* method for deleting numerous maximal cones from the
+     given fan;
+     valid parametrizations: (fan, intvec),
+     Errors will be invoked in the following cases:
+     - one of the given indices is out of range [1..m],
+       where m is the number of maximal cones in the given
+       fan;
+     The method does not check that the given indices are
+     mutually distinct. */
+  Fan* f = (Fan*)u->Data();
+  intvec* indices = (intvec*)v->Data();
+  int result = f->deleteMaxCones(indices);
+  if (result != 0)
+  {
+    Werror("cone index %d at position %d out of range [1..%d]; %s",
+           (*indices)[result - 1], result, f->getMaxCones()->nr + 1,
+           "no cone deleted");
+    return TRUE;
+  }
+  else return FALSE;
+}
+static BOOLEAN jjMAXCONE2(leftv res, leftv u, leftv v)
+{
+  /* method for retrieving a maximal cone of the given fan;
+     valid parametrizations: (fan, int),
+     Errors will be invoked in the following cases:
+     - maximal cones not yet set in the fan,
+     - maximal cone index invalid;
+     The method returns an object of type cone. */
+  Fan* f = (Fan*)u->Data();
+  int index = (int)(long)v->Data();
+  lists maxCones = f->getMaxCones();
+  if (maxCones == NULL)
+  {
+    WerrorS("no maximal cones set in the given fan");
+    return TRUE;
+  }
+  else if ((index < 1) || (maxCones->nr + 1 < index))
+  {
+    Werror("invalid cone index %d", index);
+    return TRUE;
+  }
+  res->data = (char*)new Cone(*(Cone*)(maxCones->m[index - 1].data));
+  return FALSE;
+}
+static BOOLEAN jjGETPROP1(leftv res, leftv u, leftv v)
+{
+  /* method for retrieving fan properties;
+     valid parametrizations: (fan, string),
+     Errors will be invoked in the following cases:
+     - fan has so far only been instantiated by "fan f;",
+     - string is neither of 'ambientdim', 'dim', 'complete',
+       'simplicial', 'pure' */
+  Fan* f = (Fan*)u->Data();
+  char* prop = (char*)v->Data();
+  int result;
+
+  if (f->getLinSpace() == NULL)
+  {
+    WerrorS("the given fan has no properties yet (freshly instantiated)");
+    return TRUE;
+  }
+
+  if      (strcmp(prop, "ambientdim") == 0)
+    result = f->getAmbientDim();
+  else if (strcmp(prop, "dim")        == 0)
+    result = f->getDim();
+  else if (strcmp(prop, "complete")   == 0)
+    result = f->getComplete();
+  else if (strcmp(prop, "simplicial") == 0)
+    result = f->getSimplicial();
+  else if (strcmp(prop, "pure")       == 0)
+    result = f->getPure();
+  else
+  {
+    Werror("unexpected fan property '%s'", prop);
+    return TRUE;
+  }
+
+  res->data = (void*)result;
+  return FALSE;
+}
+static BOOLEAN jjGETPROP2(leftv res, leftv u, leftv v)
+{
+  /* method for retrieving cone properties;
+     valid parametrizations: (cone, string),
+     Errors will be invoked in the following cases:
+     - cone has so far only been instantiated by "cone c;",
+     - string is not 'dim' */
+  Cone* c = (Cone*)u->Data();
+  char* prop = (char*)v->Data();
+  int result;
+
+  if (c->getFan() == NULL)
+  {
+    WerrorS("the given cone has no properties yet (freshly instantiated)");
+    return TRUE;
+  }
+
+  if (strcmp(prop, "dim") == 0)
+    result = c->getDim();
+  else
+  {
+    Werror("unexpected cone property '%s'", prop);
+    return TRUE;
+  }
+
+  res->data = (void*)result;
+  return FALSE;
+}
+#endif /* HAVE_FANS */
 static BOOLEAN jjVARSTR2(leftv res, leftv u, leftv v)
 {
   idhdl h=(idhdl)u->data;
@@ -3604,10 +3844,14 @@ struct sValCmd2 dArith2[]=
 #ifdef HAVE_PLURAL
 ,{jjBRACKET,   BRACKET_CMD,    POLY_CMD,       POLY_CMD,   POLY_CMD, ALLOW_PLURAL | NO_RING}
 #endif
+#ifdef HAVE_FACTORY
 ,{jjCHINREM_BI,CHINREM_CMD,    BIGINT_CMD,     INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
 //,{jjCHINREM_P, CHINREM_CMD,    POLY_CMD,       LIST_CMD,   INTVEC_CMD, ALLOW_PLURAL}
 ,{jjCHINREM_ID,CHINREM_CMD,    ANY_TYPE/*set by p*/,LIST_CMD,INTVEC_CMD, ALLOW_PLURAL |NO_RING}
 ,{jjCHINREM_ID,CHINREM_CMD,    ANY_TYPE/*set by p*/,LIST_CMD,LIST_CMD, ALLOW_PLURAL |NO_RING}
+#else
+,{jjWRONG2,    CHINREM_CMD,    BIGINT_CMD,     INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
+#endif
 ,{jjCOEF,      COEF_CMD,       MATRIX_CMD,     POLY_CMD,   POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjCOEFFS_Id, COEFFS_CMD,     MATRIX_CMD,     IDEAL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjCOEFFS_Id, COEFFS_CMD,     MATRIX_CMD,     MODUL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
@@ -3719,8 +3963,10 @@ struct sValCmd2 dArith2[]=
 ,{jjRES,       MRES_CMD,       RESOLUTION_CMD, IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjRES,       MRES_CMD,       RESOLUTION_CMD, MODUL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 //,{nuMPResMat,  MPRES_CMD,      MODUL_CMD,      IDEAL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
-,{jjPFAC2,     PFAC_CMD,       LIST_CMD,       BIGINT_CMD, INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjPFAC2,     PFAC_CMD,       LIST_CMD,       NUMBER_CMD, INT_CMD, ALLOW_PLURAL |ALLOW_RING}
+,{jjPFAC2,     PFAC_CMD,       LIST_CMD,       BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL |ALLOW_RING}
+,{jjPFAC2,     PFAC_CMD,       LIST_CMD,       NUMBER_CMD, BIGINT_CMD, ALLOW_PLURAL |ALLOW_RING}
+,{jjPFAC2,     PFAC_CMD,       LIST_CMD,       BIGINT_CMD, NUMBER_CMD, ALLOW_PLURAL |ALLOW_RING}
+,{jjPFAC2,     PFAC_CMD,       LIST_CMD,       NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL |ALLOW_RING}
 #ifdef HAVE_PLURAL
 ,{jjPlural_num_poly, NCALGEBRA_CMD,NONE,       POLY_CMD,   POLY_CMD  , NO_PLURAL |NO_RING}
 ,{jjPlural_num_mat,  NCALGEBRA_CMD,NONE,       POLY_CMD,   MATRIX_CMD, NO_PLURAL |NO_RING}
@@ -3742,6 +3988,7 @@ struct sValCmd2 dArith2[]=
 ,{jjQUOT,      QUOTIENT_CMD,   MODUL_CMD,      MODUL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjQUOT,      QUOTIENT_CMD,   IDEAL_CMD,      MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjRANDOM,    RANDOM_CMD,     INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
+,{jjRANK2,     RANK_CMD,       INT_CMD,        MATRIX_CMD, INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjREAD2,     READ_CMD,       STRING_CMD,     LINK_CMD,   STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjREDUCE_P,  REDUCE_CMD,     POLY_CMD,       POLY_CMD,   IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjREDUCE_P,  REDUCE_CMD,     VECTOR_CMD,     VECTOR_CMD, IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
@@ -3754,6 +4001,7 @@ struct sValCmd2 dArith2[]=
 ,{jjRES,       RES_CMD,        RESOLUTION_CMD, IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjRES,       RES_CMD,        RESOLUTION_CMD, MODUL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjSTATUS2,   STATUS_CMD,     STRING_CMD,     LINK_CMD,   STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
+,{jjSTATUS2L,  STATUS_CMD,     INT_CMD,        LIST_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjSIMPL_P,   SIMPLIFY_CMD,   POLY_CMD,       POLY_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjSIMPL_P,   SIMPLIFY_CMD,   VECTOR_CMD,     VECTOR_CMD, INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjSIMPL_ID,  SIMPLIFY_CMD,   IDEAL_CMD,      IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
@@ -3772,6 +4020,15 @@ struct sValCmd2 dArith2[]=
 ,{jjVARSTR2,   VARSTR_CMD,     STRING_CMD,     RING_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjVARSTR2,   VARSTR_CMD,     STRING_CMD,     QRING_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
 ,{jjWEDGE,     WEDGE_CMD,      MATRIX_CMD,     MATRIX_CMD, INT_CMD, NO_PLURAL |ALLOW_RING}
+#ifdef HAVE_FANS
+,{jjADDMCONE1, ADDMCONE_CMD,   NONE,           FAN_CMD,    CONE_CMD, ALLOW_PLURAL | ALLOW_RING}
+,{jjADDMCONE2, ADDMCONE_CMD,   NONE,           FAN_CMD,    LIST_CMD, ALLOW_PLURAL | ALLOW_RING}
+,{jjDELMCONE2, DELMCONE_CMD,   NONE,           FAN_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
+,{jjDELMCONE3, DELMCONE_CMD,   NONE,           FAN_CMD,    INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
+,{jjMAXCONE2,  MAXCONE_CMD,    CONE_CMD,       FAN_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
+,{jjGETPROP1,  GETPROP_CMD,    INT_CMD,        FAN_CMD,    STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
+,{jjGETPROP2,  GETPROP_CMD,    INT_CMD,        CONE_CMD,   STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
+#endif /* HAVE_FANS */
 ,{NULL,        0,              0,              0,          0, NO_PLURAL |NO_RING}
 };
 /*=================== operations with 1 arg.: static proc =================*/
@@ -4512,10 +4769,12 @@ static number jjLONG2N(long d)
 #endif
 static BOOLEAN jjPFAC1(leftv res, leftv v)
 {
+  /* call method jjPFAC2 with second argument = 0 (meaning that no
+     valid bound for the prime factors has been given) */
   sleftv tmp;
-  memset(&tmp,0,sizeof(tmp));
-  tmp.rtyp=INT_CMD;
-  return jjPFAC2(res,v,&tmp);
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.rtyp = INT_CMD;
+  return jjPFAC2(res, v, &tmp);
 }
 static BOOLEAN jjLU_DECOMP(leftv res, leftv v)
 {
@@ -4798,6 +5057,13 @@ static BOOLEAN jjRESERVEDNAME(leftv res, leftv v)
   //res->data = (char *)0;
   return FALSE;
 }
+static BOOLEAN jjRANK1(leftv res, leftv v)
+{
+  matrix m =(matrix)v->Data();
+  int rank = luRank(m, 0);
+  res->data =(char *)(long)rank;
+  return FALSE;
+}
 static BOOLEAN jjREAD(leftv res, leftv v)
 {
   return jjREAD2(res,v,NULL);
@@ -5050,28 +5316,32 @@ static BOOLEAN jjTYPEOF(leftv res, leftv v)
 {
   switch ((int)(long)v->data)
   {
-    case INT_CMD:     res->data=omStrDup("int"); break;
-    case POLY_CMD:   res->data=omStrDup("poly"); break;
-    case VECTOR_CMD:  res->data=omStrDup("vector"); break;
-    case STRING_CMD:  res->data=omStrDup("string"); break;
-    case INTVEC_CMD:  res->data=omStrDup("intvec"); break;
-    case IDEAL_CMD:   res->data=omStrDup("ideal"); break;
-    case MATRIX_CMD: res->data=omStrDup("matrix"); break;
-    case MODUL_CMD:   res->data=omStrDup("module"); break;
-    case MAP_CMD:     res->data=omStrDup("map"); break;
-    case PROC_CMD:    res->data=omStrDup("proc"); break;
-    case RING_CMD:    res->data=omStrDup("ring"); break;
-    case QRING_CMD:   res->data=omStrDup("qring"); break;
-    case INTMAT_CMD:  res->data=omStrDup("intmat"); break;
-    case NUMBER_CMD:  res->data=omStrDup("number"); break;
-    case BIGINT_CMD:  res->data=omStrDup("bigint"); break;
-    case LIST_CMD:   res->data=omStrDup("list"); break;
-    case PACKAGE_CMD: res->data=omStrDup("package"); break;
-    case LINK_CMD:   res->data=omStrDup("link"); break;
-    case RESOLUTION_CMD:res->data=omStrDup("resolution");break;
+    case INT_CMD:        res->data=omStrDup("int"); break;
+    case POLY_CMD:       res->data=omStrDup("poly"); break;
+    case VECTOR_CMD:     res->data=omStrDup("vector"); break;
+    case STRING_CMD:     res->data=omStrDup("string"); break;
+    case INTVEC_CMD:     res->data=omStrDup("intvec"); break;
+    case IDEAL_CMD:      res->data=omStrDup("ideal"); break;
+    case MATRIX_CMD:     res->data=omStrDup("matrix"); break;
+    case MODUL_CMD:      res->data=omStrDup("module"); break;
+    case MAP_CMD:        res->data=omStrDup("map"); break;
+    case PROC_CMD:       res->data=omStrDup("proc"); break;
+    case RING_CMD:       res->data=omStrDup("ring"); break;
+    case QRING_CMD:      res->data=omStrDup("qring"); break;
+    case INTMAT_CMD:     res->data=omStrDup("intmat"); break;
+    case NUMBER_CMD:     res->data=omStrDup("number"); break;
+    case BIGINT_CMD:     res->data=omStrDup("bigint"); break;
+    case LIST_CMD:       res->data=omStrDup("list"); break;
+    case PACKAGE_CMD:    res->data=omStrDup("package"); break;
+    case LINK_CMD:       res->data=omStrDup("link"); break;
+    case RESOLUTION_CMD: res->data=omStrDup("resolution");break;
+#ifdef HAVE_FANS
+    case FAN_CMD:        res->data=omStrDup("fan");break;
+    case CONE_CMD:       res->data=omStrDup("cone");break;
+#endif /* HAVE_FANS */
     case DEF_CMD:
-    case NONE:    res->data=omStrDup("none"); break;
-    default:       res->data=omStrDup("?unknown type?");
+    case NONE:           res->data=omStrDup("none"); break;
+    default:             res->data=omStrDup("?unknown type?");
   }
   return FALSE;
 }
@@ -5120,7 +5390,151 @@ static BOOLEAN jjVDIM(leftv res, leftv v)
   res->data = (char *)(long)scMult0Int((ideal)v->Data(),currQuotient);
   return FALSE;
 }
-
+#ifdef HAVE_FANS
+static BOOLEAN jjDELMCONE1(leftv res, leftv v)
+{
+  /* method for deleting all maximal cones of the given fan;
+     valid parametrizations: (fan) */
+  Fan* f = (Fan*)v->Data();
+  f->deleteMaxCones(NULL);
+  return FALSE;
+}
+static BOOLEAN jjMAXRAYS1(leftv res, leftv v)
+{
+  /* method for retrieving all maximal rays of the given fan;
+     valid parametrizations: (fan),
+     If there are no maximal rays, the method returns a 1x1
+     matrix with entry 0. Otherwise the returned matrix contains
+     the maximal rays as column vectors. */
+  Fan* f = (Fan*)v->Data();
+  intvec* result = NULL;
+  if (f->getMaxRays() == NULL)
+    /* return a 1x1 matrix with sole entry zero */
+    result = new intvec(1, 1, 0);
+  else
+    result = ivCopy(f->getMaxRays());
+  res->data = (char*)result;
+  return FALSE;
+}
+static BOOLEAN jjMAXRAYS2(leftv res, leftv v)
+{
+  /* method for retrieving all maximal rays of the given cone;
+     valid parametrizations: (cone),
+     If there are no maximal rays, the method returns a 1x1
+     matrix with entry 0. Otherwise the returned matrix contains
+     the maximal rays as column vectors. */
+  Cone* c = (Cone*)v->Data();
+  intvec* result = NULL;
+  if (c->getRays() == NULL)
+    /* return a 1x1 matrix with sole entry zero */
+    result = new intvec(1, 1, 0);
+  else
+  {
+    intvec* indices = c->getRays();
+    intvec* maxRays = c->getFan()->getMaxRays();
+    result = new intvec(maxRays->rows(), indices->length(), 0);
+    for (int c = 1; c <= indices->length(); c++)
+      for (int r = 1; r <= maxRays->rows(); r++)
+      {
+        IMATELEM(*result, r, c) = IMATELEM(*maxRays, r, (*indices)[c - 1]);
+      }
+  }
+  res->data = (char*)result;
+  return FALSE;
+}
+static BOOLEAN jjFACETNS1(leftv res, leftv v)
+{
+  /* method for retrieving the facet normals of the given fan;
+     valid parametrizations: (fan),
+     If there are no facet normals, a 1x1 matrix with entry 0
+     is returned; otherwise a matrix the columns of which are
+     the facet normals of the given fan. */
+  Fan* f = (Fan*)v->Data();
+  intvec* result = NULL;
+  if (f->getFacetNs() == NULL)
+    /* return a 1x1 matrix with sole entry zero */
+    result = new intvec(1, 1, 0);
+  else
+    result = ivCopy(f->getFacetNs());
+  res->data = (char*)result;
+  return FALSE;
+}
+static BOOLEAN jjFACETNS2(leftv res, leftv v)
+{
+  /* method for retrieving the facet normals of the given cone;
+     valid parametrizations: (fan),
+     If there are no facet normals, a 1x1 matrix with entry 0
+     is returned; otherwise a matrix the columns of which are
+     the facet normals of the given cone. */
+  Cone* c = (Cone*)v->Data();
+  intvec* result = NULL;
+  if (c->getFacetNs() == NULL)
+    /* return a 1x1 matrix with sole entry zero */
+    result = new intvec(1, 1, 0);
+  else
+  {
+    intvec* indices = c->getFacetNs();
+    intvec* facetNs = c->getFan()->getFacetNs();
+    result = new intvec(facetNs->rows(), indices->length(), 0);
+    for (int c = 1; c <= indices->length(); c++)
+      for (int r = 1; r <= facetNs->rows(); r++)
+      {
+        IMATELEM(*result, r, c) = IMATELEM(*facetNs, r, (*indices)[c - 1]);
+      }
+  }
+  res->data = (char*)result;
+  return FALSE;
+}
+static BOOLEAN jjLINSPACE(leftv res, leftv v)
+{
+  /* method for retrieving the lineality space of the given fan;
+     valid parametrizations: (fan) */
+  Fan* f = (Fan*)v->Data();
+  intvec* result = ivCopy(f->getLinSpace());
+  res->data = (char*)result;
+  return FALSE;
+}
+static BOOLEAN jjMAXCONE1(leftv res, leftv v)
+{
+  /* method for retrieving all maximal cones of the given fan;
+     valid parametrizations: (fan),
+     Errors will be invoked in the following cases:
+     - maximal cones not yet set in the fan;
+     The method returns a list of cone objects. */
+  Fan* f = (Fan*)v->Data();
+  lists maxCones = lCopy(f->getMaxCones());
+  if (maxCones == NULL)
+  {
+    WerrorS("no maximal cones set in the given fan");
+    return TRUE;
+  }
+  res->data = (char*)maxCones;
+  return FALSE;
+}
+static BOOLEAN jjADJACENCY1(leftv res, leftv v)
+{
+  /* method for retrieving the adjacency matrix of the given fan;
+     valid parametrizations: (fan),
+     Errors will be invoked in the following cases:
+     - no maximal cone has been defined yet in the given fan;
+     The matrix entries have the following meaning:
+     _[i, j] =  0: the maximal cones with indices i and j are
+                   not adjacent,
+             =  1: they are adjacent, and the intersection facet
+                   has been stored in the given fan,
+             = -1: they are adjacent but there is no intersection
+                   facet available */
+  Fan* f = (Fan*)v->Data();
+  if (f->getMaxCones()->nr + 1 < 1)
+  {
+    WerrorS("no maximal cones defined yet");
+    return TRUE;
+  }
+  intvec* adjacencyMatrix = f->getAdjacency();
+  res->data = (char*)adjacencyMatrix;
+  return FALSE;
+}
+#endif /* HAVE_FANS */
 static BOOLEAN jjLOAD1(leftv res, leftv v)
 {
   return jjLOAD(res, v,iiOp==LIB_CMD);
@@ -5602,6 +6016,7 @@ struct sValCmd1 dArith1[]=
 ,{kQHWeight,    QHWEIGHT_CMD,    INTVEC_CMD,     IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{kQHWeight,    QHWEIGHT_CMD,    INTVEC_CMD,     MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{jjWRONG,      QRING_CMD,       0,              ANY_TYPE      , ALLOW_PLURAL |ALLOW_RING}
+,{jjRANK1,      RANK_CMD,        INT_CMD,        MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{jjREAD,       READ_CMD,        STRING_CMD,     LINK_CMD      , ALLOW_PLURAL |ALLOW_RING}
 ,{jjREGULARITY, REGULARITY_CMD,  INT_CMD,        LIST_CMD      , NO_PLURAL |ALLOW_RING}
 ,{jjREPART,     REPART_CMD,      NUMBER_CMD,     NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
@@ -5618,12 +6033,16 @@ struct sValCmd1 dArith1[]=
 ,{jjROWS,       ROWS_CMD,        INT_CMD,        MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{jjROWS_IV,    ROWS_CMD,        INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{jjCOUNT_IV,   ROWS_CMD,        INT_CMD,        INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjF5C,        F5C_CMD,         IDEAL_CMD,      IDEAL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjSLIM_GB,    SLIM_GB_CMD,     IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjSLIM_GB,    SLIM_GB_CMD,     MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
+,{,{jjF5C,        F5C_CMD,         IDEAL_CMD,      IDEAL_CMD     , NO_PLURAL |ALLOW_RING}
+,{jjSLIM_GB,    SLIM_GB_CMD,     IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL }
+,{jjSLIM_GB,    SLIM_GB_CMD,     MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL }
 ,{jjSort_Id,    SORTVEC_CMD,     INTVEC_CMD,     IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{jjSort_Id,    SORTVEC_CMD,     INTVEC_CMD,     MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
+#ifdef HAVE_FACTORY
 ,{jjSQR_FREE,   SQR_FREE_CMD,    IDEAL_CMD,      POLY_CMD      , NO_PLURAL |ALLOW_RING}
+#else
+,{jjWRONG,      SQR_FREE_CMD,    IDEAL_CMD,      POLY_CMD      , NO_PLURAL |ALLOW_RING}
+#endif
 ,{jjSTD,        STD_CMD,         IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{jjSTD,        STD_CMD,         MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{jjDUMMY,      STRING_CMD,      STRING_CMD,     STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
@@ -5661,6 +6080,16 @@ struct sValCmd1 dArith1[]=
 ,{kWeight,      WEIGHT_CMD,      INTVEC_CMD,     MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
 ,{jjLOAD1,      LOAD_CMD,        NONE,           STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
 ,{loNewtonP,    NEWTONPOLY_CMD,  IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
+#ifdef HAVE_FANS
+,{jjDELMCONE1,  DELMCONE_CMD,    NONE,           FAN_CMD       , ALLOW_PLURAL |ALLOW_RING}
+,{jjMAXRAYS1,   MAXRAYS_CMD,     INTMAT_CMD,     FAN_CMD       , ALLOW_PLURAL |ALLOW_RING}
+,{jjMAXRAYS2,   MAXRAYS_CMD,     INTMAT_CMD,     CONE_CMD      , ALLOW_PLURAL |ALLOW_RING}
+,{jjFACETNS1,   FACETNS_CMD,     INTMAT_CMD,     FAN_CMD       , ALLOW_PLURAL |ALLOW_RING}
+,{jjFACETNS2,   FACETNS_CMD,     INTMAT_CMD,     CONE_CMD      , ALLOW_PLURAL |ALLOW_RING}
+,{jjLINSPACE,   LINSPACE_CMD,    INTMAT_CMD,     FAN_CMD       , ALLOW_PLURAL |ALLOW_RING}
+,{jjMAXCONE1,   MAXCONE_CMD,     LIST_CMD,       FAN_CMD       , ALLOW_PLURAL |ALLOW_RING}
+,{jjADJACENCY1, ADJACENCY_CMD,   INTMAT_CMD,     FAN_CMD       , ALLOW_PLURAL |ALLOW_RING}
+#endif /* HAVE_FANS */
 ,{NULL,         0,               0,              0             , NO_PLURAL |NO_RING}
 };
 /*=================== operations with 3 args.: static proc =================*/
@@ -6673,6 +7102,109 @@ static BOOLEAN jjSTATUS3(leftv res, leftv u, leftv v, leftv w)
   res->data = (void *)(long)yes;
   return FALSE;
 }
+#ifdef HAVE_FANS
+static BOOLEAN jjSETPROP1(leftv res, leftv u, leftv v, leftv w)
+{
+  /* method for setting fan properties;
+     valid parametrizations: (fan, string, int),
+     Errors will be invoked in the following cases:
+     - string is neither of 'dim', 'complete', 'simplicial',
+       and 'pure';
+     A value 0 means that the property is not fulfilled.
+     1 means it is. -1 means that the answer is unknown.
+     Any value other than 0 and 1 will be converted to -1;
+     except for dim: Here, only negative values will be converted
+     to -1. */
+  Fan* f = (Fan*)u->Data();
+  char* prop = (char*)v->Data();
+  int value = (int)(long)w->Data();
+
+  if      (strcmp(prop, "ambientdim") == 0)
+  {
+    Werror("ambient dimension of a fan cannot be set (implicitely given)");
+    return TRUE;
+  }
+  else if (strcmp(prop, "dim")        == 0)
+    f->setDim(value);
+  else if (strcmp(prop, "complete")   == 0)
+    f->setComplete(value);
+  else if (strcmp(prop, "simplicial") == 0)
+    f->setSimplicial(value);
+  else if (strcmp(prop, "pure")       == 0)
+    f->setPure(value);
+  else
+  {
+    Werror("unexpected fan property '%s'", prop);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+static BOOLEAN jjSETPROP2(leftv res, leftv u, leftv v, leftv w)
+{
+  /* method for setting cone properties;
+     valid parametrizations: (fan, string, int),
+     Errors will be invoked in the following cases:
+     - string is not 'dim';
+     Any negative value will be converted to -1 signaling
+     that the dim is unknown. */
+  Cone* c = (Cone*)u->Data();
+  char* prop = (char*)v->Data();
+  int value = (int)(long)w->Data();
+
+  if (strcmp(prop, "dim") == 0)
+    c->setDim(value);
+  else
+  {
+    Werror("unexpected cone property '%s'", prop);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+static BOOLEAN jjADJACENCY2(leftv res, leftv u, leftv v, leftv w)
+{
+  /* method for retrieving the adjacency information concerning
+     two maximal cones of the given fan;
+     valid parametrizations: (fan, int, int),
+     Errors will be invoked in the following cases:
+     - a maximal cone index is out of range [1..m],
+       where m is the number of maximal cones in the given fan,
+     - the two specified maximal cones are not adjacent,
+     - the two specified maximal cones are adjacent but the
+       intersection facet has not been stored in the fan */
+  Fan* f = (Fan*)u->Data();
+  int maxCone1 = (int)(long)v->Data();
+  int maxCone2 = (int)(long)w->Data();
+  int nMaxCones = f->getMaxCones()->nr + 1;
+  if ((maxCone1 < 1) || (nMaxCones < maxCone1))
+  {
+    Werror("1st index %d out of range [1..%d]",
+           maxCone1, nMaxCones);
+    return TRUE;
+  }
+  if ((maxCone2 < 1) || (nMaxCones < maxCone2))
+  {
+    Werror("2nd index %d out of range [1..%d]",
+           maxCone2, nMaxCones);
+    return TRUE;
+  }
+  Cone* result = (Cone*)f->getAdjacencyFacet(maxCone1, maxCone2);
+  if (result->isNoAdj())
+  {
+    WerrorS("specified cones are not adjacent");
+    return TRUE;
+  }
+  if (result->isNoFacet())
+  {
+    Werror("specified cones are adjacent, %s",
+           "but there is no facet information available");
+    return TRUE;
+  }
+  res->data = (char*)result;
+  return FALSE;
+}
+#endif /* HAVE_FANS */
 static BOOLEAN jjSTD_HILB_W(leftv res, leftv u, leftv v, leftv w)
 {
   intvec *vw=(intvec *)w->Data(); // weights of vars
@@ -6814,6 +7346,11 @@ struct sValCmd3 dArith3[]=
 ,{jjCALL3MANY,      SYSTEM_CMD, NONE,       STRING_CMD, DEF_CMD,    DEF_CMD  , ALLOW_PLURAL |ALLOW_RING}
 ,{nuLagSolve,       LAGSOLVE_CMD,LIST_CMD,  POLY_CMD,   INT_CMD,    INT_CMD  , NO_PLURAL |NO_RING}
 ,{nuVanderSys,      VANDER_CMD, POLY_CMD,   IDEAL_CMD,  IDEAL_CMD,  INT_CMD  , NO_PLURAL |NO_RING}
+#ifdef HAVE_FANS
+,{jjSETPROP1,       SETPROP_CMD,NONE,       FAN_CMD,    STRING_CMD, INT_CMD  , NO_PLURAL |NO_RING}
+,{jjSETPROP2,       SETPROP_CMD,NONE,       CONE_CMD,   STRING_CMD, INT_CMD  , NO_PLURAL |NO_RING}
+,{jjADJACENCY2,     ADJACENCY_CMD,CONE_CMD, FAN_CMD,    INT_CMD,    INT_CMD  , NO_PLURAL |NO_RING}
+#endif /* HAVE_FANS */
 ,{NULL,             0,          0,          0,          0,          0        , NO_PLURAL |NO_RING}
 };
 /*=================== operations with many arg.: static proc =================*/
@@ -7296,6 +7833,128 @@ static BOOLEAN jjLU_SOLVE(leftv res, leftv v)
   res->data=(char*)ll;
   return FALSE;
 }
+#ifdef HAVE_FANS
+static BOOLEAN jjADDADJ(leftv res, leftv v)
+{
+  /* method for adding one or more adjacencies between pairs of
+     maximal cones of the given fan;
+     valid parametrizations: (fan, int, int, cone),
+                             (fan, int, int, 0), or
+                             (fan, intvec, intvec, list),
+     where in the latter case, the list entries must either be
+     of type Cone* or the integer zero;
+     Errors will be invoked in the following cases:
+     - we have none of the above parametrizations,
+     - intvecs and list have different lengths,
+     - int's resp. intvec entries are out of range [1..m], where
+       m is the number of maximal cones in the given fan,
+     - int's are equal resp. intvec entries at same positions
+       are equal */
+  if ((v == NULL) || (v->next == NULL) ||
+      (v->next->next == NULL) || (v->next->next->next == NULL) ||
+      (v->next->next->next->next != NULL))
+  {
+    WerrorS("expected exactly four arguments as input");
+    return TRUE;
+  }
+  Fan* f = NULL;
+  int i; intvec* iv;
+  int j; intvec* jv;
+  Cone* c = NULL; lists L;
+  leftv x = v; bool listCase = false;
+  if (x->Typ() == FAN_CMD)
+    f = (Fan*)x->Data();
+  else
+  {
+    WerrorS("expected fan as 1st argument");
+    return TRUE;
+  }
+  x = x->next;
+  if      (x->Typ() == INT_CMD)
+    i = (int)(long)x->Data();
+  else if (x->Typ() == INTVEC_CMD)
+  {
+    iv = (intvec*)x->Data(); listCase = true;
+  }
+  else
+  {
+    WerrorS("expected int or intvec as 2nd argument");
+    return TRUE;
+  }
+  x = x->next;
+  if (listCase)
+  {
+    if ((x->Typ() != INTVEC_CMD) || ((x->next->Typ() != LIST_CMD)))
+    {
+      Werror("expected (fan, int, int, cone/0) %s",
+             "or (fan, intvec, intvec, list)");
+      return TRUE;
+    }
+    else jv = (intvec*)x->Data();
+    x = x->next;
+    L = (lists)x->Data();
+  }
+  else
+  {
+    if ((x->Typ() != INT_CMD) ||
+        ((x->next->Typ() != CONE_CMD) && (x->next->Typ() != INT_CMD)))
+    {
+      Werror("expected (fan, int, int, cone/0) %s",
+             "or (fan, intvec, intvec, list)");
+      return TRUE;
+    }
+    else j = (int)(long)x->Data();
+    x = x->next;
+    if ((x->Typ() == INT_CMD) && ((int)(long)x->Data() != 0))
+    {
+      WerrorS("expected (fan, int, int, cone/0)");
+      return TRUE;
+    }
+    if (x->Typ() != INT_CMD) c = (Cone*)x->Data();
+  }
+  int n = f->getMaxCones()->nr + 1;
+  if (!listCase)
+  {
+    if ((i < 1) || (n < i))
+    { Werror("2nd argument %d out of range [1..%d]", i, n); }
+    if ((j < 1) || (n < j))
+    { Werror("3rd argument %d out of range [1..%d]", j, n); }
+    if (i == j)
+    { WerrorS("2nd and 3rd argument are equal"); }
+    f->addAdjacency(i, j, c);
+  }
+  else
+  {
+    if (iv->length() != jv->length())
+      WerrorS("2nd and 3rd argument have different lengths");
+    if (iv->length() != L->nr + 1)
+      WerrorS("2nd and 4th argument have different lengths");
+    for (i = 0; i < iv->length(); i++)
+    {
+      if (((*iv)[i] < 1) || (n < (*iv)[i]))
+        Werror("index %d at position %d in 2nd argument out of range [1..%d]",
+               (*iv)[i], i + 1, n);
+    }
+    for (j = 0; j < jv->length(); j++)
+    {
+      if (((*jv)[j] < 1) || (n < (*jv)[j]))
+        Werror("index %d at position %d in 3rd argument out of range [1..%d]",
+               (*jv)[j], j + 1, n);
+      if ((*iv)[j] == (*jv)[j])
+        Werror("indices in 2nd and 3rd argument at position %d equal", j + 1);
+    }
+    for (i = 0; i < L->nr + 1; i++)
+    {
+      if ((L->m[i].Typ() != CONE_CMD) &&
+          ((L->m[i].Typ() != INT_CMD) || ((int)(long)L->m[i].Data() != 0)))
+        Werror("entry at position %d in 4th argument neither cone nor int 0",
+               i + 1);
+    }
+    f->addAdjacencies(iv, jv, L);
+  }
+  return FALSE;
+}
+#endif /* HAVE_FANS */
 static BOOLEAN jjINTVEC_PL(leftv res, leftv v)
 {
   int i=0;
@@ -7808,6 +8467,9 @@ struct sValCmdM dArithM[]=
 ,{jjCALL2ARG,  STD_CMD,         IDEAL_CMD,           2      , ALLOW_PLURAL |ALLOW_RING}
 ,{jjCALL3ARG,  STD_CMD,         IDEAL_CMD,           3      , NO_PLURAL |ALLOW_RING}
 ,{jjSTD_HILB_WP, STD_CMD,       IDEAL_CMD,           4      , NO_PLURAL |ALLOW_RING}
+#ifdef HAVE_FANS
+,{jjADDADJ,    ADDADJ_CMD,      NONE,               -2      , NO_PLURAL |NO_RING}
+#endif /* HAVE_FANS */
 ,{NULL,        0,               0,                   0      , NO_PLURAL |NO_RING}
 };
 #ifdef MDEBUG
@@ -8422,7 +9084,7 @@ void ttGen4()
 }
 /*-------------------------------------------------------------------*/
 #else
-#include <Singular/iparith.inc>
+#include <iparith.inc>
 #endif
 
 /*=================== operations with 2 args. ============================*/
