@@ -1050,7 +1050,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
     pWrite( sp );
     pTest(sp);
 #endif
-    sp = currReduction( sp, &temp, rewRulesLast, gCurr, f5Rules, multTemp, 
+    sp = currReduction( sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
                         numVariables, shift, negBitmaskShifted, offsets, 
                         &redundant
                       );
@@ -1079,7 +1079,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
       newElement->redundant = redundant;
       // update pointer to last element in gCurr list
       gCurrLast             = newElement;
-      Print("NEW ELEMENT ADDED TO GCURR!\n");
+      Print("NEW ELEMENT ADDED TO GCURR! %p\n",newElement);
       pWrite( newElement->p );
       Print("SHORT EXP VECTOR: %ld\n", newElement->sExp);
       criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
@@ -1123,7 +1123,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
       Print("BEFORE:  ");
       pWrite(sp);
       pTest(sp);
-      sp = currReduction( sp, &temp, rewRulesLast, gCurr, f5Rules, multTemp, 
+      sp = currReduction( sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
                           numVariables, shift, negBitmaskShifted, offsets, 
                           &redundant
                         );
@@ -1151,7 +1151,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
         newElement->redundant = redundant;
         // update pointer to last element in gCurr list
         gCurrLast             = newElement;
-        Print("NEW ELEMENT ADDED TO GCURR!\n");
+        Print("NEW ELEMENT ADDED TO GCURR! %p\n",newElement);
         pWrite( newElement->p );
         Print("SHORT EXP VECTOR: %ld\n", newElement->sExp);
         criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
@@ -1201,7 +1201,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
 
 {
 #if F5EDEBUG
-    Print("CURRREDUCTION-BEGINNING \n");
+    Print("CURRREDUCTION-BEGINNING: GCURR %p \n",gCurr);
 #endif
   BOOLEAN isMult  = false;
   int i;
@@ -1222,8 +1222,10 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
   *redundant  = false;
   while ( temp )
   {
-    startagainTop:
     bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
+    startagainTop:
+    Print("POSSIBLE REDUCER %p ",temp);
+    pWrite(temp->p);
     if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
                             bucketExp, &multTemp, &isMult
                           ) 
@@ -1358,7 +1360,7 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
               (*cp)->next   = newPair;
             }  
             // get back on track for the old poly which has to be checked for 
-            // reductionbsy by the following element in gCurr
+            // reductions by the following element in gCurr
             pWrite(newPoly);
             Print("Poly copying: ");
             pWrite(newPoly);
@@ -1404,9 +1406,11 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
         // throw away the leading monomials of reducer and bucket
         tempNeg       = pCopy( temp->p );
         tempLength    = pLength( tempNeg->next );
+        Print("HERE\n");
         pWrite(kBucketGetLm(bucket));
         p_Mult_nn( tempNeg, coeff, currRing );
         kBucketExtractLm(bucket);
+        pWrite(pNeg(tempNeg->next));
         kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
         if( canonicalize++ % 40 )
         {
@@ -1439,8 +1443,9 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
     temp = gCurr;
     while ( temp )
     {
-      startagainTail:
       bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
+      startagainTail:
+            Print("HERE TAILREDUCTION AGAIN %p\n",temp);
       if( isDivisibleGetMult( kBucketGetLm( bucket ), bucketExp, temp->p, 
                               temp->sExp, &multTemp, &isMult
                             ) 
@@ -1475,8 +1480,17 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
               isMult      = false;
               *redundant  = true;
               temp        = temp->next;
-              goto startagainTail;
+            Print("HERE TAILREDUCTION\n");
+              if( temp )
+              {
+                goto startagainTail;
+              }
+              else
+              {
+                break;
+              }
             }
+            Print("HERE TAILREDUCTION2\n");
             poly multiplier = pOne();
             getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
                                 negBitmaskShifted, offsets
@@ -1930,17 +1944,6 @@ static poly redMoraNF (poly h,kStrategy strat, int flag)
     {
       j++;
     }
-    Print("POLY IN REDUCTION:  ");
-    if( p_GetOrder( H.p, currRing ) == pWTotaldegree( H.p, currRing ) )
-    {
-      Print(" ALLES OK\n");
-    }
-    else 
-    {
-      Print("BEI POLY %p",H.p); Print(" stimmt etwas nicht!\n");
-    }
-    pWrite( H.p );
-    
   }
 }
 
