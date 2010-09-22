@@ -277,6 +277,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
   cpTemp->mult1     = NULL;
   cpTemp->p1        = gCurr->p;
   cpTemp->rewRule1  = gCurr->rewRule;
+  Print("TEST REWRULE1 %p\n",cpTemp->rewRule1);
   cpTemp->mLabel2   = NULL;
   cpTemp->smLabel2  = 0;
   cpTemp->mult2     = NULL;
@@ -342,7 +343,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
       cpTemp->smLabel1  = 0;
       cpTemp->mult1     = NULL;
       cpTemp->p1        = gCurr->p;
-      cpTemp->rewRule1  = NULL;
+      cpTemp->rewRule1  = gCurr->rewRule;
       cpTemp->mLabel2   = NULL;
       cpTemp->smLabel2  = 0;
       cpTemp->mult2     = NULL;
@@ -947,7 +948,7 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
     RewRules* temp = rewRules->next;
     Print("%p\n", temp);
 #if F5EDEBUG
-    Print("Tested Element: ");
+    Print("Tested Element: %ld\n",smLabel);
     while( j )
     {
       Print("%d ",mLabel[(currRing->N)-j]);
@@ -960,7 +961,6 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
     while( NULL != temp )
     {
 #if F5EDEBUG
-    Print("Rew Rule: %p\n",temp->label);
     while( j )
     {
       Print("%d ",temp->label[(currRing->N)-j]);
@@ -982,7 +982,7 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
           j--;
         }
 #if F5EDEBUG
-        Print("CRITERION2-END \n");
+        Print("CRITERION2-END-DETECTED \n");
 #endif
           return true;
       }
@@ -1010,8 +1010,9 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
   Cpair* tempDel          = NULL;
   RewRules* rewRulesLast  = NULL; 
   Lpoly* higherLabel      = NULL;
-  Lpoly*    gCurrLast     = gCurr;
+  Lpoly*  gCurrLast       = gCurr;
   BOOLEAN redundant       = false;
+  BOOLEAN whenToCheck     = false; 
   // start the rewriter rules list with a NULL element for the recent,
   // i.e. initial element in \c gCurr
   rewRulesLast        = gCurr->rewRule;
@@ -1032,76 +1033,88 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
     // The first element cannot be detected by Criterion 2 as there are no new
     // rules added to \c rewRules until now.
     Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
-    RewRules* newRule   = (RewRules*) omalloc( sizeof(RewRules) );
-    newRule->next       = NULL;
-    newRule->label      = temp->mLabel1;
-    newRule->slabel     = ~temp->smLabel1;
-    rewRulesLast->next  = newRule;
-    rewRulesLast        = newRule; 
+    //------------------------------------------------------------------//
+    // TODO: check if this is efficient                                 //
+    // one could handle the first cp case different without whenToCheck //
+    //------------------------------------------------------------------//
+    //if( !whenToCheck || 
+    //    (whenToCheck && !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1)) 
+    //  )
+    Print("ADDRESS OF REWRULE OF TEMP1: %p\n",temp->rewRule1);
+    if( !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1)  )
+    {
+      Print("HERE\n");
+      RewRules* newRule   = (RewRules*) omalloc( sizeof(RewRules) );
+      newRule->next       = NULL;
+      newRule->label      = temp->mLabel1;
+      newRule->slabel     = ~temp->smLabel1;
+      rewRulesLast->next  = newRule;
+      rewRulesLast        = newRule; 
+      //whenToCheck         = true;
 #if F5EDEBUG
-    Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
+      Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
 #endif
 
-    // from this point on, rewRulesLast != NULL, thus we do not need to test this
-    // again in the following iteration over the list of critical pairs
-    
+      // from this point on, rewRulesLast != NULL, thus we do not need to test this
+      // again in the following iteration over the list of critical pairs
+      
 #if F5EDEBUG
-    Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
-    Print("GEN1: ");
-    pWrite(temp->p1);
-    Print("GEN2: ");
-    pWrite(temp->p2);
+      Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
+      Print("GEN1: ");
+      pWrite(temp->p1);
+      Print("GEN2: ");
+      pWrite(temp->p2);
 #endif
 
-    // compute s-polynomial and reduce it w.r.t. redGB
-    sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift, 
-                                  negBitmaskShifted, offsets 
-                                );
-    pNorm( sp ); 
+      // compute s-polynomial and reduce it w.r.t. redGB
+      sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift, 
+                                    negBitmaskShifted, offsets 
+                                  );
+      pNorm( sp ); 
 #if F5EDEBUG
-    Print("BEFORE:  ");
-    pWrite( sp );
-    pTest(sp);
+      Print("BEFORE:  ");
+      pWrite( sp );
+      pTest(sp);
 #endif
-    sp = currReduction( sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
-                        numVariables, shift, negBitmaskShifted, offsets, 
-                        &redundant
-                      );
+      sp = currReduction( sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
+                          numVariables, shift, negBitmaskShifted, offsets, 
+                          &redundant
+                        );
 #if F5EDEBUG
-    Print("AFTER:  ");
-    pWrite(pHead(sp));
-    pTest(sp);
+      Print("AFTER:  ");
+      pWrite(pHead(sp));
+      pTest(sp);
 #endif
+      // otherwise sp is reduced to zero and we do not need to add it to gCurr
+      // Note that even in this case the corresponding rule is already added to
+      // rewRules list!
+      if( sp )
+      {
+        pNorm( sp ); 
+        Print("ORDER %ld -- %ld\n",p_GetOrder(sp,currRing), sp->exp[currRing->pOrdIndex]);
+        // add sp together with rewRulesLast to gCurr!!!
+        Lpoly* newElement     = (Lpoly*) omalloc( sizeof(Lpoly) );
+        newElement->next      = gCurrLast;
+        newElement->p         = sp; 
+        newElement->sExp      = pGetShortExpVector(sp); 
+        newElement->rewRule   = rewRulesLast; 
+        newElement->redundant = redundant;
+        // update pointer to last element in gCurr list
+        gCurrLast             = newElement;
+        Print("ELEMENT ADDED TO GCURR: ");
+        pWrite( gCurrLast->p );
+        criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
+                          shift, negBitmaskShifted, offsets 
+                        );
+          criticalPairCurr( gCurrLast, *f5Rules, &cp, numVariables, 
+                            shift, negBitmaskShifted, offsets 
+                          );
+      }
+    }
     tempDel  = temp;
     temp     = temp->next;
     omfree(tempDel);
-    
-    // otherwise sp is reduced to zero and we do not need to add it to gCurr
-    // Note that even in this case the corresponding rule is already added to
-    // rewRules list!
-    if( sp )
-    {
-      pNorm( sp ); 
-      Print("ORDER %ld -- %ld\n",p_GetOrder(sp,currRing), sp->exp[currRing->pOrdIndex]);
-      // add sp together with rewRulesLast to gCurr!!!
-      Lpoly* newElement     = (Lpoly*) omalloc( sizeof(Lpoly) );
-      newElement->next      = gCurrLast;
-      newElement->p         = sp; 
-      newElement->sExp      = pGetShortExpVector(sp); 
-      newElement->rewRule   = rewRulesLast; 
-      newElement->redundant = redundant;
-      // update pointer to last element in gCurr list
-      gCurrLast             = newElement;
-      Print("NEW ELEMENT ADDED TO GCURR! %p\n",newElement);
-      pWrite( newElement->p );
-      Print("SHORT EXP VECTOR: %ld\n", newElement->sExp);
-      criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
-                        shift, negBitmaskShifted, offsets 
-                      );
-        criticalPairCurr( gCurrLast, *f5Rules, &cp, numVariables, 
-                          shift, negBitmaskShifted, offsets 
-                        );
-    }
+      
     //------------------------------------------------
     // TODO: CURRENT ITERATION REDUCTION
     //------------------------------------------------
@@ -1117,63 +1130,60 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
         newRule->slabel     = ~temp->smLabel1;
         rewRulesLast->next  = newRule;
         rewRulesLast        = newRule; 
-      }
       
 #if F5EDEBUG
-      Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
-      Print("GEN1: ");
-      pWrite(temp->p1);
-      Print("GEN2: ");
-      pWrite(temp->p2);
+        Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
+        Print("GEN1: ");
+        pWrite(temp->p1);
+        Print("GEN2: ");
+        pWrite(temp->p2);
 #endif
 
-      // compute s-polynomial and reduce it w.r.t. redGB
-      sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift,   
-                                    negBitmaskShifted, offsets 
-                                  );
-      pNorm( sp ); 
+        // compute s-polynomial and reduce it w.r.t. redGB
+        sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift,   
+                                      negBitmaskShifted, offsets 
+                                    );
+        pNorm( sp ); 
+        
+        Print("BEFORE:  ");
+        pWrite(sp);
+        pTest(sp);
+        sp = currReduction( sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
+                            numVariables, shift, negBitmaskShifted, offsets, 
+                            &redundant
+                          );
+        Print("AFTER:  ");
+        pTest(sp);
       
-      Print("BEFORE:  ");
-      pWrite(sp);
-      pTest(sp);
-      sp = currReduction( sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
-                          numVariables, shift, negBitmaskShifted, offsets, 
-                          &redundant
-                        );
-      Print("AFTER:  ");
-      pTest(sp);
-
-
+        // otherwise sp is reduced to zero and we do not need to add it to gCurr
+        // Note that even in this case the corresponding rule is already added to
+        // rewRules list!
+        if( sp )
+        {
+          Print("ORDER %ld -- %ld\n",p_GetOrder(sp,currRing), sp->exp[currRing->pOrdIndex]);
+          pNorm( sp ); 
+          // add sp together with rewRulesLast to gCurr!!!
+          Lpoly* newElement     = (Lpoly*) omalloc( sizeof(Lpoly) );
+          newElement->next      = gCurrLast;
+          newElement->p         = sp; 
+          newElement->sExp      = pGetShortExpVector(sp); 
+          newElement->rewRule   = rewRulesLast; 
+          newElement->redundant = redundant;
+          // update pointer to last element in gCurr list
+          gCurrLast             = newElement;
+          Print("ELEMENT ADDED TO GCURR: ");
+          pWrite( gCurrLast->p );
+          criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
+                            shift, negBitmaskShifted, offsets 
+                          );
+          criticalPairCurr( gCurrLast, *f5Rules, &cp, numVariables, 
+                            shift, negBitmaskShifted, offsets 
+                          );
+        }
+      }
       tempDel  = temp;
       temp     = temp->next;
       omfree(tempDel);
-      
-      // otherwise sp is reduced to zero and we do not need to add it to gCurr
-      // Note that even in this case the corresponding rule is already added to
-      // rewRules list!
-      if( sp )
-      {
-        Print("ORDER %ld -- %ld\n",p_GetOrder(sp,currRing), sp->exp[currRing->pOrdIndex]);
-        pNorm( sp ); 
-        // add sp together with rewRulesLast to gCurr!!!
-        Lpoly* newElement     = (Lpoly*) omalloc( sizeof(Lpoly) );
-        newElement->next      = gCurrLast;
-        newElement->p         = sp; 
-        newElement->sExp      = pGetShortExpVector(sp); 
-        newElement->rewRule   = rewRulesLast; 
-        newElement->redundant = redundant;
-        // update pointer to last element in gCurr list
-        gCurrLast             = newElement;
-        Print("NEW ELEMENT ADDED TO GCURR! %p\n",newElement);
-        pWrite( newElement->p );
-        Print("SHORT EXP VECTOR: %ld\n", newElement->sExp);
-        criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
-                          shift, negBitmaskShifted, offsets 
-                        );
-        criticalPairCurr( gCurrLast, *f5Rules, &cp, numVariables, 
-                          shift, negBitmaskShifted, offsets 
-                        );
-        }
     }
   }
   omfree( multTemp );
