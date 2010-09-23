@@ -218,7 +218,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
                   ); 
   if( cpBounds )
   {
-    computeSpols( strat, cpBounds, redGB, gCurr, f5Rules, numVariables, shift, 
+    computeSpols( strat, cpBounds, redGB, &gCurr, f5Rules, numVariables, shift, 
                   negBitmaskShifted, offsets
                 );
   }
@@ -238,6 +238,8 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
     {
       Print("BEI POLY "); gCurr->p; Print(" stimmt etwas nicht!\n");
     }
+    Print("INSERT TO REDGB: ");
+    pWrite(gCurr->p);
     idInsertPoly( redGB, gCurr->p );
     temp = gCurr;
     gCurr = gCurr->next;
@@ -468,6 +470,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
         cpTemp->mult1[j]    =   0;  
         cpTemp->mult2[j]    =   temp;  
         cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
+        critPairDeg         +=  cpTemp->rewRule1->label[j]; 
       }
     }
     cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
@@ -528,6 +531,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mult1[j]    =   0;  
       cpTemp->mult2[j]    =   temp;  
       cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
+      critPairDeg         +=  cpTemp->rewRule1->label[j];
     }
   }
   cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
@@ -622,7 +626,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
         cpTemp->mult2[j]    =   0; 
         cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j] - temp;
         cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j];
-        critPairDeg         +=  cpTemp->rewRule2->label[j]; 
+        critPairDeg         +=  cpTemp->rewRule1->label[j] - temp; 
       }
       else
       {
@@ -630,6 +634,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
         cpTemp->mult2[j]    =   temp;  
         cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
         cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j] + temp;
+        critPairDeg         +=  cpTemp->rewRule1->label[j]; 
       }
     }
     // compute only if there is a "real" multiple of p1 needed
@@ -823,31 +828,33 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
     boundNew->cp            = cp;
     boundNew->length        = 1;
     *bound                  = boundNew;
+    Print("here1\n");
   }
   else
   {
     if((*bound)->deg < deg) 
     {
-      CpairDegBound** temp = bound;
-      while((*temp)->next && ((*temp)->next->deg < deg))
+      CpairDegBound* temp = *bound;
+      while((temp)->next && ((temp)->next->deg < deg))
       {
-        *temp = (*temp)->next;
+        temp = (temp)->next;
       }
-      if( (*temp)->next && (*temp)->next->deg == deg )
+      if( (temp)->next && (temp)->next->deg == deg )
       {
-        cp->next          = (*temp)->next->cp;
-        (*temp)->next->cp = cp;
-        (*temp)->next->length++;
+        cp->next          = (temp)->next->cp;
+        (temp)->next->cp = cp;
+        (temp)->next->length++;
+        Print("here2\n");
       }
       else
       {
         CpairDegBound* boundNew = (CpairDegBound*) omalloc(sizeof(CpairDegBound));
-        boundNew->next          = (*temp)->next;
+        boundNew->next          = (temp)->next;
         boundNew->deg           = deg;
         boundNew->cp            = cp;
         boundNew->length        = 1;
-        (*temp)->next           = boundNew;
-        Print("HERE %p\n",*temp);
+        (temp)->next           = boundNew;
+        Print("HERE %p -- %p\n",temp,*bound);
       }
     }
     else
@@ -871,6 +878,22 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
   }
 #if F5EDEBUG
   pWrite( (*bound)->cp->p2 );
+  CpairDegBound* test = *bound;
+  Print("-------------------------------------\n");
+  while( test )
+  {
+    Print("DEGREE %d\n",test->deg);
+    Cpair* testcp = test->cp;
+    while( testcp )
+    {
+      Print("Pairs: %p\n",testcp);
+      pWrite(testcp->p1);
+      pWrite(testcp->p2);
+      testcp = testcp->next;
+    }
+    test  = test->next;
+  }
+  Print("-------------------------------------\n");
   Print("INSERTCRITPAIR-END deg bound %p\n",*bound);
 #endif
 }
@@ -998,7 +1021,7 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
 
 
 
-void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCurr, 
+void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCurr, 
                     const F5Rules* f5Rules, int numVariables, 
                     int* shift, unsigned long* negBitmaskShifted, int* offsets
                   )
@@ -1010,12 +1033,12 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
   Cpair* tempDel          = NULL;
   RewRules* rewRulesLast  = NULL; 
   Lpoly* higherLabel      = NULL;
-  Lpoly*  gCurrLast       = gCurr;
+  Lpoly*  gCurrLast       = *gCurr;
   BOOLEAN redundant       = false;
   BOOLEAN whenToCheck     = false; 
   // start the rewriter rules list with a NULL element for the recent,
   // i.e. initial element in \c gCurr
-  rewRulesLast        = gCurr->rewRule;
+  rewRulesLast        = (*gCurr)->rewRule;
   // this will go on for the complete current iteration step!
   // => after computeSpols() terminates this iteration step is done!
   int* multTemp = (int*) omalloc( (currRing->N+1)*sizeof(int) );
@@ -1040,7 +1063,18 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
     //if( !whenToCheck || 
     //    (whenToCheck && !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1)) 
     //  )
-    Print("ADDRESS OF REWRULE OF TEMP1: %p\n",temp->rewRule1);
+    Print("ADDRESS OF REWRULE OF TEMP1: %p\n----------------------------\n",temp->rewRule1);
+    Cpair* tempcp = temp;
+    while( tempcp )
+    {
+      Print("%p\n",tempcp);
+      pWrite(tempcp->p1);
+      pWrite(tempcp->p2);
+      tempcp =  tempcp->next;
+    }
+    Print("---------------------------\nPAIR: %p\n",temp);
+    pWrite(temp->p1);
+    pWrite(temp->p2);
     if( !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1)  )
     {
       Print("HERE\n");
@@ -1121,6 +1155,9 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
     Print("THIS STEP %p\n",temp);
     while( temp!=NULL )
     {
+      Print("---------------------------\nPAIR: %p\n",temp);
+      pWrite(temp->p1);
+      pWrite(temp->p2);
       if(!criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1))
       {
         Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
@@ -1186,6 +1223,9 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
       omfree(tempDel);
     }
   }
+  // get back the new list of elements in gCurr, i.e. the list of elements
+  // computed in this iteration step
+  *gCurr = gCurrLast;
   omfree( multTemp );
 
 #if F5EDEBUG
@@ -1604,7 +1644,7 @@ Cpair* merge(Cpair* cp, Cpair* cp2)
 {
   // initialize new, sorted list of critical pairs
   Cpair* cpNew = NULL;
-  if( expCmp(cp->mLabelExp, cp2->mLabelExp) == -1 )
+  if( expCmp(cp->mLabelExp, cp2->mLabelExp) == 1 )
   {
     cpNew = cp;
     cp    = cp->next;

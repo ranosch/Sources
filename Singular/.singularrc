@@ -15,11 +15,13 @@ memory(0);
 memory(1);
 memory(2);
 //ideal g = system("f5",i,2,1);
+i;
+std(i);
 ideal g = f5e(i);
 memory(0);
 memory(1);
 memory(2);
 g;
+i;
+reduce(std(i),g);
 $
-//reduce(std(i),g);
-

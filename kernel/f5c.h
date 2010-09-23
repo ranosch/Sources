@@ -294,7 +294,8 @@ void computeSpols (
                               ///       linked list of critical pairs is NOT  
                               ///       sorted.
   ideal           redGB,      ///<[in]  reducers of earlier iteration steps
-  Lpoly*          gCurr,      ///<[in]  reducers of the current iteration step
+  Lpoly**         gCurr,      ///<[in,out]  pointer to the list of reducers of the 
+                              ///           current iteration step
   const F5Rules*  f5Rules,    ///<[in]  rules for F5 Criterion checks
   int numVariables,           ///<[in]  global stuff for faster exponent computations
   int* shift,                 ///<[in]  global stuff for faster exponent computations
