@@ -357,6 +357,8 @@ poly currReduction  (
   const F5Rules* f5Rules, ///<[in]      rules for F5 Criterion checks
   int*  multTemp,         ///<[in]      integer exponent vector for the mulitples
                           ///           of the reducers
+  int*  multLabelTemp,    ///<[in]      integer exponent vector for the mulitples
+                          ///           of the labels of reducers
   int numVariables,       ///<[in]  global stuff for faster exponent computations
   int* shift,             ///<[in]  global stuff for faster exponent computations
   unsigned long* negBit,  ///<[in]  global stuff for faster exponent computations
