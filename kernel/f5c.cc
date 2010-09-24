@@ -61,7 +61,7 @@ ideal f5cMain(ideal F, ideal Q)
     return idInit(1, F->rank);
   }
   // interreduction of the input ideal F
-  ideal FRed = F;
+  ideal FRed = idCopy( F );
 
 #if F5EDEBUG
   int j = 0;
@@ -134,7 +134,6 @@ ideal f5cMain(ideal F, ideal Q)
   omfree(shift);
   omfree(negBitmaskShifted);
   omfree(offsets);
-  
   return r;
 }
 
@@ -1107,13 +1106,14 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
 #if F5EDEBUG
   Print("COMPUTESPOLS-BEGINNING\n");
 #endif
-  Cpair* temp             = NULL;
-  Cpair* tempDel          = NULL;
-  RewRules* rewRulesLast  = NULL; 
-  Lpoly* higherLabel      = NULL;
-  Lpoly*  gCurrLast       = *gCurr;
-  BOOLEAN redundant       = false;
-  BOOLEAN whenToCheck     = false; 
+  Cpair* temp                 = NULL;
+  Cpair* tempDel              = NULL;
+  RewRules* rewRulesLast      = NULL; 
+  Lpoly* higherLabel          = NULL;
+  Lpoly*  gCurrLast           = *gCurr;
+  BOOLEAN redundant           = false;
+  BOOLEAN whenToCheck         = false; 
+  higherLabelPoly* polyForDel = NULL;
   // start the rewriter rules list with a NULL element for the recent,
   // i.e. initial element in \c gCurr
   rewRulesLast        = (*gCurr)->rewRule;
@@ -1198,7 +1198,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
       pWrite( sp );
       pTest(sp);
 #endif
-      sp = currReduction( strat, sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
+      sp = currReduction( strat, &polyForDel, sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
                           numVariables, shift, negBitmaskShifted, offsets, 
                           &redundant
                         );
@@ -1273,7 +1273,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         Print("BEFORE:  ");
         pWrite(sp);
         pTest(sp);
-        sp = currReduction( strat, sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
+        sp = currReduction( strat, &polyForDel, sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
                             numVariables, shift, negBitmaskShifted, offsets, 
                             &redundant
                           );
@@ -1344,9 +1344,10 @@ inline void kBucketCopyToPoly(kBucket_pt bucket, poly *p, int *length)
 
 
 
-poly currReduction  ( kStrategy strat, poly sp, Cpair** cp, RewRules* rewRulesLast, 
-                      Lpoly* gCurr, const F5Rules* f5Rules, int* multTemp, 
-                      int numVariables, int* shift, unsigned long* negBitmaskShifted, 
+poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp, 
+                      Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr, 
+                      const F5Rules* f5Rules, int* multTemp, int numVariables, 
+                      int* shift, unsigned long* negBitmaskShifted, 
                       int* offsets, BOOLEAN* redundant
                     )
 

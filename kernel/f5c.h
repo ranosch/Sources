@@ -97,6 +97,21 @@ struct Lpoly
 
  
 
+/// @struct \c higherLabelPoly 
+/// @brief \c higherLabelPoly is a linked list of polynomials which are
+/// generated during a higher label reduction step in \c currReduction().
+/// Those polynomials must be deleted to save memory after their corresponding 
+/// s-polynomial is computed and reduced further. This is done at the end of
+/// each degree reduction step.
+struct higherLabelPoly
+{
+  poly              p;    ///<  poly from a higher label reduction, must be deleted
+                          ///   after the degree reduction step
+  higherLabelPoly*  next; ///<  pointer to the next element in the list
+};
+
+
+
 /// @struct \c Cpair 
 /// @brief \c Cpair is the structure of the list of critical pairs in F5C+
 /// containing the corresponding polynomials, the multiplied labels, and the
@@ -327,6 +342,8 @@ poly currReduction  (
                           ///           needed for possible reduction of newly
                           ///           generated polys during higher label
                           ///           reductions  
+  higherLabelPoly** hlp,  ///<[in,out]  list of higher label polys to be deleted 
+                          ///           after the current degree reduction  
   poly sp,                ///<[in,out]  s-polynomial to be reduced
   Cpair** cp,             ///<[in,out]  corresponding critical pair: if a new 
                           ///           polynomial is added due to a higher
