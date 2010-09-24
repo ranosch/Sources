@@ -489,6 +489,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
                                 sizeof(unsigned long));
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets );
+        Print("IN CRITPAIRPREv %ld %ld %ld %ld\n",cpTemp->mLabelExp[1], cpTemp->mLabelExp[2],cpTemp->mLabelExp[3],cpTemp->mLabelExp[4]);
       insertCritPair(cpTemp, critPairDeg, cpBounds);
       Cpair* cp         = (Cpair*) omalloc( sizeof(Cpair) );
       cpTemp            = cp;
@@ -546,11 +547,12 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
     // to the list of critical pairs 
     cpTemp->p2        = redGB->m[IDELEMS(redGB)-1];
     // now we really need the memory for the exp label
-    cpTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*
+    cpTemp->mLabelExp = (unsigned long*) omalloc0(NUMVARS*
                               sizeof(unsigned long));
     getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                         numVariables, shift, negBitmaskShifted, offsets
                       );
+      Print("IN CRITPAIRPREv %ld %ld %ld %ld\n",cpTemp->mLabelExp[1], cpTemp->mLabelExp[2],cpTemp->mLabelExp[3],cpTemp->mLabelExp[4]);
     insertCritPair(cpTemp, critPairDeg, cpBounds);
   }
   omfree(expVecTemp);
@@ -668,6 +670,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
         getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
                             shift, negBitmaskShifted, offsets
                           );
+        Print("IN CRITPAIRCURR %ld %ld %ld %ld\n",cpTemp->mLabelExp[1], cpTemp->mLabelExp[2],cpTemp->mLabelExp[3],cpTemp->mLabelExp[4]);
         // compare which label is greater and possibly switch the 1st and 2nd 
         // generator in cpTemp
         // exchange generator 1 and 2 in cpTemp
@@ -775,6 +778,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
                           shift, negBitmaskShifted, offsets
                         );
+        Print("IN CRITPAIRCURR %ld %ld %ld %ld\n",cpTemp->mLabelExp[1], cpTemp->mLabelExp[2],cpTemp->mLabelExp[3],cpTemp->mLabelExp[4]);
       // compare which label is greater and possibly switch the 1st and 2nd 
       // generator in cpTemp
       // exchange generator 1 and 2 in cpTemp
@@ -850,7 +854,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
       if( (temp)->next && (temp)->next->deg == deg )
       {
         cp->next          = (temp)->next->cp;
-        (temp)->next->cp = cp;
+        (temp)->next->cp  = cp;
         (temp)->next->length++;
         // if there exist other elements in the list with the very same label
         // then delete them as they will be detected by the Rewritten Criterion
@@ -859,6 +863,14 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
         while( tempForDel->next )
         {
           Print("here2\n");
+          poly pTestStuff = pOne();
+          pSetExp(pTestStuff,3,1);
+          pSetExp(pTestStuff,1,2);
+          pWrite(pTestStuff);
+        Print("%ld %ld %ld %ld\n",pTestStuff->exp[1],pTestStuff->exp[2],pTestStuff->exp[3],pTestStuff->exp[4]);
+          Print("COMPINDEX: %ld -- %ld\n",tempForDel->next->mLabelExp[currRing->pCompIndex],cp->mLabelExp[currRing->pCompIndex]);
+          Print("%d %d %d %d %d\n",tempForDel->next->mLabel1[0],tempForDel->next->mLabel1[1], tempForDel->next->mLabel1[2],tempForDel->next->mLabel1[3],tempForDel->next->mLabel1[4]);
+          Print("%d %d %d %d %d\n",cp->mLabel1[0],cp->mLabel1[1], cp->mLabel1[2],cp->mLabel1[3],cp->mLabel1[4]);
           if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
           {
             Cpair* tempDel    = tempForDel->next;
@@ -896,9 +908,25 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
         // then delete them as they will be detected by the Rewritten Criterion
         // of F5 nevertheless
         tempForDel    = cp;
+        poly pTestStuff2 = pOne();
+        pSetExp(pTestStuff2,3,1);
+        pSetExp(pTestStuff2,1,2);
+        pWrite(pTestStuff2);
+        Print("%ld %ld %ld %ld\n",pTestStuff2->exp[1],pTestStuff2->exp[2],pTestStuff2->exp[3],pTestStuff2->exp[4]);
+        poly pTestStuff3 = pOne();
+        pSetExp(pTestStuff3,3,1);
+        pSetExp(pTestStuff3,1,2);
+        pWrite(pTestStuff3);
+        Print("%ld %ld %ld %ld\n",pTestStuff3->exp[1],pTestStuff3->exp[2],pTestStuff3->exp[3],pTestStuff3->exp[4]);
+        Print("COMPARISON: %d\n",pLmCmp(pTestStuff2,pTestStuff3));
         while( tempForDel->next )
         {
-          Print("NEXT CP ADDRESS %p\n",tempForDel->next);
+          Print("%p -- NEXT CP ADDRESS %p\n",tempForDel,tempForDel->next);
+          Print("COMPINDEX: %ld -- %ld\n",tempForDel->next->mLabelExp[currRing->pCompIndex],cp->mLabelExp[currRing->pCompIndex]);
+          Print("%d %d %d %d %d\n",tempForDel->next->mLabel1[0],tempForDel->next->mLabel1[1], tempForDel->next->mLabel1[2],tempForDel->next->mLabel1[3],tempForDel->next->mLabel1[4]);
+          Print("%d %d %d %d %d\n",cp->mLabel1[0],cp->mLabel1[1], cp->mLabel1[2],cp->mLabel1[3],cp->mLabel1[4]);
+          Print("%ld %ld %ld %ld\n",tempForDel->next->mLabelExp[1], tempForDel->next->mLabelExp[2],tempForDel->next->mLabelExp[3],tempForDel->next->mLabelExp[4]);
+          Print("%ld %ld %ld %ld\n",cp->mLabelExp[1], cp->mLabelExp[2],cp->mLabelExp[3],cp->mLabelExp[4]);
           if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
           {
             Print("here3\n");
