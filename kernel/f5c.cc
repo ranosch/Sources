@@ -1127,42 +1127,11 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
 #if F5EDEBUG
     Print("START OF NEW DEG ROUND: CP %ld -- %p\n",cp->deg,cp);
 #endif
-    Print("\n----------------------------\n");
-    Cpair* cpcp = cp->cp;
-    while( cpcp )
-    {
-      Print("%p\n",cpcp);
-      pWrite(cpcp->p1);
-      pWrite(cpcp->p2);
-      cpcp =  cpcp->next;
-    }
-    Print("---------------------------\nPAIR: %p\n",temp);
     temp  = sort(cp->cp, cp->length); 
     CpairDegBound* cpDel  = cp;
     cp                    = cp->next;
     omfree( cpDel );
-    // The first element cannot be detected by Criterion 2 as there are no new
-    // rules added to \c rewRules until now.
     Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
-    //------------------------------------------------------------------//
-    // TODO: check if this is efficient                                 //
-    // one could handle the first cp case different without whenToCheck //
-    //------------------------------------------------------------------//
-    //if( !whenToCheck || 
-    //    (whenToCheck && !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1)) 
-    //  )
-    Print("ADDRESS OF REWRULE OF TEMP1: %p\n----------------------------\n",temp->rewRule1);
-    Cpair* tempcp = temp;
-    while( tempcp )
-    {
-      Print("%p\n",tempcp);
-      pWrite(tempcp->p1);
-      pWrite(tempcp->p2);
-      tempcp =  tempcp->next;
-    }
-    Print("---------------------------\nPAIR: %p\n",temp);
-    pWrite(temp->p1);
-    pWrite(temp->p2);
     if( !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1)  )
     {
       Print("HERE\n");
@@ -1310,6 +1279,19 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
       temp     = temp->next;
       omfree(tempDel);
     }
+    // free the memory consumed by polynomials which were generated during a
+    // higher label reduction
+    higherLabelPoly* tempFree = polyForDel;
+    while( polyForDel )
+    {
+      pDelete( &(polyForDel->p) );
+      tempFree    = polyForDel->next;
+      omfree( polyForDel );
+      polyForDel  = tempFree;
+    }
+#if F5EDEBUG
+    Print("POLYFORDEL %p == NULL ?\n",polyForDel);
+#endif
   }
   // get back the new list of elements in gCurr, i.e. the list of elements
   // computed in this iteration step
@@ -1473,6 +1455,14 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
             // else we have to generate a new "trivial" critical pair
             if( newPoly )
             {
+              // keep newPolys address, since it must be deleted after the
+              // current degree reduction in computeSpols()
+              higherLabelPoly* newHigher  = (higherLabelPoly*)  
+                                            omalloc( sizeof(higherLabelPoly) );
+              newHigher->p                = newPoly;
+              newHigher->next             = *polyForDel;
+              *polyForDel                 = newHigher;
+
               pNorm( newPoly );
               // generate a new critical for further reduction steps
               // note: this will be a "trivial" critical pair, as the 2nd
