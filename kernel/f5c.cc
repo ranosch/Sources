@@ -1466,8 +1466,6 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
             // this is ok since p2 is never tested by the 2nd criterion
             newPair->rewRule2   = NULL;
             
-            // initialize the new bucket
-            kBucketInit( bucket, newPoly, 0 );
             //multiplier->exp       = multTempExp;
             //getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
             //                    negBitmaskShifted, offsets
