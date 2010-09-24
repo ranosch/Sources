@@ -1198,7 +1198,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
       pWrite( sp );
       pTest(sp);
 #endif
-      sp = currReduction( sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
+      sp = currReduction( strat, sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
                           numVariables, shift, negBitmaskShifted, offsets, 
                           &redundant
                         );
@@ -1228,9 +1228,9 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
                           shift, negBitmaskShifted, offsets 
                         );
-          criticalPairCurr( gCurrLast, *f5Rules, &cp, numVariables, 
-                            shift, negBitmaskShifted, offsets 
-                          );
+        criticalPairCurr( gCurrLast, *f5Rules, &cp, numVariables, 
+                          shift, negBitmaskShifted, offsets 
+                        );
       }
     }
     tempDel  = temp;
@@ -1273,7 +1273,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         Print("BEFORE:  ");
         pWrite(sp);
         pTest(sp);
-        sp = currReduction( sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
+        sp = currReduction( strat, sp, &temp, rewRulesLast, gCurrLast, f5Rules, multTemp, 
                             numVariables, shift, negBitmaskShifted, offsets, 
                             &redundant
                           );
@@ -1344,10 +1344,10 @@ inline void kBucketCopyToPoly(kBucket_pt bucket, poly *p, int *length)
 
 
 
-poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr, 
-                      const F5Rules* f5Rules, int* multTemp, int numVariables, 
-                      int* shift, unsigned long* negBitmaskShifted, int* offsets, 
-                      BOOLEAN* redundant
+poly currReduction  ( kStrategy strat, poly sp, Cpair** cp, RewRules* rewRulesLast, 
+                      Lpoly* gCurr, const F5Rules* f5Rules, int* multTemp, 
+                      int numVariables, int* shift, unsigned long* negBitmaskShifted, 
+                      int* offsets, BOOLEAN* redundant
                     )
 
 {
@@ -1412,113 +1412,148 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
           if( expCmp( multTempExp, (*cp)->mLabelExp ) == 1 )
           {            
 #if F5EDEBUG
-    Print("HIGHER LABEL REDUCTION \n");
+            Print("HIGHER LABEL REDUCTION \n");
 #endif
             poly newPoly  = pInit();
-            poly oldPoly  = pInit();
             int length;
-            pWrite(kBucketGetLm(bucket));
-            kBucketCopyToPoly( bucket, &newPoly, &length );
+            int cano            = kBucketCanonicalize( bucket );
+            kBucket* newBucket  = kBucketCreate();
+            kBucketInit( newBucket, pCopy(bucket->buckets[cano]), bucket->buckets_length[cano] );
             Print("NEW POLYNOMIAL FROM BUCKET: ");
-            pWrite(newPoly);
-            oldPoly = pCopy( newPoly );
-            // add new rule to RewRules
-            RewRules* newRule = (RewRules*) omalloc( sizeof(RewRules) );
-            newRule->label    = (int*) omalloc( (currRing->N+1)*
-                                                sizeof(int) 
-                                              );
-            newRule->next       = NULL;
-            newRule->label      = multTemp;
-            newRule->slabel     = multShortExp;
-            rewRulesLast->next  = newRule;
-            rewRulesLast        = newRule; 
+            pWrite(kBucketGetLm(newBucket));
             Print("HERE?\n");
-            
-            // generate a new critical for further reduction steps
-            // note: this will be a "trivial" critical pair, as the 2nd
-            // generator will be 1
-            Cpair* newPair      = (Cpair*) omalloc( sizeof(Cpair) );
-            newPair->mLabelExp  = (unsigned long*) omalloc0( NUMVARS*
-                                    sizeof(unsigned long) );
-            newPair->mLabel1  = (int*) omalloc( (currRing->N+1)*sizeof(int) );
-            newPair->mult1    = (int*) omalloc( (currRing->N+1)*sizeof(int) );
-            newPair->mult2    = (int*) omalloc( (currRing->N+1)*sizeof(int) );
-            // multiplier for new polynomial
-            static poly multiplier = pOne();
-            int j = 0;
-            for( j=0;j<NUMVARS;j++ )
-            {
-              newPair->mLabelExp[j] = multTempExp[j];
-              multiplier->exp[j]    = multTempExp[j];
-            }
-            for( j=0;j<currRing->N+1;j++ )
-            {
-              newPair->mLabel1[j] = multTemp[j];
-              newPair->mult1[j]   = 0;
-              newPair->mult2[j]   = 0;
-            }
-            newPair->smLabel1   = multShortExp;
-            newPair->rewRule1   = temp->rewRule;
-            newPair->mLabel2    = NULL;
-            newPair->smLabel2   = 0;
-            newPair->mult2      = NULL;
-            newPair->p2         = pOne();
-            // this is ok since p2 is never tested by the 2nd criterion
-            newPair->rewRule2   = NULL;
-            
+            pWrite(kBucketGetLm(newBucket));
             //multiplier->exp       = multTempExp;
             //getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
             //                    negBitmaskShifted, offsets
             //                  );
 
             // throw away the leading monomials of reducer and bucket
-            p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+            static poly multiplier = pOne();
+            // set multTemp back from label multiplier to real multiplier of the
+            // polys 
+            for( i=1;i<(currRing->N)+1; i++ )
+            {
+              multTemp[i] -=  temp->rewRule->label[i];
+            }
+            getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                                negBitmaskShifted, offsets
+                              );
+            // throw away the leading monomials of reducer and bucket
+            pSetm( multiplier );
+            p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(newBucket)), currRing );
             tempLength = pLength( temp->p->next );
-            kBucketExtractLm(bucket);
-            kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p->next, 
+            kBucketExtractLm(newBucket);
+            Print("MULTIPLIER: ");
+            pWrite(multiplier);
+            Print("REDUCER: ");
+            pWrite( temp->p );
+            kBucket_Minus_m_Mult_p( newBucket, multiplier, temp->p->next, 
                                     &tempLength 
                                   ); 
-            newPair->p1 =  kBucketExtractLm( bucket );
-            newPair->p1 =  p_Merge_q ( newPair->p1, kBucketExtractLm(bucket), 
-                                        currRing 
-                                      );
-            // insertion sort of newPair to the list of critical pairs waiting
-            // to be reduced, sorted by increasing labels
-            Cpair* temp = (*cp)->next;
-                Print("ADDRESS: %p\n",temp);
-            if( temp )
-            { 
-              if( (expCmp(newPair->mLabelExp, temp->mLabelExp) == -1) )
+            // get monomials out of bucket and save the poly as first generator 
+            // of a new critical pair
+            //----------------------------------------------
+            //
+            // TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //
+            //---------------------------------------------- 
+            int length2 = 0;
+            pWrite( kBucketGetLm(newBucket) );
+            kBucketClear( newBucket, &newPoly, &length2 );
+            Print("NEWPOLY: ");
+            pWrite( newPoly );
+            newPoly = reduceByRedGBPoly( newPoly, strat );
+            
+             
+            Print("NEWLY AFTER REDGB REDUCTION:  ");
+            pWrite(newPoly);
+            // if newPoly = 0 nothing has to be done :)
+            // else we have to generate a new "trivial" critical pair
+            if( newPoly )
+            {
+              pNorm( newPoly );
+              // generate a new critical for further reduction steps
+              // note: this will be a "trivial" critical pair, as the 2nd
+              // generator will be 1
+              Cpair* newPair      = (Cpair*) omalloc( sizeof(Cpair) );
+              newPair->mLabelExp  = (unsigned long*) omalloc0( NUMVARS*
+                                      sizeof(unsigned long) );
+              newPair->mLabel1  = (int*) omalloc( (currRing->N+1)*sizeof(int) );
+              newPair->mult1    = (int*) omalloc( (currRing->N+1)*sizeof(int) );
+              newPair->mult2    = (int*) omalloc( (currRing->N+1)*sizeof(int) );
+              // compute the multiple of the rule of temp & multTemp
+              for( i=1;i<(currRing->N)+1; i++ )
               {
-                (*cp)->next = newPair;
-                newPair->next = temp;
+                multTemp[i] +=  temp->rewRule->label[i];
+              }
+              int j = 0;
+              for( j=0;j<NUMVARS;j++ )
+              {
+                newPair->mLabelExp[j] = multTempExp[j];
+                multiplier->exp[j]    = multTempExp[j];
+              }
+              for( j=0;j<currRing->N+1;j++ )
+              {
+                newPair->mLabel1[j] = multTemp[j];
+                newPair->mult1[j]   = 0;
+                newPair->mult2[j]   = 0;
+              }
+              newPair->smLabel1   = multShortExp;
+              newPair->rewRule1   = temp->rewRule;
+              newPair->mLabel2    = NULL;
+              newPair->smLabel2   = 0;
+              newPair->mult2      = NULL;
+              newPair->p2         = pOne();
+              // this is ok since p2 is never tested by the 2nd criterion
+              newPair->rewRule2   = NULL;
+              
+              //newPair->p1 =  kBucketExtractLm( bucket );
+              //newPair->p1 =  p_Merge_q ( newPair->p1, kBucketExtractLm(bucket), 
+              //                            currRing 
+              //                          );
+              // insertion sort of newPair to the list of critical pairs waiting
+              // to be reduced, sorted by increasing labels
+              //kBucketInit( bucket, oldPoly, length ); 
+              //pDelete( &oldPoly );  
+              Cpair* temp = (*cp)->next;
+                  Print("ADDRESS: %p\n",temp);
+              if( temp )
+              { 
+                if( (expCmp(newPair->mLabelExp, temp->mLabelExp) == -1) )
+                {
+                  (*cp)->next = newPair;
+                  newPair->next = temp;
+                }
+                else
+                {
+                  while ( temp->next && (expCmp(newPair->mLabelExp, temp->next->mLabelExp) == 1) )
+                  {
+                    temp  = temp->next;
+                  }
+                  newPair->next = temp->next;
+                  temp->next    = newPair;
+                }
               }
               else
               {
-                while ( temp->next && (expCmp(newPair->mLabelExp, temp->next->mLabelExp) == 1) )
-                {
-                  temp  = temp->next;
-                }
-                newPair->next = temp->next;
-                temp->next    = newPair;
-              }
+                newPair->next = NULL;
+                (*cp)->next   = newPair;
+              }  
             }
+            // newPoly = 0 => free memory
             else
             {
-              newPair->next = NULL;
-              (*cp)->next   = newPair;
-            }  
+              Print("HERE WE ARE DELETING POLYS IS FUN!\n");
+              pDelete( &newPoly );
+            }
             // get back on track for the old poly which has to be checked for 
             // reductions by the following element in gCurr
-            pWrite(newPoly);
             Print("Poly copying: ");
-            pWrite(newPoly);
-            pWrite(oldPoly);
-            kBucketInit( bucket, oldPoly, 0 );
-            pDelete( &oldPoly );
+            pWrite(kBucketGetLm( bucket ) );
             isMult      = false;
             *redundant  = true;
-            temp    = temp->next;
+            temp        = temp->next;
             goto startagainTop;
           }
           // else we can go on and reduce sp

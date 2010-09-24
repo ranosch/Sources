@@ -323,6 +323,10 @@ inline void kBucketCopyToPoly (
 /// @return the reduced s-polynomial
 /// @sa computeSpols, reducedByRedGBCritPair
 poly currReduction  ( 
+  kStrategy strat,        ///<[in]      strategy to reduce elements w.r.t. \c redGB
+                          ///           needed for possible reduction of newly
+                          ///           generated polys during higher label
+                          ///           reductions  
   poly sp,                ///<[in,out]  s-polynomial to be reduced
   Cpair** cp,             ///<[in,out]  corresponding critical pair: if a new 
                           ///           polynomial is added due to a higher
