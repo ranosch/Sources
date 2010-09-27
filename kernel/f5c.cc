@@ -43,6 +43,9 @@
 #include "pInline2.h"
 #include "f5c.h"
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #ifdef PDEBUG
 #undef PDEBUG
 #define PDEBUG 1 
@@ -120,7 +123,7 @@ ideal f5cMain(ideal F, ideal Q)
     for( k=0; k<IDELEMS(r); k++ )
     {
       pTest( r->m[k] );
-      Print("TESTS: %p ",r->m[k]);
+      Print("TESTS bef interred: %p ",r->m[k]);
       pWrite(r->m[k]);
     }
 #endif
@@ -129,6 +132,14 @@ ideal f5cMain(ideal F, ideal Q)
     idDelete( &r );
     r = rTemp;
     Print("HERE2\n");
+#if F5EDEBUG
+    for( k=0; k<IDELEMS(r); k++ )
+    {
+      pTest( r->m[k] );
+      Print("TESTS after interred: %p ",r->m[k]);
+      pWrite(r->m[k]);
+    }
+#endif
   }
   
   omfree(shift);
@@ -146,6 +157,18 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
 #if F5EDEBUG
   Print("F5CITER-BEGIN\n");
   Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
+  int j = 0;
+  int k = 0;
+  Print("SIZE OF redGB: %d\n",IDELEMS(redGB));
+  for( ; k<IDELEMS(redGB); k++)
+  {
+    j = 0;
+    Print("Poly: %p -- ",redGB->m[k]);
+    pTest( redGB->m[k] );
+    pWrite(pHead(redGB->m[k]));
+    Print("%d. EXP VEC: ", k);
+    Print("\n");
+  }
 #endif  
   // create the reduction structure "strat" which is needed for all 
   // reductions with redGB in this iteration step
@@ -153,7 +176,20 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   strat->syzComp  = 0;
   strat->ak       = idRankFreeModule(redGB);
   prepRedGBReduction(strat, redGB);
-
+#if F5EDEBUG
+  Print("F5CITER-AFTER PREPREDUCTION\n");
+  Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
+  Print("SIZE OF redGB: %d\n",IDELEMS(redGB));
+  for( ; k<IDELEMS(redGB); k++)
+  {
+    j = 0;
+    Print("Poly: %p -- ",redGB->m[k]);
+    pTest( redGB->m[k] );
+    pWrite(pHead(redGB->m[k]));
+    Print("%d. EXP VEC: ", k);
+    Print("\n");
+  }
+#endif  
   int i;
   // create array of leading monomials of previously computed elements in redGB
   F5Rules* f5Rules        = (F5Rules*) omalloc(sizeof(struct F5Rules));
@@ -164,20 +200,23 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
 
   for(i=0; i<IDELEMS(redGB); i++) 
   {
+    Print("%d -- ",i);
+    pTest( redGB->m[i] );
+    pWrite( redGB->m[i] );
     f5Rules->label[i]  =  (int*) omalloc((currRing->N+1)*sizeof(int));
     pGetExpV(redGB->m[i], f5Rules->label[i]);
     pGetExpV(redGB->m[i], f5Rules->label[i]);
     f5Rules->slabel[i] =  pGetShortExpVector(redGB->m[i]); // bit complement ~
+    pWrite( redGB->m[i] );
   } 
 
 #if F5EDEBUG
-  int j = 0;
-  int k = 0;
   Print("SIZE OF redGB: %d\n",IDELEMS(redGB));
   for( ; k<IDELEMS(redGB); k++)
   {
     j = 0;
-    Print("Poly: ");
+    Print("Poly: %p -- ",redGB->m[k]);
+    pTest( redGB->m[k] );
     pWrite(pHead(redGB->m[k]));
     Print("%d. EXP VEC: ", k);
     Print("%p->%d\n", f5Rules->label[k], f5Rules->label[k][0]);
@@ -403,6 +442,11 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
                       );
     insertCritPair( cpTemp, critPairDeg, cpBounds );
   }
+  else 
+  {
+    // we can delete the memory reserved for cpTemp
+    omfree( cpTemp );
+  }
   omfree(expVecTemp);
   omfree(expVecNewElement);
 #if F5EDEBUG
@@ -553,6 +597,11 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
                       );
       Print("IN CRITPAIRPREv %ld %ld %ld %ld\n",cpTemp->mLabelExp[1], cpTemp->mLabelExp[2],cpTemp->mLabelExp[3],cpTemp->mLabelExp[4]);
     insertCritPair(cpTemp, critPairDeg, cpBounds);
+  }
+  else 
+  {
+    // we can delete the memory reserved for cpTemp
+    omfree( cpTemp );
   }
   omfree(expVecTemp);
   omfree(expVecNewElement);
@@ -815,6 +864,11 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       
       insertCritPair(cpTemp, critPairDeg, cpBounds);
     } 
+    else 
+    {
+      // we can delete the memory reserved for cpTemp
+      omfree( cpTemp );
+    }
   }
   omfree(checkExp);
   omfree(expVecTemp);
@@ -1169,11 +1223,22 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
       pWrite(temp->p2);
 #endif
 
-      // compute s-polynomial and reduce it w.r.t. redGB
-      sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift, 
-                                    negBitmaskShifted, offsets 
-                                  );
-      pNorm( sp ); 
+      // check if the critical pair is a trivial one, i.e. a pair generated 
+      // during a higher label reduction 
+      // => p1 is already the s-polynomial reduced w.r.t. redGB and we do not 
+      // need to reduce and/or compute anything
+      if( temp->p2 )
+      { 
+        // compute s-polynomial and reduce it w.r.t. redGB
+        sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift, 
+                                      negBitmaskShifted, offsets 
+                                    );
+        pNorm( sp ); 
+      }
+      else
+      {
+        sp = temp->p1;
+      }
 #if F5EDEBUG
       Print("BEFORE:  ");
       pWrite( sp );
@@ -1251,12 +1316,23 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         pWrite(temp->p2);
 #endif
 
-        // compute s-polynomial and reduce it w.r.t. redGB
-        sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift,   
-                                      negBitmaskShifted, offsets 
-                                    );
-        pNorm( sp ); 
-        
+        // check if the critical pair is a trivial one, i.e. a pair generated 
+        // during a higher label reduction 
+        // => p1 is already the s-polynomial reduced w.r.t. redGB and we do not 
+        // need to reduce and/or compute anything
+        if( temp->p2 )
+        { 
+          // compute s-polynomial and reduce it w.r.t. redGB
+          sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift, 
+                                        negBitmaskShifted, offsets 
+                                      );
+          pNorm( sp ); 
+        }
+        else
+        {
+          sp = temp->p1;
+        }
+
         Print("BEFORE:  ");
         pWrite(sp);
         pTest(sp);
@@ -1505,7 +1581,7 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
               newPair->smLabel2   = 0;
               newPair->mult2      = NULL;
               newPair->p1         = newPoly;
-              newPair->p2         = pOne();
+              newPair->p2         = NULL;
               // this is ok since p2 is never tested by the 2nd criterion
               newPair->rewRule2   = NULL;
               
