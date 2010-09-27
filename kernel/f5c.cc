@@ -1135,13 +1135,15 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
   while( cp )
   {
 #if F5EDEBUG
-    Print("START OF NEW DEG ROUND: CP %ld -- %p\n",cp->deg,cp);
+    Print("START OF NEW DEG ROUND: CP %ld | %p -- %p: # %d\n",cp->deg,cp->cp,cp,cp->length);
+    Print("NEW CPDEG? %p\n",cp->next);
 #endif
     temp  = sort(cp->cp, cp->length); 
     CpairDegBound* cpDel  = cp;
     cp                    = cp->next;
     omfree( cpDel );
     Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
+    Print("COMPUTED PAIR: %p -- NEXT PAIR %p\n",temp, temp->next);
     if( !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1)  )
     {
       Print("HERE\n");
@@ -1176,6 +1178,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
       Print("BEFORE:  ");
       pWrite( sp );
       pTest(sp);
+    Print("TEMPSBEFORE OK? %p -- %p\n",temp,temp->next);
 #endif
       sp = currReduction( strat, &polyForDel, sp, &temp, rewRulesLast, gCurrLast, 
                           f5Rules, multTemp, multLabelTemp, numVariables, shift, 
@@ -1185,10 +1188,12 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
       Print("AFTER:  ");
       pWrite(pHead(sp));
       pTest(sp);
+    Print("TEMPSAFTER OK? %p -- %p\n",temp,temp->next);
 #endif
       // otherwise sp is reduced to zero and we do not need to add it to gCurr
       // Note that even in this case the corresponding rule is already added to
       // rewRules list!
+    Print("TEMPS1 OK? %p -- %p\n",temp,temp->next);
       if( sp )
       {
         pNorm( sp ); 
@@ -1204,9 +1209,11 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         gCurrLast             = newElement;
         Print("ELEMENT ADDED TO GCURR: ");
         pWrite( gCurrLast->p );
+    Print("TEMPS2 OK? %p -- %p\n",temp,temp->next);
         criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
                           shift, negBitmaskShifted, offsets 
                         );
+    Print("TEMPS3 OK? %p -- %p\n",temp,temp->next);
         criticalPairCurr( gCurrLast, *f5Rules, &cp, numVariables, 
                           shift, negBitmaskShifted, offsets 
                         );
@@ -1222,7 +1229,8 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
     Print("THIS STEP %p\n",temp);
     while( temp!=NULL )
     {
-      Print("---------------------------\nPAIR: %p\n",temp);
+      Print("---------------------------\nPAIR: %p\nPAIRNEXT: %p\n",temp,temp->next);
+      Print("%p -- %p\n",temp->p1,temp->p2);
       pWrite(temp->p1);
       pWrite(temp->p2);
       if(!criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1))
@@ -1471,7 +1479,9 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
               // generate a new critical for further reduction steps
               // note: this will be a "trivial" critical pair, as the 2nd
               // generator will be 1
+              Print("NEW PAIR COMPUTED?\n"); 
               Cpair* newPair      = (Cpair*) omalloc( sizeof(Cpair) );
+              Print("%p\n",newPair);
               newPair->mLabelExp  = (unsigned long*) omalloc0( NUMVARS*
                                       sizeof(unsigned long) );
               newPair->mLabel1  = (int*) omalloc( (currRing->N+1)*sizeof(int) );
@@ -1494,6 +1504,7 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
               newPair->mLabel2    = NULL;
               newPair->smLabel2   = 0;
               newPair->mult2      = NULL;
+              newPair->p1         = newPoly;
               newPair->p2         = pOne();
               // this is ok since p2 is never tested by the 2nd criterion
               newPair->rewRule2   = NULL;
@@ -1530,6 +1541,7 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
                 newPair->next = NULL;
                 (*cp)->next   = newPair;
               }  
+              Print("NEW PAIR ADDRESS: %p -- %p\n",newPair,newPair->next);
             }
             // newPoly = 0 => free memory
             else
