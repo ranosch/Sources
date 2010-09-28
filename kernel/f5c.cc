@@ -202,6 +202,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   {
     Print("%d -- ",i);
     pTest( redGB->m[i] );
+    Print("------\n");
     pWrite( redGB->m[i] );
     f5Rules->label[i]  =  (int*) omalloc((currRing->N+1)*sizeof(int));
     pGetExpV(redGB->m[i], f5Rules->label[i]);
@@ -751,6 +752,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
         }
         
         insertCritPair(cpTemp, critPairDeg, cpBounds);
+      Print("HERE\n");
         
         Cpair* cp         = (Cpair*) omalloc( sizeof(Cpair) );
         cpTemp            = cp;
@@ -764,7 +766,6 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
         cpTemp->mLabel2   = NULL;
         cpTemp->smLabel2  = 0;
         cpTemp->mult2     = NULL;
-        pWrite( cpTemp->p2 );
         cpTemp->rewRule2  = (gCurrIter->next)->rewRule;
         cpTemp->mLabel1   = (int*) omalloc((currRing->N+1)*sizeof(int));
         cpTemp->mLabel2   = (int*) omalloc((currRing->N+1)*sizeof(int));
@@ -863,6 +864,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       }
       
       insertCritPair(cpTemp, critPairDeg, cpBounds);
+      Print("HERE\n");
     } 
     else 
     {
@@ -1217,10 +1219,11 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
       
 #if F5EDEBUG
       Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
-      Print("GEN1: ");
-      pWrite(temp->p1);
-      Print("GEN2: ");
-      pWrite(temp->p2);
+      Print("%p\n",temp);
+      Print("GEN1: %p\n",temp->p1);
+      //pWrite(temp->p1);
+      Print("GEN2: %p\n",temp->p2);
+      //pWrite(temp->p2);
 #endif
 
       // check if the critical pair is a trivial one, i.e. a pair generated 
@@ -1294,10 +1297,10 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
     Print("THIS STEP %p\n",temp);
     while( temp!=NULL )
     {
-      Print("---------------------------\nPAIR: %p\nPAIRNEXT: %p\n",temp,temp->next);
-      Print("%p -- %p\n",temp->p1,temp->p2);
-      pWrite(temp->p1);
-      pWrite(temp->p2);
+      //Print("---------------------------\nPAIR: %p\nPAIRNEXT: %p\n",temp,temp->next);
+      //Print("%p -- %p\n",temp->p1,temp->p2);
+      //pWrite(temp->p1);
+      //pWrite(temp->p2);
       if(!criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1))
       {
         Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
@@ -1312,8 +1315,8 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
         Print("GEN1: ");
         pWrite(temp->p1);
-        Print("GEN2: ");
-        pWrite(temp->p2);
+        //Print("GEN2: ");
+        //pWrite(temp->p2);
 #endif
 
         // check if the critical pair is a trivial one, i.e. a pair generated 
@@ -1451,8 +1454,8 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
   *redundant  = false;
   while ( temp )
   {
-    bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
     startagainTop:
+    bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
     Print("POSSIBLE REDUCER %p ",temp);
     pWrite(temp->p);
     if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
@@ -1719,8 +1722,8 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
     temp = gCurr;
     while ( temp )
     {
-      bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
       startagainTail:
+      bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
             Print("HERE TAILREDUCTION AGAIN %p\n",temp);
       if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
                               bucketExp, &multTemp, &isMult
@@ -2606,11 +2609,18 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
     Print("ISDIVISIBLE-BEGINNING \n");
 #endif
   pWrite(a);
+  Print("%ld\n",pGetShortExpVector(a));
+  Print("%ld\n",~pGetShortExpVector(a));
   pWrite(b);
+  Print("%ld\n",~pGetShortExpVector(b));
+  Print("BOOLEAN? %ld\n",(pGetShortExpVector(a) & (~pGetShortExpVector(b))));
+  Print("BOOLEAN? %ld\n",(sev_a & not_sev_b));
   p_LmCheckPolyRing1(a, currRing);
   p_LmCheckPolyRing1(b, currRing);
   if (sev_a & not_sev_b)
   {
+    Print("SEVA %ld\n",sev_a);
+    Print("SEVB %ld\n", not_sev_b);
     pAssume1(_p_LmDivisibleByNoComp(a, currRing, b, currRing) == FALSE);
     *isMult = false;
 #if F5EDEBUG
