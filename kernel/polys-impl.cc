@@ -93,7 +93,7 @@ unsigned long p_GetShortExpVector(poly p, ring r)
   unsigned int n = BIT_SIZEOF_LONG / r->N; // number of bits per exp
   unsigned int m1; // highest bit which is filled with (n+1)
   unsigned int i = 0, j=1;
-
+  
   if (n == 0)
   {
     if (r->N <2*BIT_SIZEOF_LONG)

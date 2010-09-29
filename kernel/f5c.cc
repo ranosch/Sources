@@ -59,12 +59,16 @@ int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 /// correctness. Thus these properties are assumed in the following.
 ideal f5cMain(ideal F, ideal Q) 
 {
+  Print("TEST1\n");
   if(idIs0(F)) 
   {
     return idInit(1, F->rank);
   }
   // interreduction of the input ideal F
-  ideal FRed = idCopy( F );
+  ideal FRed      = idCopy( F );
+  ideal FRedTemp  = kInterRed( FRed );
+  idDelete( &FRed );
+  FRed            = FRedTemp;
 
 #if F5EDEBUG
   int j = 0;
@@ -128,7 +132,7 @@ ideal f5cMain(ideal F, ideal Q)
     }
 */
 #endif
-    Print("HERE1\n");
+    Print("aHERE1\n");
     ideal rTemp = kInterRed(r);
     idDelete( &r );
     r = rTemp;
@@ -143,7 +147,6 @@ ideal f5cMain(ideal F, ideal Q)
 */
 #endif
   }
-  
   omfree(shift);
   omfree(negBitmaskShifted);
   omfree(offsets);
@@ -195,35 +198,43 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   int i;
   // create array of leading monomials of previously computed elements in redGB
   F5Rules* f5Rules        = (F5Rules*) omalloc(sizeof(struct F5Rules));
+  Print("ffff\n");
+  pTest( p );
+  Print("ffff0\n");
   // malloc memory for slabel
   f5Rules->label  = (int**) omalloc(IDELEMS(redGB)*sizeof(int*));
-  f5Rules->slabel = (unsigned long*) omalloc((currRing->N+1)*
+  Print("ffff\n");
+  pTest( p );
+  Print("ffff1\n");
+  f5Rules->slabel = (unsigned long*) omalloc0((currRing->N+1)*
                     sizeof(unsigned long)); 
+  pTest( redGB->m[0] );
 
   for(i=0; i<IDELEMS(redGB); i++) 
   {
-    //Print("%d -- ",i);
-    //pTest( redGB->m[i] );
-    //Print("------\n");
     //pWrite( redGB->m[i] );
+    Print("%d -- ",i);
     f5Rules->label[i]  =  (int*) omalloc((currRing->N+1)*sizeof(int));
     pGetExpV(redGB->m[i], f5Rules->label[i]);
-    pGetExpV(redGB->m[i], f5Rules->label[i]);
     f5Rules->slabel[i] =  pGetShortExpVector(redGB->m[i]); // bit complement ~
+    Print("%d -- ",i);
+    pTest( redGB->m[0] );
+    Print("------\n");
     //pWrite( redGB->m[i] );
   } 
+  Print("ffff\n");
+  //pLmTest( redGB->m[0] );
+  Print("ffff2\n");
 
   f5Rules->size = i++;
   // initialize a first (dummy) rewrite rule for the initial polynomial of this
   // iteration step
-  int* firstRuleLabel = (int*) omalloc( (currRing->N+1)*sizeof(int) );
-  firstRuleLabel[0]   = 0;
-  for( i=1;i<(currRing->N+1);i++ ) 
-  {
-    firstRuleLabel[i] = 0;
-  }
+  int* firstRuleLabel = (int*) omalloc0( (currRing->N+1)*sizeof(int) );
   RewRules firstRule  = { NULL, firstRuleLabel, 0 };
   // reduce and initialize the list of Lpolys with the current ideal generator p
+  Print("ffff\n");
+  pTest( p );
+  Print("ffff3\n");
   p = reduceByRedGBPoly( p, strat );
   pWrite( p );
   if( p )
@@ -253,6 +264,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
     omfree( firstRuleLabel );
     // next all new elements are added to redGB & redGB is being reduced
     Lpoly* temp;
+    int counter = 1;
     while( gCurr )
     {
       if( p_GetOrder( gCurr->p, currRing ) == pWTotaldegree( gCurr->p, currRing ) )
@@ -263,12 +275,13 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
       {
         Print("BEI POLY "); gCurr->p; Print(" stimmt etwas nicht!\n");
       }
-      Print("INSERT TO REDGB: ");
+      Print("%d INSERT TO REDGB: ",counter);
       pWrite(gCurr->p);
       idInsertPoly( redGB, gCurr->p );
       temp = gCurr;
       gCurr = gCurr->next;
       omfree(temp);
+      counter++;
     }
     idSkipZeroes( redGB );
   }
@@ -643,6 +656,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
   // Note: As we do not need the smaller exponent vector we do NOT store both in
   // the critical pair structure, but only the greater one. Thus the following
   // memory is freed before the end of criticalPairCurr()
+  Print("dddd\n");
   unsigned long* checkExp = (unsigned long*) omalloc0(NUMVARS*sizeof(unsigned long));
   int temp;
   long critPairDeg = 0; // degree of the label of the pair in the following
@@ -910,15 +924,6 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
         tempForDel  = cp;
         while( tempForDel->next )
         {
-          Print("here2\n");
-          poly pTestStuff = pOne();
-          pSetExp(pTestStuff,3,1);
-          pSetExp(pTestStuff,1,2);
-          pWrite(pTestStuff);
-        Print("%ld %ld %ld %ld\n",pTestStuff->exp[1],pTestStuff->exp[2],pTestStuff->exp[3],pTestStuff->exp[4]);
-          Print("COMPINDEX: %ld -- %ld\n",tempForDel->next->mLabelExp[currRing->pCompIndex],cp->mLabelExp[currRing->pCompIndex]);
-          Print("%d %d %d %d %d\n",tempForDel->next->mLabel1[0],tempForDel->next->mLabel1[1], tempForDel->next->mLabel1[2],tempForDel->next->mLabel1[3],tempForDel->next->mLabel1[4]);
-          Print("%d %d %d %d %d\n",cp->mLabel1[0],cp->mLabel1[1], cp->mLabel1[2],cp->mLabel1[3],cp->mLabel1[4]);
           if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
           {
             Cpair* tempDel    = tempForDel->next;
@@ -956,17 +961,6 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
         // then delete them as they will be detected by the Rewritten Criterion
         // of F5 nevertheless
         tempForDel    = cp;
-        poly pTestStuff2 = pOne();
-        pSetExp(pTestStuff2,3,1);
-        pSetExp(pTestStuff2,1,2);
-        pWrite(pTestStuff2);
-        Print("%ld %ld %ld %ld\n",pTestStuff2->exp[1],pTestStuff2->exp[2],pTestStuff2->exp[3],pTestStuff2->exp[4]);
-        poly pTestStuff3 = pOne();
-        pSetExp(pTestStuff3,3,1);
-        pSetExp(pTestStuff3,1,2);
-        pWrite(pTestStuff3);
-        Print("%ld %ld %ld %ld\n",pTestStuff3->exp[1],pTestStuff3->exp[2],pTestStuff3->exp[3],pTestStuff3->exp[4]);
-        Print("COMPARISON: %d\n",pLmCmp(pTestStuff2,pTestStuff3));
         while( tempForDel->next )
         {
           Print("%p -- NEXT CP ADDRESS %p\n",tempForDel,tempForDel->next);
@@ -1260,6 +1254,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         // update pointer to last element in gCurr list
         gCurrLast             = newElement;
         Print("ELEMENT ADDED TO GCURR: ");
+        pTest( gCurrLast->p );
         pWrite( gCurrLast->p );
     Print("TEMPS2 OK? %p -- %p\n",temp,temp->next);
         criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
@@ -1347,6 +1342,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
           // update pointer to last element in gCurr list
           gCurrLast             = newElement;
           Print("ELEMENT ADDED TO GCURR: ");
+          pTest( gCurrLast->p );
           pWrite( gCurrLast->p );
           criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
                             shift, negBitmaskShifted, offsets 
@@ -1709,6 +1705,8 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
       startagainTail:
       bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
             Print("HERE TAILREDUCTION AGAIN %p\n",temp);
+            Print("SPOLY RIGHT NOW: ");
+            pWrite( sp );
       if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
                               bucketExp, &multTemp, &isMult
                             ) 
@@ -1739,6 +1737,7 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
             getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
                                 shift, negBitmaskShifted, offsets
                               );   
+
             // if a higher label reduction should be done we do NOT reduce at all
             // we want to be fast in the tail reduction part
             if( expCmp( multLabelTempExp, (*cp)->mLabelExp ) == 1 )
@@ -1763,6 +1762,7 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
                               );
             // throw away the leading monomials of reducer and bucket
             pSetm( multiplier );
+            pTest( multiplier );
             p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
             tempLength = pLength( temp->p->next );
 
@@ -1776,13 +1776,16 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
               canonicalize = 0;
             }
             isMult  = false;
+  Print("alalalaHERE1\n");
             if( kBucketGetLm( bucket ) )
             {
               temp  = gCurr;
             }
             else
             {
-              break;
+  Print("HERE2\n");
+              kBucketDeleteAndDestroy( &bucket );
+              return sp;
             }
             goto startagainTail;
           }
@@ -1809,7 +1812,9 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
           }
           else
           {
-            break;
+  Print("HERE2\n");
+              kBucketDeleteAndDestroy( &bucket );
+              return sp;
           }
           goto startagainTail;
         } 
@@ -1817,7 +1822,11 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
       temp  = temp->next;
     }
     // here we know that 
+  Print("HERE1\n");
+    pWrite( sp );
+    pWrite( kBucketGetLm( bucket ) );
     sp =  p_Merge_q( sp, kBucketExtractLm(bucket), currRing );
+  Print("HERE1\n");
   }
 #if F5EDEBUG
     Print("CURRREDUCTION-END \n");
@@ -1990,7 +1999,6 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
 
   pSetCoeff0(m1, lc2);
   pSetCoeff0(m2, lc1);  // and now, m1 * LT(p1) == m2 * LT(p2)
-
   if (R != NULL)
   {
     if (Pair.i_r1 == -1)
@@ -2049,7 +2057,7 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
 
   pTest(Pair.GetLmCurrRing());
 #if F5EDEBUG 
-  Print("CREATESPOLY - BEGINNING\n");
+  Print("CREATESPOLY - END\n");
 #endif
   return Pair.GetLmCurrRing();
 }
@@ -2416,6 +2424,9 @@ poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
   ////////////////////////////////////////////////////////
   
   /*- compute------------------------------------------- -*/
+  Print("dddd\n");
+  pTest( q );
+  Print("dddd\n");
   p = pCopy(q);
   deleteHC(&p,&o,&j,strat);
   if (TEST_OPT_PROT) 
