@@ -50,7 +50,7 @@
 #undef PDEBUG
 #define PDEBUG 1 
 #endif
-#define F5EDEBUG  1
+#define F5EDEBUG  0
 #define setMaxIdeal 64
 #define NUMVARS currRing->ExpL_Size
 int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
@@ -120,12 +120,13 @@ ideal f5cMain(ideal F, ideal Q)
     // NOTE that we do not need the old rules from previous iteration steps
     // => we only interreduce the polynomials and forget about their labels
 #if F5EDEBUG
-    for( k=0; k<IDELEMS(r); k++ )
+/*    for( k=0; k<IDELEMS(r); k++ )
     {
       pTest( r->m[k] );
       Print("TESTS bef interred: %p ",r->m[k]);
       pWrite(r->m[k]);
     }
+*/
 #endif
     Print("HERE1\n");
     ideal rTemp = kInterRed(r);
@@ -133,12 +134,13 @@ ideal f5cMain(ideal F, ideal Q)
     r = rTemp;
     Print("HERE2\n");
 #if F5EDEBUG
-    for( k=0; k<IDELEMS(r); k++ )
+/*    for( k=0; k<IDELEMS(r); k++ )
     {
       pTest( r->m[k] );
       Print("TESTS after interred: %p ",r->m[k]);
       pWrite(r->m[k]);
     }
+*/
 #endif
   }
   
@@ -165,7 +167,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
     j = 0;
     Print("Poly: %p -- ",redGB->m[k]);
     pTest( redGB->m[k] );
-    pWrite(pHead(redGB->m[k]));
+   // pWrite(pHead(redGB->m[k]));
     Print("%d. EXP VEC: ", k);
     Print("\n");
   }
@@ -180,12 +182,12 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   Print("F5CITER-AFTER PREPREDUCTION\n");
   Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
   Print("SIZE OF redGB: %d\n",IDELEMS(redGB));
-  for( ; k<IDELEMS(redGB); k++)
+  for(k=0 ; k<IDELEMS(redGB); k++)
   {
     j = 0;
-    Print("Poly: %p -- ",redGB->m[k]);
-    pTest( redGB->m[k] );
-    pWrite(pHead(redGB->m[k]));
+    //Print("Poly: %p -- ",redGB->m[k]);
+    //pTest( redGB->m[k] );
+    //pWrite(pHead(redGB->m[k]));
     Print("%d. EXP VEC: ", k);
     Print("\n");
   }
@@ -200,34 +202,16 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
 
   for(i=0; i<IDELEMS(redGB); i++) 
   {
-    Print("%d -- ",i);
-    pTest( redGB->m[i] );
-    Print("------\n");
-    pWrite( redGB->m[i] );
+    //Print("%d -- ",i);
+    //pTest( redGB->m[i] );
+    //Print("------\n");
+    //pWrite( redGB->m[i] );
     f5Rules->label[i]  =  (int*) omalloc((currRing->N+1)*sizeof(int));
     pGetExpV(redGB->m[i], f5Rules->label[i]);
     pGetExpV(redGB->m[i], f5Rules->label[i]);
     f5Rules->slabel[i] =  pGetShortExpVector(redGB->m[i]); // bit complement ~
-    pWrite( redGB->m[i] );
+    //pWrite( redGB->m[i] );
   } 
-
-#if F5EDEBUG
-  Print("SIZE OF redGB: %d\n",IDELEMS(redGB));
-  for( ; k<IDELEMS(redGB); k++)
-  {
-    j = 0;
-    Print("Poly: %p -- ",redGB->m[k]);
-    pTest( redGB->m[k] );
-    pWrite(pHead(redGB->m[k]));
-    Print("%d. EXP VEC: ", k);
-    Print("%p->%d\n", f5Rules->label[k], f5Rules->label[k][0]);
-    for( ; j<currRing->N+1; j++)
-    {
-      Print("%d ",f5Rules->label[k][j]);
-    }
-    Print("\n");
-  }
-#endif
 
   f5Rules->size = i++;
   // initialize a first (dummy) rewrite rule for the initial polynomial of this
@@ -884,12 +868,12 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
 
 void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
 {
+  Cpair* tempForDel = NULL;
 #if F5EDEBUG
   Print("INSERTCRITPAIR-BEGINNING deg bound %p\n",*bound);
   Print("ADDRESS NEW CRITPAIR: %p -- degree %ld\n",cp, deg);
   pWrite(cp->p1);
   pWrite(cp->p2);
-  Cpair* tempForDel = NULL;
   if( (*bound) ) 
   {
     Print("ADDRESS BOUND CRITPAIR: %p -- deg %ld -- length %d\n",(*bound)->cp,(*bound)->deg, (*bound)->length);
