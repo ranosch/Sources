@@ -203,12 +203,12 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   pTest( p );
   Print("ffff0\n");
   // malloc memory for slabel
-  Print("ELEMENTS IN REDGB: %d\n",IDELEMS( redGB ) );
+  Print("ELEMENTS IN REDGB: %d\n",IDELEMS(redGB) );
   f5Rules->label  = (int**) omAlloc(IDELEMS(redGB)*sizeof(int*));
   Print("ffff\n");
   pTest( p );
   Print("ffff1\n");
-  f5Rules->slabel = (unsigned long*) omAlloc0((currRing->N+1)*
+  f5Rules->slabel = (unsigned long*) omAlloc0(IDELEMS(redGB)*
                     sizeof(unsigned long)); 
   Print("ALLOCATED SLABEL: %p -- %p / %p\n",f5Rules->slabel,f5Rules->slabel[0],f5Rules->slabel[1]);
   pTest( redGB->m[0] );
@@ -222,6 +222,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
     pGetExpV(redGB->m[i], f5Rules->label[i]);
     pWrite( redGB->m[i] );
     Print("ADDR: %p\n",f5Rules->slabel[i] );
+    Print("ADDR: %p\n",*(f5Rules->slabel+i) );
     f5Rules->slabel[i] =  pGetShortExpVector(redGB->m[i]); // bit complement ~
     Print("VALUE: %ld\n%d -- ",f5Rules->slabel[i],i);
     pWrite( redGB->m[i] );
@@ -252,7 +253,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
     gCurr->sExp       = pGetShortExpVector(p);
     gCurr->p          = p;
     gCurr->rewRule    = &firstRule;
-    gCurr->redundant  = false;
+    gCurr->redundant  = FALSE;
     
     // initializing the list of critical pairs for this iteration step 
     CpairDegBound* cpBounds = NULL;
@@ -634,7 +635,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
 #endif
   int i, j;
   unsigned long* mLabelExp;
-  bool pairNeeded       = false;
+  bool pairNeeded       = FALSE;
   int* expVecNewElement = (int*) omAlloc((currRing->N+1)*sizeof(int));
   int* expVecTemp       = (int*) omAlloc((currRing->N+1)*sizeof(int));
   pGetExpV(gCurr->p, expVecNewElement); 
@@ -692,7 +693,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       temp  = expVecNewElement[j] - expVecTemp[j];
       if(temp<0)
       {
-        pairNeeded          =   true;
+        pairNeeded          =   TRUE;
         cpTemp->mult1[j]    =   -temp;  
         cpTemp->mult2[j]    =   0; 
         cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j] - temp;
@@ -786,7 +787,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       }
       critPairDeg = 0;
     }
-    pairNeeded  = false;
+    pairNeeded  = FALSE;
     gCurrIter   = gCurrIter->next;
   }
   Print("COMPUTATION OF LAST POSSIBLE PAIR IN CRITPAIRCURR\n");
@@ -810,7 +811,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
     if(temp<0)
     {
       Print("HERE DRIN %d\n",j);
-      pairNeeded          =   true;
+      pairNeeded          =   TRUE;
       cpTemp->mult1[j]    =   -temp;  
       cpTemp->mult2[j]    =   0; 
       cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j] - temp;
@@ -1079,7 +1080,7 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 #if F5EDEBUG
         Print("CRITERION1-END-DETECTED \n");
 #endif
-      return true;
+      return TRUE;
     }
       Print("HERE\n");
 
@@ -1087,7 +1088,7 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 #if F5EDEBUG
   Print("CRITERION1-END \n");
 #endif
-  return false;
+  return FALSE;
 }
 
 
@@ -1141,7 +1142,7 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
 #if F5EDEBUG
         Print("CRITERION2-END-DETECTED \n");
 #endif
-          return true;
+          return TRUE;
       }
       Print("HERE\n");
       temp  = temp->next;
@@ -1150,7 +1151,7 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
 #if F5EDEBUG
   Print("CRITERION2-END \n");
 #endif
-  return false;
+  return FALSE;
 }
 
 
@@ -1168,8 +1169,8 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
   RewRules* rewRulesLast      = NULL; 
   Lpoly* higherLabel          = NULL;
   Lpoly*  gCurrLast           = *gCurr;
-  BOOLEAN redundant           = false;
-  BOOLEAN whenToCheck         = false; 
+  BOOLEAN redundant           = FALSE;
+  BOOLEAN whenToCheck         = FALSE; 
   higherLabelPoly* polyForDel = NULL;
   // start the rewriter rules list with a NULL element for the recent,
   // i.e. initial element in \c gCurr
@@ -1201,7 +1202,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
       newRule->slabel     = ~temp->smLabel1;
       rewRulesLast->next  = newRule;
       rewRulesLast        = newRule; 
-      //whenToCheck         = true;
+      //whenToCheck         = TRUE;
 #if F5EDEBUG
       Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
 #endif
@@ -1429,7 +1430,7 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
 #if F5EDEBUG
     Print("CURRREDUCTION-BEGINNING: GCURR %p \n",gCurr);
 #endif
-  BOOLEAN isMult  = false;
+  BOOLEAN isMult  = FALSE;
   int i;
   unsigned long multLabelShortExp;
   static int tempLength           = 0;
@@ -1445,7 +1446,7 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
   // Note that we need to make this top reduction explicit to be able to decide
   // if the returned polynomial is redundant or not!
   // search for reducers in the list gCurr
-  *redundant  = false;
+  *redundant  = FALSE;
   while ( temp )
   {
     startagainTop:
@@ -1458,7 +1459,7 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
                           ) 
       )
     {
-      *redundant = true;
+      *redundant = TRUE;
       // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
       // multTemp and check this multiple by both criteria
       Print("ISMULT %d\n",isMult);
@@ -1626,8 +1627,8 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
             // reductions by the following element in gCurr
             Print("Poly copying: ");
             pWrite(kBucketGetLm( bucket ) );
-            isMult      = false;
-            *redundant  = true;
+            isMult      = FALSE;
+            *redundant  = TRUE;
             temp        = temp->next;
             goto startagainTop;
           }
@@ -1649,8 +1650,8 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
             kBucketCanonicalize( bucket );
             canonicalize = 0;
           }
-          isMult      = false;
-          *redundant  = false;
+          isMult      = FALSE;
+          *redundant  = FALSE;
           if( kBucketGetLm( bucket ) )
           {
             temp  = gCurr;
@@ -1685,7 +1686,7 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
           canonicalize = 0;
         }
 
-        *redundant  = false;
+        *redundant  = FALSE;
         if( kBucketGetLm( bucket ) )
         {
           temp  = gCurr;
@@ -1766,8 +1767,8 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
             // we want to be fast in the tail reduction part
             if( expCmp( multLabelTempExp, (*cp)->mLabelExp ) == 1 )
             {            
-              isMult      = false;
-              *redundant  = true;
+              isMult      = FALSE;
+              *redundant  = TRUE;
               temp        = temp->next;
               Print("HERE TAILREDUCTION\n");
               if( temp )
@@ -1799,7 +1800,7 @@ poly currReduction  ( kStrategy strat, higherLabelPoly** polyForDel, poly sp,
               kBucketCanonicalize( bucket );
               canonicalize = 0;
             }
-            isMult  = false;
+            isMult  = FALSE;
   Print("alalalaHERE1\n");
             if( kBucketGetLm( bucket ) )
             {
@@ -2643,7 +2644,7 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
     Print("SEVA %ld\n",sev_a);
     Print("SEVB %ld\n", not_sev_b);
     pAssume1(_p_LmDivisibleByNoComp(a, currRing, b, currRing) == FALSE);
-    *isMult = false;
+    *isMult = FALSE;
 #if F5EDEBUG
     Print("ISDIVISIBLE-END1 \n");
 #endif
@@ -2659,7 +2660,7 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
       Print("%d ---- %d\n",p_GetExp(a,i,currRing), p_GetExp(b,i,currRing) );
       if (p_GetExp(a,i,currRing) > p_GetExp(b,i,currRing))
       {
-        *isMult = false;
+        *isMult = FALSE;
 #if F5EDEBUG
     Print("ISDIVISIBLE-END2 \n");
 #endif
@@ -2668,7 +2669,7 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
       (*mult)[i] = (p_GetExp(b,i,currRing) - p_GetExp(a,i,currRing)); 
       if( ((*mult)[i])>0 )
       {
-        *isMult = true;
+        *isMult = TRUE;
       }
       i--;
     }
