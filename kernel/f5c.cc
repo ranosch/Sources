@@ -1245,6 +1245,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
                             f5Rules, multTemp, multLabelTemp, numVariables, shift, 
                             negBitmaskShifted, offsets, &redundant
                           );
+        sp = reduceByRedGBPoly( sp, strat );
 #if F5EDEBUG
         Print("AFTER:  ");
         pWrite(pHead(sp));
@@ -1271,7 +1272,11 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
           gCurrLast             = newElement;
           Print( "Coming from this pair: %p\n", temp );
           Print( "ELEMENT ADDED TO GCURR: %p -- %p\n", gCurrLast, gCurrLast->p );
-          pWrite( 
+          for( int lala = 1; lala < (currRing->N+1); lala++ )
+          {
+            Print( "%d  ",rewRulesLast->label[lala] );
+          }
+          Print("\n"); 
           pTest( gCurrLast->p );
           pWrite( gCurrLast->p );
       Print("TEMPS2 OK? %p -- %p\n",temp,temp->next);
@@ -1347,6 +1352,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
                               f5Rules, multTemp, multLabelTemp, numVariables, shift, 
                               negBitmaskShifted, offsets, &redundant
                             );
+          sp = reduceByRedGBPoly( sp, strat );
           Print("AFTER:  ");
           pTest(sp);
         
@@ -1368,6 +1374,11 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
             gCurrLast             = newElement;
             Print( "Coming from this pair: %p\n", temp );
             Print( "ELEMENT ADDED TO GCURR: %p -- %p\n", gCurrLast, gCurrLast->p );
+            for( int lale = 1; lale < (currRing->N+1); lale++ )
+            {
+              Print( "%d  ",rewRulesLast->label[lale] );
+            }
+            Print("\n"); 
             pTest( gCurrLast->p );
             pWrite( gCurrLast->p );
             criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
@@ -1637,6 +1648,8 @@ poly currReduction  ( kStrategy strat, poly sp,
           p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
           tempLength = pLength( temp->p->next );
           kBucketExtractLm(bucket);
+          Print("REDUCTION WITH: ");
+          pWrite( temp->p );
           kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p->next, 
                                   &tempLength 
                                 ); 
@@ -1673,7 +1686,8 @@ poly currReduction  ( kStrategy strat, poly sp,
         p_Mult_nn( tempNeg, coeff, currRing );
         pSetm( tempNeg );
         kBucketExtractLm(bucket);
-        pWrite(pNeg(tempNeg->next));
+          Print("REDUCTION WITH: ");
+          pWrite( temp->p );
         kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
         if( canonicalize++ % 40 )
         {
