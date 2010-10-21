@@ -1639,8 +1639,7 @@ poly currReduction  ( kStrategy strat, poly sp,
             goto startagainTop;
           }
           // else we can go on and reduce sp
-          // NOTE: use the multiplier to store mult*poly
-          // The multiplier will be reduced w.r.t. strat before the 
+          // The multiplied reducer will be reduced w.r.t. strat before the 
           // bucket reduction starts!
           static poly multiplier = pOne();
           static poly multReducer;
@@ -1650,7 +1649,6 @@ poly currReduction  ( kStrategy strat, poly sp,
           // throw away the leading monomials of reducer and bucket
           pSetm( multiplier );
           p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
-          tempLength = pLength( temp->p->next );
           kBucketExtractLm(bucket);
           // build the multiplied reducer (note that we do not need the leading
           // term at all!
@@ -1662,6 +1660,9 @@ poly currReduction  ( kStrategy strat, poly sp,
           Print("MULTRED: %p\n", *multReducer );
           pWrite( multReducer );
           multReducer = reduceByRedGBPoly( multReducer, strat );
+          //  length must be computed after the reduction with 
+          //  redGB!
+          tempLength = pLength( multReducer );
            
           Print("REDUCTION WITH: ");
           pWrite( multReducer );
