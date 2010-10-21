@@ -1639,7 +1639,11 @@ poly currReduction  ( kStrategy strat, poly sp,
             goto startagainTop;
           }
           // else we can go on and reduce sp
+          // NOTE: use the multiplier to store mult*poly
+          // The multiplier will be reduced w.r.t. strat before the 
+          // bucket reduction starts!
           static poly multiplier = pOne();
+          static poly multReducer;
           getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
                               negBitmaskShifted, offsets
                             );
@@ -1648,11 +1652,22 @@ poly currReduction  ( kStrategy strat, poly sp,
           p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
           tempLength = pLength( temp->p->next );
           kBucketExtractLm(bucket);
+          // build the multiplied reducer (note that we do not need the leading
+          // term at all!
+          Print("LETS SEE -----------------------\n");
+          Print("MULT: %p\n", multiplier );
+          pWrite( multiplier );
+          pWrite( temp->p->next );
+          multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
+          Print("MULTRED: %p\n", *multReducer );
+          pWrite( multReducer );
+          multReducer = reduceByRedGBPoly( multReducer, strat );
+           
           Print("REDUCTION WITH: ");
+          pWrite( multReducer );
           pWrite( temp->p );
-          kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p->next, 
-                                  &tempLength 
-                                ); 
+          kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+          //pDelete( &multReducer );
           if( canonicalize++ % 40 )
           {
             kBucketCanonicalize( bucket );
@@ -1677,7 +1692,7 @@ poly currReduction  ( kStrategy strat, poly sp,
       {
         pWrite(kBucketGetLm(bucket));
         number coeff  = pGetCoeff(kBucketGetLm(bucket));
-        poly tempNeg  = pInit();
+        static poly tempNeg  = pInit();
         // throw away the leading monomials of reducer and bucket
         tempNeg       = pCopy( temp->p );
         tempLength    = pLength( tempNeg->next );
@@ -1694,7 +1709,7 @@ poly currReduction  ( kStrategy strat, poly sp,
           kBucketCanonicalize( bucket );
           canonicalize = 0;
         }
-
+        //pDelete( &tempNeg );
         *redundant  = FALSE;
         if( kBucketGetLm( bucket ) )
         {
