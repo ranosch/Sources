@@ -129,7 +129,7 @@ ideal f5cMain(ideal F, ideal Q)
     {
       pTest( r->m[k] );
       Print("TESTS bef interred: %p ",r->m[k]);
-      pWrite(r->m[k]);
+      //pWrite(r->m[k]);
     }
 */
 #endif
@@ -143,7 +143,7 @@ ideal f5cMain(ideal F, ideal Q)
     {
       pTest( r->m[k] );
       Print("TESTS after interred: %p ",r->m[k]);
-      pWrite(r->m[k]);
+      //pWrite(r->m[k]);
     }
 */
 #endif
@@ -171,7 +171,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
     j = 0;
     Print("Poly: %p -- ",redGB->m[k]);
     pTest( redGB->m[k] );
-   // pWrite(pHead(redGB->m[k]));
+   // //pWrite(pHead(redGB->m[k]));
     Print("%d. EXP VEC: ", k);
     Print("\n");
   }
@@ -191,7 +191,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
     j = 0;
     //Print("Poly: %p -- ",redGB->m[k]);
     //pTest( redGB->m[k] );
-    //pWrite(pHead(redGB->m[k]));
+    ////pWrite(pHead(redGB->m[k]));
     Print("%d. EXP VEC: ", k);
     Print("\n");
   }
@@ -215,20 +215,20 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
 
   for(i=0; i<IDELEMS(redGB); i++) 
   {
-    //pWrite( redGB->m[i] );
+    ////pWrite( redGB->m[i] );
     Print("here again\n");
     Print("%d -- ",i);
     f5Rules->label[i]  =  (int*) omAlloc((currRing->N+1)*sizeof(int));
     pGetExpV(redGB->m[i], f5Rules->label[i]);
-    pWrite( redGB->m[i] );
+    //pWrite( redGB->m[i] );
     Print("ADDR: %p\n",f5Rules->slabel[i] );
     Print("ADDR: %p\n",*(f5Rules->slabel+i) );
     f5Rules->slabel[i] =  pGetShortExpVector(redGB->m[i]); // bit complement ~
     Print("VALUE: %ld\n%d -- ",f5Rules->slabel[i],i);
-    pWrite( redGB->m[i] );
+    //pWrite( redGB->m[i] );
     pTest( redGB->m[i] );
     Print("------\n");
-    //pWrite( redGB->m[i] );
+    ////pWrite( redGB->m[i] );
   } 
   Print("ffff\n");
   //pLmTest( redGB->m[0] );
@@ -244,7 +244,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   pTest( p );
   Print("ffff3\n");
   p = reduceByRedGBPoly( p, strat );
-  pWrite( p );
+  //pWrite( p );
   if( p )
   {
     pNorm( p );  
@@ -291,7 +291,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
         Print("BEI POLY "); gCurr->p; Print(" stimmt etwas nicht!\n");
       }
       Print("%d INSERT TO REDGB: ",counter);
-      pWrite(gCurr->p);
+      //pWrite(gCurr->p);
       idInsertPoly( redGB, gCurr->p );
       temp = gCurr;
       gCurr = gCurr->next;
@@ -675,12 +675,12 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
   unsigned long* checkExp = (unsigned long*) omAlloc0(NUMVARS*sizeof(unsigned long));
   int temp;
   long critPairDeg = 0; // degree of the label of the pair in the following
-  pWrite( gCurrIter->p );
+  //pWrite( gCurrIter->p );
   while(gCurrIter->next)
   {
     cpTemp->p2        = gCurrIter->p;
     Print("2nd generator of pair: ");
-    pWrite( cpTemp->p2 );
+    //pWrite( cpTemp->p2 );
     cpTemp->rewRule2  = gCurrIter->rewRule;
     pGetExpV(gCurrIter->p, expVecTemp); 
     // computation of the lcm and the corresponding multipliers for the critical
@@ -802,7 +802,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
   // steps, i.e. elements already in redGB
   cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
     Print("AT THIS PLACE2: %ld\n",pGetExp(gCurrIter->p,0));
-    pWrite(gCurrIter->p);
+    //pWrite(gCurrIter->p);
   cpTemp->rewRule2  = gCurrIter->rewRule;
   cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetExp(gCurrIter->p, 0); 
   for(j=1; j<=currRing->N; j++)
@@ -901,12 +901,12 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
 #if F5EDEBUG
   Print("INSERTCRITPAIR-BEGINNING deg bound %p\n",*bound);
   Print("ADDRESS NEW CRITPAIR: %p -- degree %ld\n",cp, deg);
-  pWrite(cp->p1);
-  pWrite(cp->p2);
+  //pWrite(cp->p1);
+  //pWrite(cp->p2);
   if( (*bound) ) 
   {
     Print("ADDRESS BOUND CRITPAIR: %p -- deg %ld -- length %d\n",(*bound)->cp,(*bound)->deg, (*bound)->length);
-    pWrite( (*bound)->cp->p1 );
+    //pWrite( (*bound)->cp->p1 );
   }
 #endif
   if( !(*bound) ) // empty list?
@@ -1012,7 +1012,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
     }
   }
 #if F5EDEBUG
-  pWrite( (*bound)->cp->p2 );
+  //pWrite( (*bound)->cp->p2 );
   CpairDegBound* test = *bound;
   Print("-------------------------------------\n");
   while( test )
@@ -1022,8 +1022,8 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
     while( testcp )
     {
       Print("Pairs: %p\n",testcp);
-      pWrite(testcp->p1);
-      pWrite(testcp->p2);
+      //pWrite(testcp->p1);
+      //pWrite(testcp->p2);
       testcp = testcp->next;
     }
     test  = test->next;
@@ -1234,7 +1234,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
       }
 #if F5EDEBUG
       Print("BEFORE:  ");
-      pWrite( sp );
+      //pWrite( sp );
       pTest(sp);
     Print("TEMPSBEFORE OK? %p -- %p\n",temp,temp->next);
 #endif
@@ -1248,7 +1248,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         sp = reduceByRedGBPoly( sp, strat );
 #if F5EDEBUG
         Print("AFTER:  ");
-        pWrite(pHead(sp));
+        //pWrite(pHead(sp));
         pTest(sp);
         Print("TEMPSAFTER OK? %p -- %p\n",temp,temp->next);
 #endif
@@ -1278,7 +1278,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
           }
           Print("\n"); 
           pTest( gCurrLast->p );
-          pWrite( gCurrLast->p );
+          //pWrite( gCurrLast->p );
       Print("TEMPS2 OK? %p -- %p\n",temp,temp->next);
           criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
                             shift, negBitmaskShifted, offsets 
@@ -1307,8 +1307,8 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
     {
       //Print("---------------------------\nPAIR: %p\nPAIRNEXT: %p\n",temp,temp->next);
       //Print("%p -- %p\n",temp->p1,temp->p2);
-      //pWrite(temp->p1);
-      //pWrite(temp->p2);
+      ////pWrite(temp->p1);
+      ////pWrite(temp->p2);
       if(!criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1))
       {
         Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
@@ -1322,9 +1322,9 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
 #if F5EDEBUG
         Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
         Print("GEN1: %p\n", temp->p1 );
-        pWrite(temp->p1);
+        //pWrite(temp->p1);
         //Print("GEN2: ");
-        //pWrite(temp->p2);
+        ////pWrite(temp->p2);
 #endif
 
         // check if the critical pair is a trivial one, i.e. a pair generated 
@@ -1346,7 +1346,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         {
           pNorm( sp ); 
           Print("BEFORE:  ");
-          pWrite(sp);
+          //pWrite(sp);
           pTest(sp);
           sp = currReduction( strat, sp, &temp, rewRulesLast, gCurrLast, 
                               f5Rules, multTemp, multLabelTemp, numVariables, shift, 
@@ -1380,7 +1380,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
             }
             Print("\n"); 
             pTest( gCurrLast->p );
-            pWrite( gCurrLast->p );
+            //pWrite( gCurrLast->p );
             criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
                               shift, negBitmaskShifted, offsets 
                             );
@@ -1468,7 +1468,7 @@ poly currReduction  ( kStrategy strat, poly sp,
     Print("POSSIBLE REDUCER %p ",temp);
     Print("%p\n",temp->p);
     pTest( temp->p );
-    pWrite(temp->p);
+    //pWrite(temp->p);
     if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
                             bucketExp, &multTemp, &isMult
                           ) 
@@ -1516,9 +1516,9 @@ poly currReduction  ( kStrategy strat, poly sp,
                           bucket->buckets_length[cano] 
                         );
             Print("NEW POLYNOMIAL FROM BUCKET: ");
-            pWrite(kBucketGetLm(newBucket));
+            //pWrite(kBucketGetLm(newBucket));
             Print("HERE?\n");
-            pWrite(kBucketGetLm(newBucket));
+            //pWrite(kBucketGetLm(newBucket));
             //multiplier->exp       = multTempExp;
             //getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
             //                    negBitmaskShifted, offsets
@@ -1535,23 +1535,23 @@ poly currReduction  ( kStrategy strat, poly sp,
             tempLength = pLength( temp->p->next );
             kBucketExtractLm(newBucket);
             Print("MULTIPLIER: ");
-            pWrite(multiplier);
+            //pWrite(multiplier);
             Print("REDUCER: ");
-            pWrite( temp->p );
+            //pWrite( temp->p );
             kBucket_Minus_m_Mult_p( newBucket, multiplier, temp->p->next, 
                                     &tempLength 
                                   ); 
             // get monomials out of bucket and save the poly as first generator 
             // of a new critical pair
             int length2 = 0;
-            pWrite( kBucketGetLm(newBucket) );
+            //pWrite( kBucketGetLm(newBucket) );
             kBucketClear( newBucket, &newPoly, &length2 );
             Print("NEWPOLY: ");
-            pWrite( newPoly );
+            //pWrite( newPoly );
             newPoly = reduceByRedGBPoly( newPoly, strat );
              
             Print("NEWLY AFTER REDGB REDUCTION: %p\n",newPoly);
-            pWrite(newPoly);
+            //pWrite(newPoly);
             // if newPoly = 0 nothing has to be done :)
             // else we have to generate a new "trivial" critical pair
             if( newPoly )
@@ -1632,7 +1632,7 @@ poly currReduction  ( kStrategy strat, poly sp,
             // get back on track for the old poly which has to be checked for 
             // reductions by the following element in gCurr
             Print("Poly copying: ");
-            pWrite(kBucketGetLm( bucket ) );
+            //pWrite(kBucketGetLm( bucket ) );
             isMult      = FALSE;
             *redundant  = TRUE;
             temp        = temp->next;
@@ -1654,19 +1654,19 @@ poly currReduction  ( kStrategy strat, poly sp,
           // term at all!
           Print("LETS SEE -----------------------\n");
           Print("MULT: %p\n", multiplier );
-          pWrite( multiplier );
-          pWrite( temp->p->next );
+          //pWrite( multiplier );
+          //pWrite( temp->p->next );
           multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
           Print("MULTRED: %p\n", *multReducer );
-          pWrite( multReducer );
+          //pWrite( multReducer );
           multReducer = reduceByRedGBPoly( multReducer, strat );
           //  length must be computed after the reduction with 
           //  redGB!
           tempLength = pLength( multReducer );
            
           Print("REDUCTION WITH: ");
-          pWrite( multReducer );
-          pWrite( temp->p );
+          //pWrite( multReducer );
+          //pWrite( temp->p );
           kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
           //pDelete( &multReducer );
           if( canonicalize++ % 40 )
@@ -1691,19 +1691,19 @@ poly currReduction  ( kStrategy strat, poly sp,
       // criterion again => go on with reduction steps
       else
       {
-        pWrite(kBucketGetLm(bucket));
+        //pWrite(kBucketGetLm(bucket));
         number coeff  = pGetCoeff(kBucketGetLm(bucket));
         static poly tempNeg  = pInit();
         // throw away the leading monomials of reducer and bucket
         tempNeg       = pCopy( temp->p );
         tempLength    = pLength( tempNeg->next );
         Print("HERE\n");
-        pWrite(kBucketGetLm(bucket));
+        //pWrite(kBucketGetLm(bucket));
         p_Mult_nn( tempNeg, coeff, currRing );
         pSetm( tempNeg );
         kBucketExtractLm(bucket);
           Print("REDUCTION WITH: ");
-          pWrite( temp->p );
+          //pWrite( temp->p );
         kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
         if( canonicalize++ % 40 )
         {
@@ -1726,7 +1726,7 @@ poly currReduction  ( kStrategy strat, poly sp,
     temp  = temp->next;
   }
   // we know that sp = 0 at this point!
-  pWrite(kBucketGetLm(bucket));
+  //pWrite(kBucketGetLm(bucket));
   sp  = kBucketExtractLm( bucket );
 //#if F5EDEBUG
   Print("END OF TOP REDUCTION:  ");
@@ -1736,7 +1736,7 @@ poly currReduction  ( kStrategy strat, poly sp,
   //kBucketClear( bucket, &sp, &testLength ); 
   // ---------------------------------------
   pTest( sp );
-  pWrite( sp ); 
+  //pWrite( sp ); 
   // for testing of correctness of ordering!
   //kBucketInit( bucket, sp, 0 ); 
   //sp = kBucketExtractLm( bucket );
@@ -1755,7 +1755,7 @@ poly currReduction  ( kStrategy strat, poly sp,
       bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
             Print("HERE TAILREDUCTION AGAIN %p\n",temp);
             Print("SPOLY RIGHT NOW: ");
-            pWrite( sp );
+            //pWrite( sp );
             pTest( sp );
       if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
                               bucketExp, &multTemp, &isMult
@@ -1875,8 +1875,8 @@ poly currReduction  ( kStrategy strat, poly sp,
     }
     // here we know that 
   Print("HERE1\n");
-    pWrite( sp );
-    pWrite( kBucketGetLm( bucket ) );
+    //pWrite( sp );
+    //pWrite( kBucketGetLm( bucket ) );
     sp =  p_Merge_q( sp, kBucketExtractLm(bucket), currRing );
   Print("HERE1\n");
   }
@@ -1997,20 +1997,20 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   LObject Pair( currRing );
   Pair.p1  = cp->p1;
   Print( "P1: %p\n", cp->p1 );
-  pWrite(cp->p1);
+  //pWrite(cp->p1);
   Pair.p2  = cp->p2;
   Print( "P2: &p\n", cp->p2 );
-  pWrite(cp->p2);
+  //pWrite(cp->p2);
   poly m1 = multInit( cp->mult1, numVariables, shift, 
                       negBitmaskShifted, offsets 
                     );
   Print("M1: %p ",m1);
-  pWrite(m1);
+  //pWrite(m1);
   poly m2 = multInit( cp->mult2, numVariables, shift, 
                       negBitmaskShifted, offsets 
                     );
   Print("M2: %p ",m2);
-  pWrite(m2);
+  //pWrite(m2);
 #ifdef KDEBUG
   create_count_f5++;
 #endif
@@ -2655,10 +2655,10 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
 #if F5EDEBUG
     Print("ISDIVISIBLE-BEGINNING \n");
 #endif
-  pWrite(a);
+  //pWrite(a);
   Print("%ld\n",pGetShortExpVector(a));
   Print("%ld\n",~pGetShortExpVector(a));
-  pWrite(b);
+  //pWrite(b);
   Print("%ld\n",~pGetShortExpVector(b));
   Print("BOOLEAN? %ld\n",(pGetShortExpVector(a) & (~pGetShortExpVector(b))));
   Print("BOOLEAN? %ld\n",(sev_a & not_sev_b));
