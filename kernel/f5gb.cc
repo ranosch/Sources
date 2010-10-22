@@ -1787,13 +1787,13 @@ void findReducers(testPoly* checkedPrev, testPair* checkedPairs, LList* f5Criter
                                     kBucketExtractLm(bucket);
                                     kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                                     canonicalize++;
-                                    //Print("Reduction\n");
+                                    Print("Reduction\n");
                                     if(!(canonicalize % 50)) {
                                         kBucketCanonicalize(bucket);
                                     }
                                     tempPoly    =   kBucketGetLm(bucket);
                                     //Print("TEMPPOLY:  ");
-                                    //pWrite(tempPoly);
+                                    pWrite(tempPoly);
                                     if(NULL != tempPoly) {
                                         tempRed     =   gPrev->getFirst();
                                         continue;
@@ -1833,7 +1833,6 @@ void findReducers(testPoly* checkedPrev, testPair* checkedPairs, LList* f5Criter
                                     else {
                                         poly tempRedPoly    =   tempRed->getPoly();
                                         //Print("REDUCER: ");
-                                        //pWrite(tempRedPoly);
                                         pIter(tempRedPoly);
                                         int lTempRedPoly    =   pLength(tempRedPoly);
                                         //Print("HEAD MONOMIAL KBUCKET: ");
@@ -1841,13 +1840,14 @@ void findReducers(testPoly* checkedPrev, testPair* checkedPairs, LList* f5Criter
                                         kBucketExtractLm(bucket);
                                         kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                                         canonicalize++;
-                                        //Print("REDUCTION\n");
+                                        Print("REDUCTION\n");
+                                        pWrite(tempRedPoly);
                                         addToG  = 1;
                                         if(!(canonicalize % 50)) {
                                             kBucketCanonicalize(bucket);
                                         }
-                                        //Print("HEAD MONOMIAL KBUCKET: ");
-                                        //pWrite(kBucketGetLm(bucket));
+                                        Print("HEAD MONOMIAL KBUCKET: ");
+                                        pWrite(kBucketGetLm(bucket));
                                         tempPoly    =   kBucketGetLm(bucket);
                                         //Print("TEMPPOLY:  ");
                                         //pWrite(tempPoly);
@@ -1899,19 +1899,19 @@ addToG  = 0;
                     else { // u = 1 => reduce without checking criteria
                         poly tempRedPoly    =   tempRed->getPoly();
                         //Print("REDUCER: ");
-                        //pWrite(tempRedPoly);
                         pIter(tempRedPoly);
                         int lTempRedPoly    =   pLength(tempRedPoly);
                         kBucketExtractLm(bucket);
                         kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                         canonicalize++;
-                        //Print("Reduction\n");
+                        Print("Reduction\n");
+                        pWrite(tempRedPoly);
                         if(!(canonicalize % 50)) {
                             kBucketCanonicalize(bucket);
                         }
                         tempPoly    =   kBucketGetLm(bucket);
                         //Print("TEMPPOLY:  ");
-                        //pWrite(tempPoly);
+                        pWrite(tempPoly);
                         if(NULL != tempPoly) {
                             tempRed     =   gPrev->getFirst();
                             continue;
@@ -1948,13 +1948,14 @@ addToG  = 0;
                                     kBucketExtractLm(bucket);
                                     kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                                     canonicalize++;
-                                    //Print("Reduction\n");
+                                    Print("Reduction\n");
+                                    pWrite( tempRedPoly );
                                     if(!(canonicalize % 50)) {
                                         kBucketCanonicalize(bucket);
                                     }
                                     tempPoly    =   kBucketGetLm(bucket);
                                     //Print("TEMPPOLY:  ");
-                                    //pWrite(tempPoly);
+                                    pWrite(tempPoly);
                                     if(NULL != tempPoly) {
                                         tempRed     =   gPrev->getFirst();
                                         continue;
@@ -1998,13 +1999,14 @@ addToG  = 0;
                                         kBucketExtractLm(bucket);
                                         kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                                         canonicalize++;
-                                        //Print("REDUCTION\n");
+                                        Print("REDUCTION\n");
+                                        pWrite( tempRedPoly );
                                         addToG  = 1;
                                         if(!(canonicalize % 50)) {
                                             kBucketCanonicalize(bucket);
                                         }
                                         //Print("HEAD MONOMIAL KBUCKET: ");
-                                        //pWrite(kBucketGetLm(bucket));
+                                        pWrite(kBucketGetLm(bucket));
                                         tempPoly    =   kBucketGetLm(bucket);
                                         //Print("TEMPPOLY:  ");
                                         //pWrite(tempPoly);

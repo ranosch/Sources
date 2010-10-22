@@ -27,7 +27,7 @@ extern char fePathSep;
 /* the are versions of limits.h with incorrect values (IRIX_6)
 * let's include our own */
 
-#include <mylimits.h>
+#include <omalloc/mylimits.h>
 
 /* OSF/1 and AIX_4 are missing the header for setenv, but the proc exists */
 #if defined(DecAlpha_OSF1) || defined(AIX_4)
@@ -96,7 +96,7 @@ extern FILE*  feProtFile;
 extern FILE*  feFilePending; /*temp. storage for grammar.y */
 extern char   fe_promptstr[];
 extern int    si_echo, printlevel;
-extern int    pagelength, colmax;
+extern int    colmax;
 extern int    yy_blocklineno;
 extern int    yy_noeof;
 extern char   prompt_char;

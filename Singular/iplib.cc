@@ -12,12 +12,12 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-#include <Singular/mod2.h>
+#include <kernel/mod2.h>
 #include <Singular/static.h>
 #include <Singular/tok.h>
 #include <kernel/options.h>
 #include <Singular/ipid.h>
-#include <omalloc.h>
+#include <omalloc/omalloc.h>
 #include <kernel/febase.h>
 #include <kernel/ring.h>
 #include <Singular/subexpr.h>
@@ -71,12 +71,11 @@ BOOLEAN iiGetLibStatus(char *lib)
 
   char *plib = iiConvName(lib);
   hl = basePack->idroot->get(plib,0);
+  omFree(plib);
   if((hl==NULL) ||(IDTYP(hl)!=PACKAGE_CMD))
   {
-    omFree(plib);
     return FALSE;
   }
-  omFree(plib);
   return (strcmp(lib,IDPACKAGE(hl)->libname)==0);
 }
 
@@ -291,10 +290,10 @@ char* iiGetLibProcBuffer(procinfo *pi, int part )
 */
 BOOLEAN iiPStart(idhdl pn, sleftv  * v)
 {
-  BOOLEAN err=FALSE;
-  int old_echo=si_echo;
-  char save_flags=0;
   procinfov pi=NULL;
+  int old_echo=si_echo;
+  BOOLEAN err=FALSE;
+  char save_flags=0;
 
   /* init febase ======================================== */
   /* we do not enter this case if filename != NULL !! */
@@ -498,7 +497,7 @@ sleftv * iiMake_proc(idhdl pn, package pack, sleftv* sl)
   if (iiLocalRing[myynest] != currRing)
   {
     if (currRing!=NULL)
-    {  
+    {
       if (((iiRETURNEXPR[myynest+1].Typ()>BEGIN_RING)
         && (iiRETURNEXPR[myynest+1].Typ()<END_RING))
       || ((iiRETURNEXPR[myynest+1].Typ()==LIST_CMD)
@@ -746,17 +745,17 @@ BOOLEAN iiLocateLib(const char* lib, char* where)
 
 BOOLEAN iiLibCmd( char *newlib, BOOLEAN autoexport, BOOLEAN tellerror, BOOLEAN force )
 {
-  char buf[256];
   char libnamebuf[128];
+  procinfov pi;
   idhdl h;
-  BOOLEAN LoadResult = TRUE;
   idhdl pl;
   idhdl hl;
-  int lines = 1;
   long pos = 0L;
-  procinfov pi;
   char *plib = iiConvName(newlib);
   FILE * fp = feFopen( newlib, "r", libnamebuf, tellerror );
+  int lines = 1;
+  BOOLEAN LoadResult = TRUE;
+
   if (fp==NULL)
   {
     return TRUE;
@@ -817,11 +816,25 @@ static void iiCleanProcs(idhdl &root)
     root=IDNEXT(root);
   }
 }
+static void iiRunInit(package p)
+{
+  idhdl h=p->idroot->get("mod_init",0);
+  if (h==NULL) return;
+  if (IDTYP(h)==PROC_CMD)
+  {
+    int save=yylineno;
+    myynest++;
+    procinfo *pi=(procinfo*)IDDATA(h);
+    //PrintS("mod_init found\n");
+    iiMake_proc(h,p,NULL);
+    myynest--;
+    yylineno=save;
+  }
+}
 /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
 BOOLEAN iiLoadLIB(FILE *fp, char *libnamebuf, char*newlib,
              idhdl pl, BOOLEAN autoexport, BOOLEAN tellerror)
 {
-  char buf[256];
   extern FILE *yylpin;
   libstackv ls_start = library_stack;
   lib_style_types lib_style;
@@ -865,6 +878,7 @@ BOOLEAN iiLoadLIB(FILE *fp, char *libnamebuf, char*newlib,
   reinit_yylp();
   fclose( yylpin );
   fp = NULL;
+  iiRunInit(IDPACKAGE(pl));
 
   {
     libstackv ls;
@@ -1019,7 +1033,7 @@ BOOLEAN load_modules(char *newlib, char *fullname, BOOLEAN autoexport)
   else
   {
     SModulFunctions sModulFunctions;
-    
+
     package s=currPack;
     currPack=IDPACKAGE(pl);
     fktn = (fktn2_t)dynl_sym(IDPACKAGE(pl)->handle, "mod_init");
@@ -1039,7 +1053,7 @@ BOOLEAN load_modules(char *newlib, char *fullname, BOOLEAN autoexport)
 
   load_modules_end:
   return RET;
-#endif /*STATIC */  
+#endif /*STATIC */
 }
 #endif /* HAVE_DYNAMIC_LOADING */
 

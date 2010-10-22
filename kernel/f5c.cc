@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include "options.h"
 #include "structs.h"
-#include "omalloc.h"
+#include "omAlloc.h"
 #include "polys.h"
 #include "timer.h"
 #include "p_polys.h"
@@ -43,9 +43,12 @@
 #include "pInline2.h"
 #include "f5c.h"
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #ifdef PDEBUG
 #undef PDEBUG
-#define PDEBUG 1 
+#define PDEBUG 2 
 #endif
 #define F5EDEBUG  1
 #define setMaxIdeal 64
@@ -56,24 +59,27 @@ int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 /// correctness. Thus these properties are assumed in the following.
 ideal f5cMain(ideal F, ideal Q) 
 {
+  Print("TEST1\n");
   if(idIs0(F)) 
   {
     return idInit(1, F->rank);
   }
   // interreduction of the input ideal F
-  ideal FRed = kInterRed(F, NULL);
-  idDelete( &F );
-  F = FRed;
+  //ideal FRed      = idCopy( F );
+  ideal FRed        = F;
+  //ideal FRedTemp  = kInterRed( FRed );
+  //idDelete( &FRed );
+  //FRed            = FRedTemp;
 
 #if F5EDEBUG
   int j = 0;
   int k = 0;
   int* expVec   = new int[(currRing->N)+1];
-  for( ; k<IDELEMS(F); k++)
+  for( ; k<IDELEMS(FRed); k++)
   {
-    Print("ORDER: %ld\n",F->m[k]->exp[currRing->pOrdIndex]);
+    Print("ORDER: %ld\n",FRed->m[k]->exp[currRing->pOrdIndex]);
     Print("SIZE OF INTERNAL EXPONENT VECTORS: %d\n",currRing->ExpL_Size);
-    pGetExpV(F->m[k],expVec);
+    pGetExpV(FRed->m[k],expVec);
     Print("EXP VEC: ");
     for( ; j<currRing->N+1; j++)
     {
@@ -89,9 +95,9 @@ ideal f5cMain(ideal F, ideal Q)
   /// declaration of global variables used for exponent vector
   int numVariables  = currRing->N;
   /// reading/writing/comparison
-  int* shift              = (int*) omalloc((currRing->N+1)*sizeof(int));
-  unsigned long* negBitmaskShifted  = (unsigned long*) omalloc((currRing->N+1)*sizeof(unsigned long));
-  int* offsets            = (int*) omalloc((currRing->N+1)*sizeof(int));
+  int* shift              = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  unsigned long* negBitmaskShifted  = (unsigned long*) omAlloc((currRing->N+1)*sizeof(unsigned long));
+  int* offsets            = (int*) omAlloc((currRing->N+1)*sizeof(int));
   const unsigned long _bitmasks[4] = {-1, 0x7fff, 0x7f, 0x3};
   for( ; i<currRing->N+1; i++)
   {
@@ -107,36 +113,44 @@ ideal f5cMain(ideal F, ideal Q)
     offsets[i]              = (currRing->VarOffset[i] & 0xffffff);
   }
   
-  ideal r = idInit(1, F->rank);
+  ideal r = idInit(1, FRed->rank);
   // save the first element in ideal r, initialization of iteration process
-  r->m[0] = F->m[0];
+  r->m[0] = FRed->m[0];
   // counter over the remaining generators of the input ideal F
-  for(i=1; i<IDELEMS(F); i++) 
+  for(i=1; i<IDELEMS(FRed); i++) 
   {
     // computation of r: a groebner basis of <F[0],...,F[gen]> = <r,F[gen]>
-    r = f5cIter(F->m[i], r, numVariables, shift, negBitmaskShifted, offsets);
+    r = f5cIter(FRed->m[i], r, numVariables, shift, negBitmaskShifted, offsets);
     // the following interreduction is the essential idea of F5e.
     // NOTE that we do not need the old rules from previous iteration steps
     // => we only interreduce the polynomials and forget about their labels
 #if F5EDEBUG
-    for( k=0; k<IDELEMS(r); k++ )
+/*    for( k=0; k<IDELEMS(r); k++ )
     {
       pTest( r->m[k] );
-      Print("TESTS: %p ",r->m[k]);
-      pWrite(r->m[k]);
+      Print("TESTS bef interred: %p ",r->m[k]);
+      //pWrite(r->m[k]);
     }
+*/
 #endif
-    Print("HERE1\n");
-    ideal rTemp = kInterRed(r);
-    idDelete( &r );
-    r = rTemp;
+    Print("aHERE1\n");
+    //ideal rTemp = kInterRed(r);
+    //idDelete( &r );
+    //r = rTemp;
     Print("HERE2\n");
+#if F5EDEBUG
+/*    for( k=0; k<IDELEMS(r); k++ )
+    {
+      pTest( r->m[k] );
+      Print("TESTS after interred: %p ",r->m[k]);
+      //pWrite(r->m[k]);
+    }
+*/
+#endif
   }
-  
-  omfree(shift);
-  omfree(negBitmaskShifted);
-  omfree(offsets);
-  
+  omFree(shift);
+  omFree(negBitmaskShifted);
+  omFree(offsets);
   return r;
 }
 
@@ -149,6 +163,18 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
 #if F5EDEBUG
   Print("F5CITER-BEGIN\n");
   Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
+  int j = 0;
+  int k = 0;
+  Print("SIZE OF redGB: %d\n",IDELEMS(redGB));
+  for( ; k<IDELEMS(redGB); k++)
+  {
+    j = 0;
+    Print("Poly: %p -- ",redGB->m[k]);
+    pTest( redGB->m[k] );
+   // //pWrite(pHead(redGB->m[k]));
+    Print("%d. EXP VEC: ", k);
+    Print("\n");
+  }
 #endif  
   // create the reduction structure "strat" which is needed for all 
   // reductions with redGB in this iteration step
@@ -156,94 +182,124 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   strat->syzComp  = 0;
   strat->ak       = idRankFreeModule(redGB);
   prepRedGBReduction(strat, redGB);
-
+#if F5EDEBUG
+  Print("F5CITER-AFTER PREPREDUCTION\n");
+  Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
+  Print("SIZE OF redGB: %d\n",IDELEMS(redGB));
+  for(k=0 ; k<IDELEMS(redGB); k++)
+  {
+    j = 0;
+    //Print("Poly: %p -- ",redGB->m[k]);
+    //pTest( redGB->m[k] );
+    ////pWrite(pHead(redGB->m[k]));
+    Print("%d. EXP VEC: ", k);
+    Print("\n");
+  }
+#endif  
   int i;
   // create array of leading monomials of previously computed elements in redGB
-  F5Rules* f5Rules        = (F5Rules*) omalloc(sizeof(struct F5Rules));
+  F5Rules* f5Rules        = (F5Rules*) omAlloc(sizeof(struct F5Rules));
+  Print("ffff\n");
+  pTest( p );
+  Print("ffff0\n");
   // malloc memory for slabel
-  f5Rules->label  = (int**) omalloc(IDELEMS(redGB)*sizeof(int*));
-  f5Rules->slabel = (unsigned long*) omalloc((currRing->N+1)*
+  Print("ELEMENTS IN REDGB: %d\n",IDELEMS(redGB) );
+  f5Rules->label  = (int**) omAlloc(IDELEMS(redGB)*sizeof(int*));
+  Print("ffff\n");
+  pTest( p );
+  Print("ffff1\n");
+  f5Rules->slabel = (unsigned long*) omAlloc0(IDELEMS(redGB)*
                     sizeof(unsigned long)); 
+  Print("ALLOCATED SLABEL: %p -- %p / %p\n",f5Rules->slabel,f5Rules->slabel[0],f5Rules->slabel[1]);
+  pTest( redGB->m[0] );
 
   for(i=0; i<IDELEMS(redGB); i++) 
   {
-    f5Rules->label[i]  =  (int*) omalloc((currRing->N+1)*sizeof(int));
+    ////pWrite( redGB->m[i] );
+    Print("here again\n");
+    Print("%d -- ",i);
+    f5Rules->label[i]  =  (int*) omAlloc((currRing->N+1)*sizeof(int));
     pGetExpV(redGB->m[i], f5Rules->label[i]);
-    pGetExpV(redGB->m[i], f5Rules->label[i]);
+    //pWrite( redGB->m[i] );
+    Print("ADDR: %p\n",f5Rules->slabel[i] );
+    Print("ADDR: %p\n",*(f5Rules->slabel+i) );
     f5Rules->slabel[i] =  pGetShortExpVector(redGB->m[i]); // bit complement ~
+    Print("VALUE: %ld\n%d -- ",f5Rules->slabel[i],i);
+    //pWrite( redGB->m[i] );
+    pTest( redGB->m[i] );
+    Print("------\n");
+    ////pWrite( redGB->m[i] );
   } 
-
-#if F5EDEBUG
-  int j = 0;
-  int k = 0;
-  Print("SIZE OF redGB: %d\n",IDELEMS(redGB));
-  for( ; k<IDELEMS(redGB); k++)
-  {
-    j = 0;
-    Print("Poly: ");
-    pWrite(pHead(redGB->m[k]));
-    Print("%d. EXP VEC: ", k);
-    Print("%p->%d\n", f5Rules->label[k], f5Rules->label[k][0]);
-    for( ; j<currRing->N+1; j++)
-    {
-      Print("%d ",f5Rules->label[k][j]);
-    }
-    Print("\n");
-  }
-#endif
+  Print("ffff\n");
+  //pLmTest( redGB->m[0] );
+  Print("ffff2\n");
 
   f5Rules->size = i++;
   // initialize a first (dummy) rewrite rule for the initial polynomial of this
   // iteration step
-  int* firstRuleLabel = (int*) omalloc( (currRing->N+1)*sizeof(int) );
-  firstRuleLabel[0]   = 0;
-  for( i=1;i<(currRing->N+1);i++ ) 
-  {
-    firstRuleLabel[i] = 0;
-  }
+  int* firstRuleLabel = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
   RewRules firstRule  = { NULL, firstRuleLabel, 0 };
   // reduce and initialize the list of Lpolys with the current ideal generator p
-  p = (redGB, currQuotient, p);  
-  Lpoly* gCurr      = (Lpoly*) omalloc( sizeof(Lpoly) );
-  gCurr->next       = NULL;
-  gCurr->sExp       = pGetShortExpVector(p);
-  gCurr->p          = p;
-  gCurr->rewRule    = &firstRule;
-  gCurr->redundant  = false;
-  
-  // initializing the list of critical pairs for this iteration step 
-  CpairDegBound* cpBounds = NULL;
-  criticalPairInit( gCurr, redGB, *f5Rules, &cpBounds, numVariables, shift,
+  Print("ffff\n");
+  pTest( p );
+  Print("ffff3\n");
+  p = reduceByRedGBPoly( p, strat );
+  //pWrite( p );
+  if( p )
+  {
+    pNorm( p );  
+    Lpoly* gCurr      = (Lpoly*) omAlloc( sizeof(Lpoly) );
+    gCurr->next       = NULL;
+    gCurr->sExp       = pGetShortExpVector(p);
+    gCurr->p          = p;
+    gCurr->rewRule    = &firstRule;
+    gCurr->redundant  = FALSE;
+    
+    // initializing the list of critical pairs for this iteration step 
+    CpairDegBound* cpBounds = NULL;
+    criticalPairInit( gCurr, redGB, *f5Rules, &cpBounds, numVariables, shift,
+                      negBitmaskShifted, offsets
+                    ); 
+    if( cpBounds )
+    {
+      computeSpols( strat, cpBounds, redGB, &gCurr, f5Rules, numVariables, shift, 
                     negBitmaskShifted, offsets
-                  ); 
-  if( cpBounds )
-  {
-    computeSpols( strat, cpBounds, redGB, gCurr, f5Rules, numVariables, shift, 
-                  negBitmaskShifted, offsets
-                );
-  }
-  // delete the reduction strategy strat since the current iteration step is
-  // completed right now
-  clearStrat( strat, redGB );
-  omfree( firstRuleLabel );
-  // next all new elements are added to redGB & redGB is being reduced
-  Lpoly* temp;
-  while( gCurr )
-  {
-    if( p_GetOrder( gCurr->p, currRing ) == pWTotaldegree( gCurr->p, currRing ) )
-    {
-      Print(" ALLES OK\n");
+                  );
     }
-    else 
+    // delete the reduction strategy strat since the current iteration step is
+    // completed right now
+    clearStrat( strat, redGB );
+    omFree( firstRuleLabel );
+    for( i=0; i<IDELEMS(redGB); i++ )
     {
-      Print("BEI POLY "); gCurr->p; Print(" stimmt etwas nicht!\n");
+      omFree( f5Rules->label[i] );
     }
-    idInsertPoly( redGB, gCurr->p );
-    temp = gCurr;
-    gCurr = gCurr->next;
-    omfree(temp);
+    omFree( f5Rules->slabel );
+    omFree( f5Rules->label );
+    omFree( f5Rules );
+    // next all new elements are added to redGB & redGB is being reduced
+    Lpoly* temp;
+    int counter = 1;
+    while( gCurr )
+    {
+      if( p_GetOrder( gCurr->p, currRing ) == pWTotaldegree( gCurr->p, currRing ) )
+      {
+        Print(" ALLES OK\n");
+      }
+      else 
+      {
+        Print("BEI POLY "); gCurr->p; Print(" stimmt etwas nicht!\n");
+      }
+      Print("%d INSERT TO REDGB: ",counter);
+      //pWrite(gCurr->p);
+      idInsertPoly( redGB, gCurr->p );
+      temp = gCurr;
+      gCurr = gCurr->next;
+      omFree(temp);
+      counter++;
+    }
+    idSkipZeroes( redGB );
   }
-  idSkipZeroes( redGB );
 #if F5EDEBUG
   Print("F5CITER-END\n");
 #endif  
@@ -262,13 +318,13 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
   Print("CRITPAIRINIT-BEGINNING\n");
 #endif
   int i, j;
-  int* expVecNewElement = (int*) omalloc((currRing->N+1)*sizeof(int));
-  int* expVecTemp       = (int*) omalloc((currRing->N+1)*sizeof(int));
+  int* expVecNewElement = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  int* expVecTemp       = (int*) omAlloc((currRing->N+1)*sizeof(int));
   pGetExpV(gCurr->p, expVecNewElement); 
   // this must be changed for parallelizing the generation process of critical
   // pairs
   Cpair* cpTemp;
-  Cpair* cp = (Cpair*) omalloc( sizeof(Cpair) );
+  Cpair* cp = (Cpair*) omAlloc( sizeof(Cpair) );
   cpTemp    = cp;
   cpTemp->next      = NULL;
   cpTemp->mLabelExp = NULL;
@@ -277,6 +333,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
   cpTemp->mult1     = NULL;
   cpTemp->p1        = gCurr->p;
   cpTemp->rewRule1  = gCurr->rewRule;
+  Print("TEST REWRULE1 %p\n",cpTemp->rewRule1);
   cpTemp->mLabel2   = NULL;
   cpTemp->smLabel2  = 0;
   cpTemp->mult2     = NULL;
@@ -284,11 +341,11 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
 
   // we only need to alloc memory for the 1st label as for the initial 
   // critical pairs all 2nd generators have label NULL in F5e
-  cpTemp->mLabel1   = (int*) omalloc((currRing->N+1)*sizeof(int));
-  cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
-  cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
+  cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
   int temp;
-  long critPairDeg = pDeg(gCurr->p, currRing);
+  long critPairDeg  = 0; // degree of the label of the pair in the following
   for(i=0; i<IDELEMS(redGB)-1; i++)
   {
     pGetExpV(redGB->m[i], expVecTemp); 
@@ -327,14 +384,14 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
       // to the list of critical pairs 
       cpTemp->p2        = redGB->m[i];
       // now we really need the memory for the exp label
-      cpTemp->mLabelExp = (unsigned long*) omalloc0(NUMVARS*
+      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
                                 sizeof(unsigned long));
       Print("CRITPAIR EXPTEMP 0: %ld\n",cpTemp->mLabelExp[0]);
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets );
       Print("CRITPAIR EXPTEMP 0: %ld\n",cpTemp->mLabelExp[0]);
       insertCritPair(cpTemp, critPairDeg, cpBounds);
-      Cpair* cp = (Cpair*) omalloc( sizeof(Cpair) );
+      Cpair* cp = (Cpair*) omAlloc( sizeof(Cpair) );
       cpTemp            = cp;
       cpTemp->next      = NULL;
       cpTemp->mLabelExp = NULL;
@@ -342,17 +399,17 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
       cpTemp->smLabel1  = 0;
       cpTemp->mult1     = NULL;
       cpTemp->p1        = gCurr->p;
-      cpTemp->rewRule1  = NULL;
+      cpTemp->rewRule1  = gCurr->rewRule;
       cpTemp->mLabel2   = NULL;
       cpTemp->smLabel2  = 0;
       cpTemp->mult2     = NULL;
       cpTemp->p2        = NULL;
 
-      cpTemp->mLabel1   = (int*) omalloc((currRing->N+1)*sizeof(int));
-      cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
-      cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
+      cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+      cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
+      cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
     }
-    critPairDeg = pDeg(gCurr->p, currRing);
+    critPairDeg = 0;
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -391,15 +448,20 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
     // to the list of critical pairs 
     cpTemp->p2        = redGB->m[IDELEMS(redGB)-1];
     // now we really need the memory for the exp label
-    cpTemp->mLabelExp = (unsigned long*) omalloc0(NUMVARS*
+    cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
                               sizeof(unsigned long));
     getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                         numVariables, shift, negBitmaskShifted, offsets
                       );
     insertCritPair( cpTemp, critPairDeg, cpBounds );
   }
-  omfree(expVecTemp);
-  omfree(expVecNewElement);
+  else 
+  {
+    // we can delete the memory reserved for cpTemp
+    omFree( cpTemp );
+  }
+  omFree(expVecTemp);
+  omFree(expVecNewElement);
 #if F5EDEBUG
   Print("CRITPAIRINIT-BEGINNING\n");
 #endif
@@ -417,13 +479,13 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
   Print("CRITPAIRPREV-BEGINNING\n");
 #endif
   int i, j;
-  int* expVecNewElement = (int*) omalloc((currRing->N+1)*sizeof(int));
-  int* expVecTemp       = (int*) omalloc((currRing->N+1)*sizeof(int));
+  int* expVecNewElement = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  int* expVecTemp       = (int*) omAlloc((currRing->N+1)*sizeof(int));
   pGetExpV(gCurr->p, expVecNewElement); 
   // this must be changed for parallelizing the generation process of critical
   // pairs
   Cpair* cpTemp;
-  Cpair* cp         = (Cpair*) omalloc( sizeof(Cpair) );
+  Cpair* cp         = (Cpair*) omAlloc( sizeof(Cpair) );
   cpTemp            = cp;
   cpTemp->next      = NULL;
   cpTemp->mLabelExp = NULL;
@@ -439,11 +501,11 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
 
   // we only need to alloc memory for the 1st label as for the initial 
   // critical pairs all 2nd generators have label NULL in F5e
-  cpTemp->mLabel1   = (int*) omalloc((currRing->N+1)*sizeof(int));
-  cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
-  cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
+  cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
   int temp;
-  long critPairDeg = pDeg(gCurr->p, currRing);
+  long critPairDeg = 0; // degree of the label of the critical pair in the following
   for(i=0; i<IDELEMS(redGB)-1; i++)
   {
     pGetExpV(redGB->m[i], expVecTemp); 
@@ -467,6 +529,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
         cpTemp->mult1[j]    =   0;  
         cpTemp->mult2[j]    =   temp;  
         cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
+        critPairDeg         +=  cpTemp->rewRule1->label[j]; 
       }
     }
     cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
@@ -478,12 +541,13 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
       // to the list of critical pairs 
       cpTemp->p2        = redGB->m[i];
       // now we really need the memory for the exp label
-      cpTemp->mLabelExp = (unsigned long*) omalloc0(NUMVARS*
+      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
                                 sizeof(unsigned long));
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets );
+        Print("IN CRITPAIRPREv %ld %ld %ld %ld\n",cpTemp->mLabelExp[1], cpTemp->mLabelExp[2],cpTemp->mLabelExp[3],cpTemp->mLabelExp[4]);
       insertCritPair(cpTemp, critPairDeg, cpBounds);
-      Cpair* cp         = (Cpair*) omalloc( sizeof(Cpair) );
+      Cpair* cp         = (Cpair*) omAlloc( sizeof(Cpair) );
       cpTemp            = cp;
       cpTemp->next      = NULL;
       cpTemp->mLabelExp = NULL;
@@ -497,11 +561,11 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mult2     = NULL;
       cpTemp->p2        = NULL;
 
-      cpTemp->mLabel1   = (int*) omalloc((currRing->N+1)*sizeof(int));
-      cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
-      cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
+      cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+      cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
+      cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
     }
-    critPairDeg = pDeg(gCurr->p, currRing);
+    critPairDeg = 0;
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -527,6 +591,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mult1[j]    =   0;  
       cpTemp->mult2[j]    =   temp;  
       cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
+      critPairDeg         +=  cpTemp->rewRule1->label[j];
     }
   }
   cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
@@ -538,15 +603,21 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
     // to the list of critical pairs 
     cpTemp->p2        = redGB->m[IDELEMS(redGB)-1];
     // now we really need the memory for the exp label
-    cpTemp->mLabelExp = (unsigned long*) omalloc(NUMVARS*
+    cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
                               sizeof(unsigned long));
     getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                         numVariables, shift, negBitmaskShifted, offsets
                       );
+      Print("IN CRITPAIRPREv %ld %ld %ld %ld\n",cpTemp->mLabelExp[1], cpTemp->mLabelExp[2],cpTemp->mLabelExp[3],cpTemp->mLabelExp[4]);
     insertCritPair(cpTemp, critPairDeg, cpBounds);
   }
-  omfree(expVecTemp);
-  omfree(expVecNewElement);
+  else 
+  {
+    // we can delete the memory reserved for cpTemp
+    omFree( cpTemp );
+  }
+  omFree(expVecTemp);
+  omFree(expVecNewElement);
 #if F5EDEBUG
   Print("CRITPAIRPREV-END\n");
 #endif
@@ -564,14 +635,16 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
 #endif
   int i, j;
   unsigned long* mLabelExp;
-  int* expVecNewElement = (int*) omalloc((currRing->N+1)*sizeof(int));
-  int* expVecTemp       = (int*) omalloc((currRing->N+1)*sizeof(int));
+  bool pairNeeded       = FALSE;
+  int* expVecNewElement = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  int* expVecTemp       = (int*) omAlloc((currRing->N+1)*sizeof(int));
   pGetExpV(gCurr->p, expVecNewElement); 
   Lpoly* gCurrIter  = gCurr->next;
+ Print("HERE %p\n",gCurrIter);
   // this must be changed for parallelizing the generation process of critical
   // pairs
   Cpair* cpTemp;
-  Cpair* cp         = (Cpair*) omalloc( sizeof(Cpair) );
+  Cpair* cp         = (Cpair*) omAlloc( sizeof(Cpair) );
   cpTemp            = cp;
   cpTemp->next      = NULL;
   cpTemp->mLabelExp = NULL;
@@ -583,26 +656,32 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
   cpTemp->mLabel2   = NULL;
   cpTemp->smLabel2  = 0;
   cpTemp->mult2     = NULL;
-  cpTemp->p2        = gCurrIter->p;
-  cpTemp->rewRule2  = gCurrIter->rewRule;
 
   // we need to alloc memory for the 1st & the 2nd label here
   // both elements are generated during the current iteration step
-  cpTemp->mLabel1   = (int*) omalloc((currRing->N+1)*sizeof(int));
-  cpTemp->mLabel2   = (int*) omalloc((currRing->N+1)*sizeof(int));
-  cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
-  cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
+  cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+      Print("HERE1\n");
+  cpTemp->mLabel2   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+      Print("HERE2\n");
+  cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
   // alloc memory for a temporary (non-integer/SINGULAR internal) exponent vector
   // for fast comparisons at the end which label is greater, those of the 1st or
   // those of the 2nd generator
   // Note: As we do not need the smaller exponent vector we do NOT store both in
   // the critical pair structure, but only the greater one. Thus the following
   // memory is freed before the end of criticalPairCurr()
-  unsigned long* checkExp = (unsigned long*) omalloc0(NUMVARS*sizeof(unsigned long));
+  Print("dddd\n");
+  unsigned long* checkExp = (unsigned long*) omAlloc0(NUMVARS*sizeof(unsigned long));
   int temp;
-  long critPairDeg = pDeg(gCurr->p, currRing);
+  long critPairDeg = 0; // degree of the label of the pair in the following
+  //pWrite( gCurrIter->p );
   while(gCurrIter->next)
   {
+    cpTemp->p2        = gCurrIter->p;
+    Print("2nd generator of pair: ");
+    //pWrite( cpTemp->p2 );
+    cpTemp->rewRule2  = gCurrIter->rewRule;
     pGetExpV(gCurrIter->p, expVecTemp); 
     // computation of the lcm and the corresponding multipliers for the critical
     // pair generated by the new element and elements of the previous iteration
@@ -614,11 +693,13 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       temp  = expVecNewElement[j] - expVecTemp[j];
       if(temp<0)
       {
+        pairNeeded          =   TRUE;
         cpTemp->mult1[j]    =   -temp;  
         cpTemp->mult2[j]    =   0; 
         cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j] - temp;
         cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j];
-        critPairDeg         +=  cpTemp->rewRule2->label[j]; 
+        critPairDeg         +=  cpTemp->rewRule1->label[j] - temp; 
+        Print("PAIRDEG1: %d\n",critPairDeg);
       }
       else
       {
@@ -626,8 +707,128 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
         cpTemp->mult2[j]    =   temp;  
         cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
         cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j] + temp;
+        critPairDeg         +=  cpTemp->rewRule1->label[j]; 
+        Print("PAIRDEG2: %d\n",critPairDeg);
       }
     }
+    // compute only if there is a "real" multiple of p1 needed
+    // otherwise we can go on with the next element, since the 
+    // 2nd generator is a past reducer of p1 which was not allowed
+    // to reduce!
+    if( pairNeeded )
+    {
+      cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
+      cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
+      
+      // testing the F5 Criterion
+      if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+          && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
+          && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, cpTemp->rewRule2)
+        ) 
+      {
+        // completing the construction of the new critical pair and inserting it
+        // to the list of critical pairs 
+        // now we really need the memory for the exp label
+        cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+                                  sizeof(unsigned long));
+        getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
+                            numVariables, shift, negBitmaskShifted, offsets
+                          );
+        getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
+                            shift, negBitmaskShifted, offsets
+                          );
+        Print("IN CRITPAIRCURR %ld %ld %ld %ld\n",cpTemp->mLabelExp[1], cpTemp->mLabelExp[2],cpTemp->mLabelExp[3],cpTemp->mLabelExp[4]);
+        // compare which label is greater and possibly switch the 1st and 2nd 
+        // generator in cpTemp
+        // exchange generator 1 and 2 in cpTemp
+        if( expCmp(cpTemp->mLabelExp, checkExp) == -1 )
+        {
+          poly pTempHolder                = cpTemp->p1;
+          int* mLabelTempHolder           = cpTemp->mLabel1;
+          int* multTempHolder             = cpTemp->mult1;
+          unsigned long smLabelTempHolder = cpTemp->smLabel1;  
+          RewRules* rewRuleTempHolder     = cpTemp->rewRule1;
+          unsigned long* expTempHolder    = cpTemp->mLabelExp;
+
+          cpTemp->p1                      = cpTemp->p2;
+          cpTemp->p2                      = pTempHolder;
+          cpTemp->mLabel1                 = cpTemp->mLabel2;
+          cpTemp->mLabel2                 = mLabelTempHolder;
+          cpTemp->mult1                   = cpTemp->mult2;
+          cpTemp->mult2                   = multTempHolder;
+          cpTemp->smLabel1                = cpTemp->smLabel2;
+          cpTemp->smLabel2                = smLabelTempHolder;
+          cpTemp->rewRule1                = cpTemp->rewRule2;
+          cpTemp->rewRule2                = rewRuleTempHolder;
+          cpTemp->mLabelExp               = checkExp;
+          checkExp                        = expTempHolder;
+        }
+        
+        insertCritPair(cpTemp, critPairDeg, cpBounds);
+      Print("HERE\n");
+        
+        Cpair* cp         = (Cpair*) omAlloc( sizeof(Cpair) );
+        cpTemp            = cp;
+        cpTemp->next      = NULL;
+        cpTemp->mLabelExp = NULL;
+        cpTemp->mLabel1   = NULL;
+        cpTemp->smLabel1  = 0;
+        cpTemp->mult1     = NULL;
+        cpTemp->p1        = gCurr->p;
+        cpTemp->rewRule1  = gCurr->rewRule;
+        cpTemp->mLabel2   = NULL;
+        cpTemp->smLabel2  = 0;
+        cpTemp->mult2     = NULL;
+        cpTemp->rewRule2  = (gCurrIter->next)->rewRule;
+        cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+        cpTemp->mLabel2   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+        cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
+        cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
+      }
+      critPairDeg = 0;
+    }
+    pairNeeded  = FALSE;
+    gCurrIter   = gCurrIter->next;
+  }
+  Print("COMPUTATION OF LAST POSSIBLE PAIR IN CRITPAIRCURR\n");
+  // same critical pair processing for the last element in gCurr
+  // This is outside of the loop to keep memory low, since we know that after
+  // this element no new memory for a critical pair must be allocated.
+  cpTemp->p2  = gCurrIter->p;
+  Print("2nd generator of pair: ");
+  pGetExpV(gCurrIter->p, expVecTemp); 
+  // computation of the lcm and the corresponding multipliers for the critical
+  // pair generated by the new element and elements of the previous iteration
+  // steps, i.e. elements already in redGB
+  cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
+    Print("AT THIS PLACE2: %ld\n",pGetExp(gCurrIter->p,0));
+    //pWrite(gCurrIter->p);
+  cpTemp->rewRule2  = gCurrIter->rewRule;
+  cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetExp(gCurrIter->p, 0); 
+  for(j=1; j<=currRing->N; j++)
+  {
+    temp  = expVecNewElement[j] - expVecTemp[j];
+    if(temp<0)
+    {
+      Print("HERE DRIN %d\n",j);
+      pairNeeded          =   TRUE;
+      cpTemp->mult1[j]    =   -temp;  
+      cpTemp->mult2[j]    =   0; 
+      cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j] - temp;
+      cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j];
+      critPairDeg         +=  cpTemp->rewRule1->label[j] - temp;
+    }
+    else
+    {
+      cpTemp->mult1[j]    =   0;  
+      cpTemp->mult2[j]    =   temp;  
+      cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
+      cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j] + temp;
+      critPairDeg         +=  cpTemp->rewRule1->label[j];
+    }
+  }
+  if( pairNeeded )
+  {
     cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
     cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
     
@@ -640,7 +841,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       // now we really need the memory for the exp label
-      cpTemp->mLabelExp = (unsigned long*) omalloc0(NUMVARS*
+      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
                                 sizeof(unsigned long));
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets
@@ -648,16 +849,18 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
                           shift, negBitmaskShifted, offsets
                         );
+        Print("IN CRITPAIRCURR %ld %ld %ld %ld\n",cpTemp->mLabelExp[1], cpTemp->mLabelExp[2],cpTemp->mLabelExp[3],cpTemp->mLabelExp[4]);
       // compare which label is greater and possibly switch the 1st and 2nd 
       // generator in cpTemp
       // exchange generator 1 and 2 in cpTemp
-      if( expCmp(cpTemp->mLabelExp, checkExp) == 1 )
+      if( expCmp(cpTemp->mLabelExp, checkExp) == -1 )
       {
         poly pTempHolder                = cpTemp->p1;
         int* mLabelTempHolder           = cpTemp->mLabel1;
         int* multTempHolder             = cpTemp->mult1;
         unsigned long smLabelTempHolder = cpTemp->smLabel1;  
         RewRules* rewRuleTempHolder     = cpTemp->rewRule1;
+        unsigned long* expTempHolder    = cpTemp->mLabelExp;
 
         cpTemp->p1                      = cpTemp->p2;
         cpTemp->p2                      = pTempHolder;
@@ -669,108 +872,22 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
         cpTemp->smLabel2                = smLabelTempHolder;
         cpTemp->rewRule1                = cpTemp->rewRule2;
         cpTemp->rewRule2                = rewRuleTempHolder;
+        cpTemp->mLabelExp               = checkExp;
+        checkExp                        = expTempHolder;
       }
       
       insertCritPair(cpTemp, critPairDeg, cpBounds);
-      
-      Cpair* cp         = (Cpair*) omalloc( sizeof(Cpair) );
-      cpTemp            = cp;
-      cpTemp->next      = NULL;
-      cpTemp->mLabelExp = NULL;
-      cpTemp->mLabel1   = NULL;
-      cpTemp->smLabel1  = 0;
-      cpTemp->mult1     = NULL;
-      cpTemp->p1        = gCurr->p;
-      cpTemp->rewRule1  = gCurr->rewRule;
-      cpTemp->mLabel2   = NULL;
-      cpTemp->smLabel2  = 0;
-      cpTemp->mult2     = NULL;
-      cpTemp->p2        = gCurrIter->next->p;
-      cpTemp->rewRule2  = gCurrIter->next->rewRule;
-      cpTemp->mLabel1   = (int*) omalloc((currRing->N+1)*sizeof(int));
-      cpTemp->mult1     = (int*) omalloc((currRing->N+1)*sizeof(int));
-      cpTemp->mult2     = (int*) omalloc((currRing->N+1)*sizeof(int));
-    }
-    critPairDeg = pDeg(gCurr->p, currRing);
-    gCurrIter = gCurrIter->next;
-  }
-  // same critical pair processing for the last element in gCurr
-  // This is outside of the loop to keep memory low, since we know that after
-  // this element no new memory for a critical pair must be allocated.
-  pGetExpV(gCurrIter->p, expVecTemp); 
-  // computation of the lcm and the corresponding multipliers for the critical
-  // pair generated by the new element and elements of the previous iteration
-  // steps, i.e. elements already in redGB
-  cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
-  cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetExp(gCurrIter->p, 0); 
-  for(j=1; j<=currRing->N; j++)
-  {
-    temp  = expVecNewElement[j] - expVecTemp[j];
-    if(temp<0)
+      Print("HERE\n");
+    } 
+    else 
     {
-      cpTemp->mult1[j]    =   -temp;  
-      cpTemp->mult2[j]    =   0; 
-      cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j] - temp;
-      cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j];
-      critPairDeg         +=  cpTemp->rewRule2->label[j];
-    }
-    else
-    {
-      cpTemp->mult1[j]    =   0;  
-      cpTemp->mult2[j]    =   temp;  
-      cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
-      cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j] + temp;
+      // we can delete the memory reserved for cpTemp
+      omFree( cpTemp );
     }
   }
-  cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
-  cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
-  
-  // testing the F5 Criterion
-  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
-      && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
-      && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, cpTemp->rewRule2)
-    ) 
-  {
-    // completing the construction of the new critical pair and inserting it
-    // to the list of critical pairs 
-    // now we really need the memory for the exp label
-    cpTemp->mLabelExp = (unsigned long*) omalloc0(NUMVARS*
-                              sizeof(unsigned long));
-    getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
-                        numVariables, shift, negBitmaskShifted, offsets
-                      );
-    getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
-                        shift, negBitmaskShifted, offsets
-                      );
-    // compare which label is greater and possibly switch the 1st and 2nd 
-    // generator in cpTemp
-    // exchange generator 1 and 2 in cpTemp
-    if( expCmp(cpTemp->mLabelExp, checkExp) == 1 )
-    {
-      poly pTempHolder                = cpTemp->p1;
-      int* mLabelTempHolder           = cpTemp->mLabel1;
-      int* multTempHolder             = cpTemp->mult1;
-      unsigned long smLabelTempHolder = cpTemp->smLabel1;  
-      RewRules* rewRuleTempHolder     = cpTemp->rewRule1;
-
-      cpTemp->p1                      = cpTemp->p2;
-      cpTemp->p2                      = pTempHolder;
-      cpTemp->mLabel1                 = cpTemp->mLabel2;
-      cpTemp->mLabel2                 = mLabelTempHolder;
-      cpTemp->mult1                   = cpTemp->mult2;
-      cpTemp->mult2                   = multTempHolder;
-      cpTemp->smLabel1                = cpTemp->smLabel2;
-      cpTemp->smLabel2                = smLabelTempHolder;
-      cpTemp->rewRule1                = cpTemp->rewRule2;
-      cpTemp->rewRule2                = rewRuleTempHolder;
-    }
-    
-    insertCritPair(cpTemp, critPairDeg, cpBounds);
-  } 
-
-  omfree(checkExp);
-  omfree(expVecTemp);
-  omfree(expVecNewElement);
+  omFree(checkExp);
+  omFree(expVecTemp);
+  omFree(expVecNewElement);
 #if F5EDEBUG
   Print("CRITPAIRCURR-END\n");
 #endif
@@ -780,63 +897,112 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
 
 void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
 {
+  Cpair* tempForDel = NULL;
 #if F5EDEBUG
   Print("INSERTCRITPAIR-BEGINNING deg bound %p\n",*bound);
   Print("ADDRESS NEW CRITPAIR: %p -- degree %ld\n",cp, deg);
-  pWrite(cp->p1);
-  pWrite(cp->p2);
+  //pWrite(cp->p1);
+  //pWrite(cp->p2);
   if( (*bound) ) 
   {
     Print("ADDRESS BOUND CRITPAIR: %p -- deg %ld -- length %d\n",(*bound)->cp,(*bound)->deg, (*bound)->length);
-    pWrite( (*bound)->cp->p1 );
+    //pWrite( (*bound)->cp->p1 );
   }
 #endif
   if( !(*bound) ) // empty list?
   {
-    CpairDegBound* boundNew = (CpairDegBound*) omalloc(sizeof(CpairDegBound));
+    CpairDegBound* boundNew = (CpairDegBound*) omAlloc(sizeof(CpairDegBound));
     boundNew->next          = NULL;
     boundNew->deg           = deg;
     boundNew->cp            = cp;
     boundNew->length        = 1;
     *bound                  = boundNew;
+    Print("here1\n");
   }
   else
   {
     if((*bound)->deg < deg) 
     {
-      CpairDegBound** temp = bound;
-      while((*temp)->next && ((*temp)->next->deg < deg))
+      CpairDegBound* temp = *bound;
+      while((temp)->next && ((temp)->next->deg < deg))
       {
-        *temp = (*temp)->next;
+        temp = (temp)->next;
       }
-      if( (*temp)->next && (*temp)->next->deg == deg )
+      if( (temp)->next && (temp)->next->deg == deg )
       {
-        cp->next          = (*temp)->next->cp;
-        (*temp)->next->cp = cp;
-        (*temp)->next->length++;
+        cp->next          = (temp)->next->cp;
+        (temp)->next->cp  = cp;
+        (temp)->next->length++;
+        // if there exist other elements in the list with the very same label
+        // then delete them as they will be detected by the Rewritten Criterion
+        // of F5 nevertheless
+        tempForDel  = cp;
+        while( tempForDel->next )
+        {
+          if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
+          {
+            Cpair* tempDel    = tempForDel->next;
+            tempForDel->next  = (tempForDel->next)->next;
+            omFree( tempDel );
+            (temp)->next->length--;
+          }
+          // tempForDel->next could be NULL as we have deleted one element
+          // inbetween
+          if( tempForDel->next )
+          {
+            tempForDel  = tempForDel->next;
+          }
+        }
       }
       else
       {
-        CpairDegBound* boundNew = (CpairDegBound*) omalloc(sizeof(CpairDegBound));
-        boundNew->next          = (*temp)->next;
+        CpairDegBound* boundNew = (CpairDegBound*) omAlloc(sizeof(CpairDegBound));
+        boundNew->next          = (temp)->next;
         boundNew->deg           = deg;
         boundNew->cp            = cp;
         boundNew->length        = 1;
-        (*temp)->next           = boundNew;
-        Print("HERE %p\n",*temp);
+        (temp)->next           = boundNew;
+        Print("HERE %p -- %p\n",temp,*bound);
       }
     }
     else
     {
       if((*bound)->deg == deg) 
       {
-        cp->next     = (*bound)->cp;
-        (*bound)->cp = cp;
+        cp->next      = (*bound)->cp;
+        (*bound)->cp  = cp;
         (*bound)->length++;
+        // if there exist other elements in the list with the very same label
+        // then delete them as they will be detected by the Rewritten Criterion
+        // of F5 nevertheless
+        tempForDel    = cp;
+        while( tempForDel->next )
+        {
+          Print("%p -- NEXT CP ADDRESS %p\n",tempForDel,tempForDel->next);
+          Print("COMPINDEX: %ld -- %ld\n",tempForDel->next->mLabelExp[currRing->pCompIndex],cp->mLabelExp[currRing->pCompIndex]);
+          Print("%d %d %d %d %d\n",tempForDel->next->mLabel1[0],tempForDel->next->mLabel1[1], tempForDel->next->mLabel1[2],tempForDel->next->mLabel1[3],tempForDel->next->mLabel1[4]);
+          Print("%d %d %d %d %d\n",cp->mLabel1[0],cp->mLabel1[1], cp->mLabel1[2],cp->mLabel1[3],cp->mLabel1[4]);
+          Print("%ld %ld %ld %ld\n",tempForDel->next->mLabelExp[1], tempForDel->next->mLabelExp[2],tempForDel->next->mLabelExp[3],tempForDel->next->mLabelExp[4]);
+          Print("%ld %ld %ld %ld\n",cp->mLabelExp[1], cp->mLabelExp[2],cp->mLabelExp[3],cp->mLabelExp[4]);
+          if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
+          {
+            Print("here3\n");
+            Cpair* tempDel    = tempForDel->next;
+            tempForDel->next  = (tempForDel->next)->next;
+            omFree( tempDel );
+            (*bound)->length--;
+          }
+          // tempForDel->next could be NULL as we have deleted one element
+          // inbetween
+          if( tempForDel->next )
+          {
+            tempForDel  = tempForDel->next;
+          }
+        }
       }
       else
         {
-        CpairDegBound* boundNew = (CpairDegBound*) omalloc(sizeof(CpairDegBound));
+        CpairDegBound* boundNew = (CpairDegBound*) omAlloc(sizeof(CpairDegBound));
         boundNew->next          = *bound;
         boundNew->deg           = deg;
         boundNew->cp            = cp;
@@ -846,7 +1012,23 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
     }
   }
 #if F5EDEBUG
-  pWrite( (*bound)->cp->p2 );
+  //pWrite( (*bound)->cp->p2 );
+  CpairDegBound* test = *bound;
+  Print("-------------------------------------\n");
+  while( test )
+  {
+    Print("DEGREE %d\n",test->deg);
+    Cpair* testcp = test->cp;
+    while( testcp )
+    {
+      Print("Pairs: %p\n",testcp);
+      //pWrite(testcp->p1);
+      //pWrite(testcp->p2);
+      testcp = testcp->next;
+    }
+    test  = test->next;
+  }
+  Print("-------------------------------------\n");
   Print("INSERTCRITPAIR-END deg bound %p\n",*bound);
 #endif
 }
@@ -860,7 +1042,7 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
   int i = 0;
   int j = currRing->N;
 #if F5EDEBUG
-    Print("Tested Element: ");
+    Print("CRITERION1-BEGINNING\nTested Element: ");
     while( j )
     {
       Print("%d ",mLabel[(currRing->N)-j]);
@@ -898,7 +1080,7 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 #if F5EDEBUG
         Print("CRITERION1-END-DETECTED \n");
 #endif
-      return true;
+      return TRUE;
     }
       Print("HERE\n");
 
@@ -906,7 +1088,7 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 #if F5EDEBUG
   Print("CRITERION1-END \n");
 #endif
-  return false;
+  return FALSE;
 }
 
 
@@ -924,7 +1106,7 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
     RewRules* temp = rewRules->next;
     Print("%p\n", temp);
 #if F5EDEBUG
-    Print("Tested Element: ");
+    Print("Tested Element: %ld\n",smLabel);
     while( j )
     {
       Print("%d ",mLabel[(currRing->N)-j]);
@@ -937,7 +1119,6 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
     while( NULL != temp )
     {
 #if F5EDEBUG
-    Print("Rew Rule: %p\n",temp->label);
     while( j )
     {
       Print("%d ",temp->label[(currRing->N)-j]);
@@ -959,9 +1140,9 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
           j--;
         }
 #if F5EDEBUG
-        Print("CRITERION2-END \n");
+        Print("CRITERION2-END-DETECTED \n");
 #endif
-          return true;
+          return TRUE;
       }
       Print("HERE\n");
       temp  = temp->next;
@@ -970,12 +1151,12 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
 #if F5EDEBUG
   Print("CRITERION2-END \n");
 #endif
-  return false;
+  return FALSE;
 }
 
 
 
-void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCurr, 
+void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCurr, 
                     const F5Rules* f5Rules, int numVariables, 
                     int* shift, unsigned long* negBitmaskShifted, int* offsets
                   )
@@ -986,176 +1167,242 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly* gCur
   Cpair* temp             = NULL;
   Cpair* tempDel          = NULL;
   RewRules* rewRulesLast  = NULL; 
-  Lpoly* higherLabel      = NULL;
-  Lpoly*    gCurrLast     = gCurr;
-  BOOLEAN redundant       = false;
+  Lpoly*  gCurrLast       = *gCurr;
+  BOOLEAN redundant       = FALSE;
+  BOOLEAN whenToCheck     = FALSE; 
   // start the rewriter rules list with a NULL element for the recent,
   // i.e. initial element in \c gCurr
-  rewRulesLast        = gCurr->rewRule;
+  rewRulesLast        = (*gCurr)->rewRule;
   // this will go on for the complete current iteration step!
   // => after computeSpols() terminates this iteration step is done!
-  int* multTemp = (int*) omalloc( (currRing->N+1)*sizeof(int) );
+  int* multTemp       = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+  int* multLabelTemp  = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
   poly sp;
   // compute and reduce new elements as long as we have critical pairs 
   while( cp )
   {
 #if F5EDEBUG
-    Print("START OF NEW DEG ROUND: CP %ld -- %p\n",cp->deg,cp);
+    Print("START OF NEW DEG ROUND: CP %ld | %p -- %p: # %d\n",cp->deg,cp->cp,cp,cp->length);
+    Print("NEW CPDEG? %p\n",cp->next);
 #endif
     temp  = sort(cp->cp, cp->length); 
     CpairDegBound* cpDel  = cp;
     cp                    = cp->next;
-    omfree( cpDel );
-    // The first element cannot be detected by Criterion 2 as there are no new
-    // rules added to \c rewRules until now.
+    omFree( cpDel );
     Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
-    RewRules* newRule   = (RewRules*) omalloc( sizeof(RewRules) );
-    newRule->next       = NULL;
-    newRule->label      = temp->mLabel1;
-    newRule->slabel     = ~temp->smLabel1;
-    rewRulesLast->next  = newRule;
-    rewRulesLast        = newRule; 
+    Print("COMPUTED PAIR: %p -- NEXT PAIR %p\n",temp, temp->next);
+    if( !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1)  )
+    {
+      Print("HERE\n");
+      RewRules* newRule   = (RewRules*) omAlloc( sizeof(RewRules) );
+      newRule->next       = NULL;
+      newRule->label      = temp->mLabel1;
+      newRule->slabel     = ~temp->smLabel1;
+      rewRulesLast->next  = newRule;
+      rewRulesLast        = newRule; 
+      //whenToCheck         = TRUE;
 #if F5EDEBUG
-    Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
+      Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
 #endif
 
-    // from this point on, rewRulesLast != NULL, thus we do not need to test this
-    // again in the following iteration over the list of critical pairs
-    
-#if F5EDEBUG
-    Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
-    Print("GEN1: ");
-    pWrite(temp->p1);
-    Print("GEN2: ");
-    pWrite(temp->p2);
-#endif
+      // from this point on, rewRulesLast != NULL, thus we do not need to test this
+      // again in the following iteration over the list of critical pairs
+      
+//#if F5EDEBUG
+      Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
+      Print("%p\n",temp);
+      Print("GEN1: %p\n",temp->p1);
+      pTest(temp->p1);
+      Print("GEN2: %p\n",temp->p2);
+      pTest(temp->p2);
+//#endif
 
-    // compute s-polynomial and reduce it w.r.t. redGB
-    sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift, 
-                                  negBitmaskShifted, offsets 
-                                );
-    pNorm( sp ); 
+      // check if the critical pair is a trivial one, i.e. a pair generated 
+      // during a higher label reduction 
+      // => p1 is already the s-polynomial reduced w.r.t. redGB and we do not 
+      // need to reduce and/or compute anything
+      if( temp->p2 )
+      { 
+        // compute s-polynomial and reduce it w.r.t. redGB
+        sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift, 
+                                      negBitmaskShifted, offsets 
+                                    );
+      }
+      else
+      {
+        sp = temp->p1;
+      }
 #if F5EDEBUG
-    Print("BEFORE:  ");
-    pWrite( sp );
-    pTest(sp);
+      Print("BEFORE:  ");
+      //pWrite( sp );
+      pTest(sp);
+    Print("TEMPSBEFORE OK? %p -- %p\n",temp,temp->next);
 #endif
-    sp = currReduction( sp, &temp, rewRulesLast, gCurr, f5Rules, multTemp, 
-                        numVariables, shift, negBitmaskShifted, offsets, 
-                        &redundant
-                      );
+      if( sp )
+      {
+        pNorm( sp ); 
+        sp = currReduction( strat, sp, &temp, rewRulesLast, gCurrLast, 
+                            f5Rules, multTemp, multLabelTemp, numVariables, shift, 
+                            negBitmaskShifted, offsets, &redundant
+                          );
+        sp = reduceByRedGBPoly( sp, strat );
 #if F5EDEBUG
-    Print("AFTER:  ");
-    pWrite(pHead(sp));
-    pTest(sp);
+        Print("AFTER:  ");
+        //pWrite(pHead(sp));
+        pTest(sp);
+        Print("TEMPSAFTER OK? %p -- %p\n",temp,temp->next);
 #endif
+        // otherwise sp is reduced to zero and we do not need to add it to gCurr
+        // Note that even in this case the corresponding rule is already added to
+        // rewRules list!
+        Print("TEMPS1 OK? %p -- %p\n",temp,temp->next);
+
+        if( sp )
+        {
+          pNorm( sp ); 
+          Print("ORDER %ld -- %ld\n",p_GetOrder(sp,currRing), sp->exp[currRing->pOrdIndex]);
+          // add sp together with rewRulesLast to gCurr!!!
+          Lpoly* newElement     = (Lpoly*) omAlloc( sizeof(Lpoly) );
+          newElement->next      = gCurrLast;
+          newElement->p         = sp; 
+          newElement->sExp      = pGetShortExpVector(sp); 
+          newElement->rewRule   = rewRulesLast; 
+          newElement->redundant = redundant;
+          // update pointer to last element in gCurr list
+          gCurrLast             = newElement;
+          Print( "Coming from this pair: %p\n", temp );
+          Print( "ELEMENT ADDED TO GCURR: %p -- %p\n", gCurrLast, gCurrLast->p );
+          for( int lala = 1; lala < (currRing->N+1); lala++ )
+          {
+            Print( "%d  ",rewRulesLast->label[lala] );
+          }
+          Print("\n"); 
+          pTest( gCurrLast->p );
+          //pWrite( gCurrLast->p );
+      Print("TEMPS2 OK? %p -- %p\n",temp,temp->next);
+          criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
+                            shift, negBitmaskShifted, offsets 
+                          );
+      Print("TEMPS3 OK? %p -- %p\n",temp,temp->next);
+          criticalPairCurr( gCurrLast, *f5Rules, &cp, numVariables, 
+                            shift, negBitmaskShifted, offsets 
+                          );
+      Print("TEMPS4 OK? %p -- %p\n",temp,temp->next);
+        }
+      }
+      else // sp == 0
+      {
+        pDelete( &sp );
+      }
+    }
     tempDel  = temp;
     temp     = temp->next;
-    omfree(tempDel);
-    
-    // otherwise sp is reduced to zero and we do not need to add it to gCurr
-    // Note that even in this case the corresponding rule is already added to
-    // rewRules list!
-    if( sp )
-    {
-      pNorm( sp ); 
-      Print("ORDER %ld -- %ld\n",p_GetOrder(sp,currRing), sp->exp[currRing->pOrdIndex]);
-      // add sp together with rewRulesLast to gCurr!!!
-      Lpoly* newElement     = (Lpoly*) omalloc( sizeof(Lpoly) );
-      newElement->next      = NULL;
-      newElement->p         = sp; 
-      newElement->sExp      = pGetShortExpVector(sp); 
-      newElement->rewRule   = rewRulesLast; 
-      newElement->redundant = redundant;
-      // update pointer to last element in gCurr list
-      gCurrLast->next       = newElement;
-      gCurrLast             = newElement;
-      Print("NEW ELEMENT ADDED TO GCURR!\n");
-      pWrite( newElement->p );
-      Print("SHORT EXP VECTOR: %ld\n", newElement->sExp);
-      criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
-                        shift, negBitmaskShifted, offsets 
-                      );
-        criticalPairCurr( gCurrLast, *f5Rules, &cp, numVariables, 
-                          shift, negBitmaskShifted, offsets 
-                        );
-    }
+    omFree(tempDel);
+      
     //------------------------------------------------
     // TODO: CURRENT ITERATION REDUCTION
     //------------------------------------------------
     Print("THIS STEP %p\n",temp);
     while( temp!=NULL )
     {
+      //Print("---------------------------\nPAIR: %p\nPAIRNEXT: %p\n",temp,temp->next);
+      //Print("%p -- %p\n",temp->p1,temp->p2);
+      ////pWrite(temp->p1);
+      ////pWrite(temp->p2);
       if(!criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1))
       {
         Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
-        RewRules* newRule   = (RewRules*) omalloc( sizeof(RewRules) );
+        RewRules* newRule   = (RewRules*) omAlloc( sizeof(RewRules) );
         newRule->next       = NULL;
         newRule->label      = temp->mLabel1;
         newRule->slabel     = ~temp->smLabel1;
         rewRulesLast->next  = newRule;
         rewRulesLast        = newRule; 
-      }
       
 #if F5EDEBUG
-      Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
-      Print("GEN1: ");
-      pWrite(temp->p1);
-      Print("GEN2: ");
-      pWrite(temp->p2);
+        Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
+        Print("GEN1: %p\n", temp->p1 );
+        //pWrite(temp->p1);
+        //Print("GEN2: ");
+        ////pWrite(temp->p2);
 #endif
 
-      // compute s-polynomial and reduce it w.r.t. redGB
-      sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift,   
-                                    negBitmaskShifted, offsets 
-                                  );
-      pNorm( sp ); 
-      
-      Print("BEFORE:  ");
-      pWrite(sp);
-      pTest(sp);
-      sp = currReduction( sp, &temp, rewRulesLast, gCurr, f5Rules, multTemp, 
-                          numVariables, shift, negBitmaskShifted, offsets, 
-                          &redundant
-                        );
-      Print("AFTER:  ");
-      pTest(sp);
-
-
+        // check if the critical pair is a trivial one, i.e. a pair generated 
+        // during a higher label reduction 
+        // => p1 is already the s-polynomial reduced w.r.t. redGB and we do not 
+        // need to reduce and/or compute anything
+        if( temp->p2 )
+        { 
+          // compute s-polynomial and reduce it w.r.t. redGB
+          sp  = reduceByRedGBCritPair ( temp, strat, numVariables, shift, 
+                                        negBitmaskShifted, offsets 
+                                      );
+        }
+        else
+        {
+          sp = temp->p1;
+        }
+        if( sp )
+        {
+          pNorm( sp ); 
+          Print("BEFORE:  ");
+          //pWrite(sp);
+          pTest(sp);
+          sp = currReduction( strat, sp, &temp, rewRulesLast, gCurrLast, 
+                              f5Rules, multTemp, multLabelTemp, numVariables, shift, 
+                              negBitmaskShifted, offsets, &redundant
+                            );
+          sp = reduceByRedGBPoly( sp, strat );
+          Print("AFTER:  ");
+          pTest(sp);
+        
+          // otherwise sp is reduced to zero and we do not need to add it to gCurr
+          // Note that even in this case the corresponding rule is already added to
+          // rewRules list!
+          if( sp )
+          {
+            Print("ORDER %ld -- %ld\n",p_GetOrder(sp,currRing), sp->exp[currRing->pOrdIndex]);
+            pNorm( sp ); 
+            // add sp together with rewRulesLast to gCurr!!!
+            Lpoly* newElement     = (Lpoly*) omAlloc( sizeof(Lpoly) );
+            newElement->next      = gCurrLast;
+            newElement->p         = sp; 
+            newElement->sExp      = pGetShortExpVector(sp); 
+            newElement->rewRule   = rewRulesLast; 
+            newElement->redundant = redundant;
+            // update pointer to last element in gCurr list
+            gCurrLast             = newElement;
+            Print( "Coming from this pair: %p\n", temp );
+            Print( "ELEMENT ADDED TO GCURR: %p -- %p\n", gCurrLast, gCurrLast->p );
+            for( int lale = 1; lale < (currRing->N+1); lale++ )
+            {
+              Print( "%d  ",rewRulesLast->label[lale] );
+            }
+            Print("\n"); 
+            pTest( gCurrLast->p );
+            //pWrite( gCurrLast->p );
+            criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
+                              shift, negBitmaskShifted, offsets 
+                            );
+            criticalPairCurr( gCurrLast, *f5Rules, &cp, numVariables, 
+                              shift, negBitmaskShifted, offsets 
+                            );
+          }
+        }
+        else // sp == 0
+        {
+          pDelete( &sp );
+        }
+      }
       tempDel  = temp;
       temp     = temp->next;
-      omfree(tempDel);
-      
-      // otherwise sp is reduced to zero and we do not need to add it to gCurr
-      // Note that even in this case the corresponding rule is already added to
-      // rewRules list!
-      if( sp )
-      {
-        Print("ORDER %ld -- %ld\n",p_GetOrder(sp,currRing), sp->exp[currRing->pOrdIndex]);
-        pNorm( sp ); 
-        // add sp together with rewRulesLast to gCurr!!!
-        Lpoly* newElement     = (Lpoly*) omalloc( sizeof(Lpoly) );
-        newElement->next      = NULL;
-        newElement->p         = sp; 
-        newElement->sExp      = pGetShortExpVector(sp); 
-        newElement->rewRule   = rewRulesLast; 
-        newElement->redundant = redundant;
-        // update pointer to last element in gCurr list
-        gCurrLast->next       = newElement;
-        gCurrLast             = newElement;
-        Print("NEW ELEMENT ADDED TO GCURR!\n");
-        pWrite( newElement->p );
-        Print("SHORT EXP VECTOR: %ld\n", newElement->sExp);
-        criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
-                          shift, negBitmaskShifted, offsets 
-                        );
-        criticalPairCurr( gCurrLast, *f5Rules, &cp, numVariables, 
-                          shift, negBitmaskShifted, offsets 
-                        );
-        }
+      omFree(tempDel);
     }
   }
-  omfree( multTemp );
+  // get back the new list of elements in gCurr, i.e. the list of elements
+  // computed in this iteration step
+  *gCurr = gCurrLast;
+  omFree( multTemp );
 
 #if F5EDEBUG
   Print("COMPUTESPOLS-END\n");
@@ -1185,19 +1432,21 @@ inline void kBucketCopyToPoly(kBucket_pt bucket, poly *p, int *length)
 
 
 
-poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr, 
-                      const F5Rules* f5Rules, int* multTemp, int numVariables, 
-                      int* shift, unsigned long* negBitmaskShifted, int* offsets, 
-                      BOOLEAN* redundant
+poly currReduction  ( kStrategy strat, poly sp, 
+                      Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr, 
+                      const F5Rules* f5Rules, int* multTemp, int* multLabelTemp,
+                      int numVariables, int* shift, 
+                      unsigned long* negBitmaskShifted, 
+                      int* offsets, BOOLEAN* redundant
                     )
 
 {
 #if F5EDEBUG
-    Print("CURRREDUCTION-BEGINNING \n");
+    Print("CURRREDUCTION-BEGINNING: GCURR %p \n",gCurr);
 #endif
-  BOOLEAN isMult  = false;
+  BOOLEAN isMult  = FALSE;
   int i;
-  unsigned long multShortExp;
+  unsigned long multLabelShortExp;
   static int tempLength           = 0;
   unsigned short int canonicalize = 0; 
   Lpoly* temp                     = gCurr;
@@ -1211,17 +1460,21 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
   // Note that we need to make this top reduction explicit to be able to decide
   // if the returned polynomial is redundant or not!
   // search for reducers in the list gCurr
-  *redundant  = false;
+  *redundant  = FALSE;
   while ( temp )
   {
     startagainTop:
     bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
+    Print("POSSIBLE REDUCER %p ",temp);
+    Print("%p\n",temp->p);
+    pTest( temp->p );
+    //pWrite(temp->p);
     if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
                             bucketExp, &multTemp, &isMult
                           ) 
       )
     {
-      *redundant = true;
+      *redundant = TRUE;
       // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
       // multTemp and check this multiple by both criteria
       Print("ISMULT %d\n",isMult);
@@ -1230,159 +1483,207 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
         // compute the multiple of the rule of temp & multTemp
         for( i=1;i<(currRing->N)+1; i++ )
         {
-          multTemp[i] +=  temp->rewRule->label[i];
+          multLabelTemp[i]  = multTemp[i] + temp->rewRule->label[i];
         }
-        multShortExp  = getShortExpVecFromArray( multTemp );
+        multLabelShortExp  = getShortExpVecFromArray( multLabelTemp );
          
         // test the multiplied label by both criteria 
-        if( !criterion1( multTemp, multShortExp, f5Rules ) && 
-            !criterion2( multTemp, multShortExp, temp->rewRule )
+        if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules ) && 
+            !criterion2( multLabelTemp, multLabelShortExp, temp->rewRule )
           )
         { 
           static unsigned long* multTempExp = (unsigned long*) 
-                          omalloc0( NUMVARS*sizeof(unsigned long) );
-          getExpFromIntArray( multTemp, multTempExp, numVariables,
+                          omAlloc0( NUMVARS*sizeof(unsigned long) );
+          static unsigned long* multLabelTempExp = (unsigned long*) 
+                          omAlloc0( NUMVARS*sizeof(unsigned long) );
+          getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
                               shift, negBitmaskShifted, offsets
                             );   
           // if a higher label reduction takes place we need to create
           // a new Lpoly with the higher label and store it in a different 
           // linked list for later reductions
 
-          if( expCmp( multTempExp, (*cp)->mLabelExp ) == 1 )
+          if( expCmp( multLabelTempExp, (*cp)->mLabelExp ) == 1 )
           {            
-#if F5EDEBUG
-    Print("HIGHER LABEL REDUCTION \n");
-#endif
+//#if F5EDEBUG
+            Print("HIGHER LABEL REDUCTION \n");
+//#endif
             poly newPoly  = pInit();
-            poly oldPoly  = pInit();
             int length;
-            pWrite(kBucketGetLm(bucket));
-            kBucketCopyToPoly( bucket, &newPoly, &length );
+            int cano            = kBucketCanonicalize( bucket );
+            kBucket* newBucket  = kBucketCreate();
+            kBucketInit ( newBucket, pCopy(bucket->buckets[cano]), 
+                          bucket->buckets_length[cano] 
+                        );
             Print("NEW POLYNOMIAL FROM BUCKET: ");
-            pWrite(newPoly);
-            oldPoly = pCopy( newPoly );
-            // add new rule to RewRules
-            RewRules* newRule = (RewRules*) omalloc( sizeof(RewRules) );
-            newRule->label    = (int*) omalloc( (currRing->N+1)*
-                                                sizeof(int) 
-                                              );
-            newRule->next       = NULL;
-            newRule->label      = multTemp;
-            newRule->slabel     = multShortExp;
-            rewRulesLast->next  = newRule;
-            rewRulesLast        = newRule; 
+            //pWrite(kBucketGetLm(newBucket));
             Print("HERE?\n");
-            
-            // generate a new critical for further reduction steps
-            // note: this will be a "trivial" critical pair, as the 2nd
-            // generator will be 1
-            Cpair* newPair      = (Cpair*) omalloc( sizeof(Cpair) );
-            newPair->mLabelExp  = (unsigned long*) omalloc0( NUMVARS*
-                                    sizeof(unsigned long) );
-            newPair->mLabel1  = (int*) omalloc( (currRing->N+1)*sizeof(int) );
-            newPair->mult1    = (int*) omalloc( (currRing->N+1)*sizeof(int) );
-            newPair->mult2    = (int*) omalloc( (currRing->N+1)*sizeof(int) );
-            // multiplier for new polynomial
-            static poly multiplier = pOne();
-            int j = 0;
-            for( j=0;j<NUMVARS;j++ )
-            {
-              newPair->mLabelExp[j] = multTempExp[j];
-              multiplier->exp[j]    = multTempExp[j];
-            }
-            for( j=0;j<currRing->N+1;j++ )
-            {
-              newPair->mLabel1[j] = multTemp[j];
-              newPair->mult1[j]   = 0;
-              newPair->mult2[j]   = 0;
-            }
-            newPair->smLabel1   = multShortExp;
-            newPair->rewRule1   = temp->rewRule;
-            newPair->mLabel2    = NULL;
-            newPair->smLabel2   = 0;
-            newPair->mult2      = NULL;
-            newPair->p2         = pOne();
-            // this is ok since p2 is never tested by the 2nd criterion
-            newPair->rewRule2   = NULL;
-            
-            // initialize the new bucket
-            kBucketInit( bucket, newPoly, 0 );
+            //pWrite(kBucketGetLm(newBucket));
             //multiplier->exp       = multTempExp;
             //getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
             //                    negBitmaskShifted, offsets
             //                  );
 
             // throw away the leading monomials of reducer and bucket
-            p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+            static poly multiplier = pOne();
+            getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                                negBitmaskShifted, offsets
+                              );
+            // throw away the leading monomials of reducer and bucket
+            pSetm( multiplier );
+            p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(newBucket)), currRing );
             tempLength = pLength( temp->p->next );
-            kBucketExtractLm(bucket);
-            kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p->next, 
+            kBucketExtractLm(newBucket);
+            Print("MULTIPLIER: ");
+            //pWrite(multiplier);
+            Print("REDUCER: ");
+            //pWrite( temp->p );
+            kBucket_Minus_m_Mult_p( newBucket, multiplier, temp->p->next, 
                                     &tempLength 
                                   ); 
-            newPair->p1 =  kBucketExtractLm( bucket );
-            newPair->p1 =  p_Merge_q ( newPair->p1, kBucketExtractLm(bucket), 
-                                        currRing 
-                                      );
-            // insertion sort of newPair to the list of critical pairs waiting
-            // to be reduced, sorted by increasing labels
-            Cpair* temp = (*cp)->next;
-                Print("ADDRESS: %p\n",temp);
-            if( temp )
-            { 
-              if( (expCmp(newPair->mLabelExp, temp->mLabelExp) == -1) )
+            // get monomials out of bucket and save the poly as first generator 
+            // of a new critical pair
+            int length2 = 0;
+            //pWrite( kBucketGetLm(newBucket) );
+            kBucketClear( newBucket, &newPoly, &length2 );
+            Print("NEWPOLY: ");
+            //pWrite( newPoly );
+            newPoly = reduceByRedGBPoly( newPoly, strat );
+             
+            Print("NEWLY AFTER REDGB REDUCTION: %p\n",newPoly);
+            //pWrite(newPoly);
+            // if newPoly = 0 nothing has to be done :)
+            // else we have to generate a new "trivial" critical pair
+            if( newPoly )
+            {
+              pNorm( newPoly );
+              // generate a new critical for further reduction steps
+              // note: this will be a "trivial" critical pair, as the 2nd
+              // generator will be 1
+              Print("NEW PAIR COMPUTED?\n"); 
+              Cpair* newPair      = (Cpair*) omAlloc( sizeof(Cpair) );
+              Print("%p\n",newPair);
+              newPair->mLabelExp  = (unsigned long*) omAlloc0( NUMVARS*
+                                      sizeof(unsigned long) );
+              newPair->mLabel1  = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+              newPair->mult1    = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+              newPair->mult2    = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+              int j = 0;
+              for( j=0;j<NUMVARS;j++ )
               {
-                (*cp)->next = newPair;
-                newPair->next = temp;
+                newPair->mLabelExp[j] = multLabelTempExp[j];
+                multiplier->exp[j]    = multTempExp[j];
+              }
+              for( j=0;j<currRing->N+1;j++ )
+              {
+                newPair->mLabel1[j] = multTemp[j];
+                newPair->mult1[j]   = 0;
+                newPair->mult2[j]   = 0;
+              }
+              newPair->smLabel1   = multLabelShortExp;
+              newPair->rewRule1   = temp->rewRule;
+              newPair->mLabel2    = NULL;
+              newPair->smLabel2   = 0;
+              newPair->mult2      = NULL;
+              newPair->p1         = newPoly;
+              newPair->p2         = NULL;
+              // this is ok since p2 is never tested by the 2nd criterion
+              newPair->rewRule2   = NULL;
+              
+              //newPair->p1 =  kBucketExtractLm( bucket );
+              //newPair->p1 =  p_Merge_q ( newPair->p1, kBucketExtractLm(bucket), 
+              //                            currRing 
+              //                          );
+              // insertion sort of newPair to the list of critical pairs waiting
+              // to be reduced, sorted by increasing labels
+              //kBucketInit( bucket, oldPoly, length ); 
+              //pDelete( &oldPoly );  
+              Cpair* temp = (*cp)->next;
+              if( temp )
+              { 
+                if( (expCmp(newPair->mLabelExp, temp->mLabelExp) == -1) )
+                {
+                  (*cp)->next = newPair;
+                  newPair->next = temp;
+                }
+                else
+                {
+                  while ( temp->next && (expCmp(newPair->mLabelExp, temp->next->mLabelExp) == 1) )
+                  {
+                    temp  = temp->next;
+                  }
+                  newPair->next = temp->next;
+                  temp->next    = newPair;
+                }
               }
               else
               {
-                while ( temp->next && (expCmp(newPair->mLabelExp, temp->next->mLabelExp) == 1) )
-                {
-                  temp  = temp->next;
-                }
-                newPair->next = temp->next;
-                temp->next    = newPair;
-              }
+                newPair->next = NULL;
+                (*cp)->next   = newPair;
+              }  
+              Print("NEW PAIR ADDRESS: %p -- %p\n",newPair,newPair->next);
             }
+            // newPoly = 0 => free memory
             else
             {
-              newPair->next = NULL;
-              (*cp)->next   = newPair;
-            }  
+              Print("HERE WE ARE DELETING POLYS IS FUN!\n");
+              pDelete( &newPoly );
+            }
             // get back on track for the old poly which has to be checked for 
-            // reductionbsy by the following element in gCurr
-            pWrite(newPoly);
+            // reductions by the following element in gCurr
             Print("Poly copying: ");
-            pWrite(newPoly);
-            pWrite(oldPoly);
-            kBucketInit( bucket, oldPoly, 0 );
-            pDelete( &oldPoly );
-            isMult      = false;
-            *redundant  = true;
-            temp    = temp->next;
+            //pWrite(kBucketGetLm( bucket ) );
+            isMult      = FALSE;
+            *redundant  = TRUE;
+            temp        = temp->next;
             goto startagainTop;
           }
           // else we can go on and reduce sp
+          // The multiplied reducer will be reduced w.r.t. strat before the 
+          // bucket reduction starts!
           static poly multiplier = pOne();
+          static poly multReducer;
           getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
                               negBitmaskShifted, offsets
                             );
           // throw away the leading monomials of reducer and bucket
           pSetm( multiplier );
           p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
-          tempLength = pLength( temp->p->next );
           kBucketExtractLm(bucket);
-          kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p->next, 
-                                  &tempLength 
-                                ); 
+          // build the multiplied reducer (note that we do not need the leading
+          // term at all!
+          Print("LETS SEE -----------------------\n");
+          Print("MULT: %p\n", multiplier );
+          //pWrite( multiplier );
+          //pWrite( temp->p->next );
+          multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
+          Print("MULTRED: %p\n", *multReducer );
+          //pWrite( multReducer );
+          multReducer = reduceByRedGBPoly( multReducer, strat );
+          //  length must be computed after the reduction with 
+          //  redGB!
+          tempLength = pLength( multReducer );
+           
+          Print("REDUCTION WITH: ");
+          //pWrite( multReducer );
+          //pWrite( temp->p );
+          kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+          //pDelete( &multReducer );
           if( canonicalize++ % 40 )
           {
             kBucketCanonicalize( bucket );
             canonicalize = 0;
           }
-          isMult      = false;
-          *redundant  = false;
-          temp        = gCurr;
+          isMult      = FALSE;
+          *redundant  = FALSE;
+          if( kBucketGetLm( bucket ) )
+          {
+            temp  = gCurr;
+          }
+          else
+          {
+            break;
+          }
           goto startagainTop;
         }
       }
@@ -1390,37 +1691,56 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
       // criterion again => go on with reduction steps
       else
       {
-        pWrite(kBucketGetLm(bucket));
+        //pWrite(kBucketGetLm(bucket));
         number coeff  = pGetCoeff(kBucketGetLm(bucket));
-        poly tempNeg  = pInit();
+        static poly tempNeg  = pInit();
         // throw away the leading monomials of reducer and bucket
         tempNeg       = pCopy( temp->p );
         tempLength    = pLength( tempNeg->next );
-        pWrite(kBucketGetLm(bucket));
+        Print("HERE\n");
+        //pWrite(kBucketGetLm(bucket));
         p_Mult_nn( tempNeg, coeff, currRing );
+        pSetm( tempNeg );
         kBucketExtractLm(bucket);
+          Print("REDUCTION WITH: ");
+          //pWrite( temp->p );
         kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
         if( canonicalize++ % 40 )
         {
           kBucketCanonicalize( bucket );
           canonicalize = 0;
         }
-
-        *redundant  = false;
-        temp        = gCurr;
+        //pDelete( &tempNeg );
+        *redundant  = FALSE;
+        if( kBucketGetLm( bucket ) )
+        {
+          temp  = gCurr;
+        }
+        else
+        {
+          break;
+        }
         goto startagainTop;
       } 
     }
     temp  = temp->next;
   }
   // we know that sp = 0 at this point!
-  pWrite(kBucketGetLm(bucket));
+  //pWrite(kBucketGetLm(bucket));
   sp  = kBucketExtractLm( bucket );
-#if F5EDEBUG
+//#if F5EDEBUG
   Print("END OF TOP REDUCTION:  ");
-#endif
+//#endif
+  // for testing of correctness of ordering!
+  //int testLength = 0;
+  //kBucketClear( bucket, &sp, &testLength ); 
+  // ---------------------------------------
   pTest( sp );
-  pWrite( sp ); 
+  //pWrite( sp ); 
+  // for testing of correctness of ordering!
+  //kBucketInit( bucket, sp, 0 ); 
+  //sp = kBucketExtractLm( bucket );
+  // ---------------------------------------
   //-------------------------------------------
   // now the reduction of the tail of sp starts
   //-------------------------------------------
@@ -1433,8 +1753,12 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
     {
       startagainTail:
       bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
-      if( isDivisibleGetMult( kBucketGetLm( bucket ), bucketExp, temp->p, 
-                              temp->sExp, &multTemp, &isMult
+            Print("HERE TAILREDUCTION AGAIN %p\n",temp);
+            Print("SPOLY RIGHT NOW: ");
+            //pWrite( sp );
+            pTest( sp );
+      if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
+                              bucketExp, &multTemp, &isMult
                             ) 
         )
       {
@@ -1445,37 +1769,51 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
           // compute the multiple of the rule of temp & multTemp
           for( i=1; i<(currRing->N)+1; i++ )
           {
-            multTemp[i] +=  temp->rewRule->label[i];
+            multLabelTemp[i]  = multTemp[i] + temp->rewRule->label[i];
           }
           
-          multShortExp  = getShortExpVecFromArray( multTemp );
+          multLabelShortExp  = getShortExpVecFromArray( multLabelTemp );
           
           // test the multiplied label by both criteria 
-          if( !criterion1( multTemp, multShortExp, f5Rules ) && 
-              !criterion2( multTemp, multShortExp, temp->rewRule )
+          if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules ) && 
+              !criterion2( multLabelTemp, multLabelShortExp, temp->rewRule )
             )
           {  
             static unsigned long* multTempExp = (unsigned long*) 
-                            omalloc0( NUMVARS*sizeof(unsigned long) );
-            getExpFromIntArray( multTemp, multTempExp, numVariables,
+                            omAlloc0( NUMVARS*sizeof(unsigned long) );
+            static unsigned long* multLabelTempExp = (unsigned long*) 
+                            omAlloc0( NUMVARS*sizeof(unsigned long) );
+          
+            getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
                                 shift, negBitmaskShifted, offsets
                               );   
+
             // if a higher label reduction should be done we do NOT reduce at all
             // we want to be fast in the tail reduction part
-            if( expCmp( multTempExp, (*cp)->mLabelExp ) == 1 )
+            if( expCmp( multLabelTempExp, (*cp)->mLabelExp ) == 1 )
             {            
-              isMult      = false;
-              *redundant  = true;
+              isMult      = FALSE;
+              *redundant  = TRUE;
               temp        = temp->next;
-              goto startagainTail;
+              Print("HERE TAILREDUCTION\n");
+              if( temp )
+              {
+                goto startagainTail;
+              }
+              else
+              {
+                break;
+              }
             }
+            Print("HERE TAILREDUCTION2\n");
             poly multiplier = pOne();
             getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
                                 negBitmaskShifted, offsets
                               );
             // throw away the leading monomials of reducer and bucket
-            pSetm( multiplier );
             p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+            pSetm( multiplier );
+            pTest( multiplier );
             tempLength = pLength( temp->p->next );
 
             kBucketExtractLm(bucket);
@@ -1487,8 +1825,18 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
               kBucketCanonicalize( bucket );
               canonicalize = 0;
             }
-            isMult  = false;
-            temp    = gCurr;
+            isMult  = FALSE;
+  Print("alalalaHERE1\n");
+            if( kBucketGetLm( bucket ) )
+            {
+              temp  = gCurr;
+            }
+            else
+            {
+  Print("HERE2\n");
+              kBucketDeleteAndDestroy( &bucket );
+              return sp;
+            }
             goto startagainTail;
           }
         }
@@ -1500,6 +1848,8 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
           poly tempNeg  = pInit();
           // throw away the leading monomials of reducer and bucket
           tempNeg       = pCopy( temp->p );
+        p_Mult_nn( tempNeg, coeff, currRing );
+        pSetm( tempNeg );
           tempLength    = pLength( tempNeg->next );
           kBucketExtractLm(bucket);
           kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
@@ -1508,14 +1858,27 @@ poly currReduction  ( poly sp, Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr,
             kBucketCanonicalize( bucket );
             canonicalize = 0;
           }
-          temp  = gCurr;
+          if( kBucketGetLm( bucket ) )
+          {
+            temp  = gCurr;
+          }
+          else
+          {
+  Print("HERE2\n");
+              kBucketDeleteAndDestroy( &bucket );
+              return sp;
+          }
           goto startagainTail;
         } 
       }
       temp  = temp->next;
     }
     // here we know that 
+  Print("HERE1\n");
+    //pWrite( sp );
+    //pWrite( kBucketGetLm( bucket ) );
     sp =  p_Merge_q( sp, kBucketExtractLm(bucket), currRing );
+  Print("HERE1\n");
   }
 #if F5EDEBUG
     Print("CURRREDUCTION-END \n");
@@ -1607,7 +1970,7 @@ inline poly multInit( const int* exp, int numVariables, int* shift,
   omTypeAllocBin( poly, np, currRing->PolyBin );
   Print("POLY ADDRESS %p\n",np);
   p_SetRingOfLm( np, currRing );
-  unsigned long* expTemp  =   (unsigned long*) omalloc0(NUMVARS*
+  unsigned long* expTemp  =   (unsigned long*) omAlloc0(NUMVARS*
                               sizeof(unsigned long));
   getExpFromIntArray( exp, expTemp, numVariables, shift, negBitmaskShifted, 
                       offsets 
@@ -1629,25 +1992,25 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
                 )
 {
 #if F5EDEBUG 
-  Print("CREATESPOLY - BEGINNING\n");
+  Print("CREATESPOLY - BEGINNING %p\n", cp );
 #endif
   LObject Pair( currRing );
   Pair.p1  = cp->p1;
-  Print("P1: ");
-  pWrite(cp->p1);
+  Print( "P1: %p\n", cp->p1 );
+  //pWrite(cp->p1);
   Pair.p2  = cp->p2;
-  Print("P2: ");
-  pWrite(cp->p2);
+  Print( "P2: &p\n", cp->p2 );
+  //pWrite(cp->p2);
   poly m1 = multInit( cp->mult1, numVariables, shift, 
                       negBitmaskShifted, offsets 
                     );
   Print("M1: %p ",m1);
-  pWrite(m1);
+  //pWrite(m1);
   poly m2 = multInit( cp->mult2, numVariables, shift, 
                       negBitmaskShifted, offsets 
                     );
   Print("M2: %p ",m2);
-  pWrite(m2);
+  //pWrite(m2);
 #ifdef KDEBUG
   create_count_f5++;
 #endif
@@ -1688,7 +2051,6 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
 
   pSetCoeff0(m1, lc2);
   pSetCoeff0(m2, lc1);  // and now, m1 * LT(p1) == m2 * LT(p2)
-
   if (R != NULL)
   {
     if (Pair.i_r1 == -1)
@@ -1747,7 +2109,7 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
 
   pTest(Pair.GetLmCurrRing());
 #if F5EDEBUG 
-  Print("CREATESPOLY - BEGINNING\n");
+  Print("CREATESPOLY - END\n");
 #endif
   return Pair.GetLmCurrRing();
 }
@@ -1922,17 +2284,6 @@ static poly redMoraNF (poly h,kStrategy strat, int flag)
     {
       j++;
     }
-    Print("POLY IN REDUCTION:  ");
-    if( p_GetOrder( H.p, currRing ) == pWTotaldegree( H.p, currRing ) )
-    {
-      Print(" ALLES OK\n");
-    }
-    else 
-    {
-      Print("BEI POLY %p",H.p); Print(" stimmt etwas nicht!\n");
-    }
-    pWrite( H.p );
-    
   }
 }
 
@@ -2101,6 +2452,7 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
       PrintS("t"); mflush(); 
     }
     Print("CURRING TYP: %p\n",currRing->typ);
+    Print("RED TAIL REDUCTION DONE\n");
     p = redtail(p,strat->sl,strat);
   }
   test=save_test;
@@ -2124,6 +2476,9 @@ poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
   ////////////////////////////////////////////////////////
   
   /*- compute------------------------------------------- -*/
+  Print("dddd\n");
+  pTest( q );
+  Print("dddd\n");
   p = pCopy(q);
   deleteHC(&p,&o,&j,strat);
   if (TEST_OPT_PROT) 
@@ -2156,9 +2511,9 @@ void clearStrat(kStrategy strat, ideal F, ideal Q)
   omFreeSize((ADDRESS)strat->ecartS,IDELEMS(strat->Shdl)*sizeof(int));
   omFreeSize((ADDRESS)strat->sevS,IDELEMS(strat->Shdl)*sizeof(unsigned long));
   omFreeSize((ADDRESS)strat->NotUsedAxis,(pVariables+1)*sizeof(BOOLEAN));
-  omfree(strat->sevT);
-  omfree(strat->S_2_R);
-  omfree(strat->R);
+  omFree(strat->sevT);
+  omFree(strat->S_2_R);
+  omFree(strat->R);
 
   if ((Q!=NULL)&&(strat->fromQ!=NULL))
   {
@@ -2300,14 +2655,21 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
 #if F5EDEBUG
     Print("ISDIVISIBLE-BEGINNING \n");
 #endif
-  pWrite(a);
-  pWrite(b);
+  //pWrite(a);
+  Print("%ld\n",pGetShortExpVector(a));
+  Print("%ld\n",~pGetShortExpVector(a));
+  //pWrite(b);
+  Print("%ld\n",~pGetShortExpVector(b));
+  Print("BOOLEAN? %ld\n",(pGetShortExpVector(a) & (~pGetShortExpVector(b))));
+  Print("BOOLEAN? %ld\n",(sev_a & not_sev_b));
   p_LmCheckPolyRing1(a, currRing);
   p_LmCheckPolyRing1(b, currRing);
   if (sev_a & not_sev_b)
   {
+    Print("SEVA %ld\n",sev_a);
+    Print("SEVB %ld\n", not_sev_b);
     pAssume1(_p_LmDivisibleByNoComp(a, currRing, b, currRing) == FALSE);
-    *isMult = false;
+    *isMult = FALSE;
 #if F5EDEBUG
     Print("ISDIVISIBLE-END1 \n");
 #endif
@@ -2321,18 +2683,18 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
     do
     {
       Print("%d ---- %d\n",p_GetExp(a,i,currRing), p_GetExp(b,i,currRing) );
-      if (p_GetExp(a,i,currRing) < p_GetExp(b,i,currRing))
+      if (p_GetExp(a,i,currRing) > p_GetExp(b,i,currRing))
       {
-        *isMult = false;
+        *isMult = FALSE;
 #if F5EDEBUG
     Print("ISDIVISIBLE-END2 \n");
 #endif
         return FALSE;
       }
-      (*mult)[i] = (p_GetExp(a,i,currRing) - p_GetExp(b,i,currRing)); 
+      (*mult)[i] = (p_GetExp(b,i,currRing) - p_GetExp(a,i,currRing)); 
       if( ((*mult)[i])>0 )
       {
-        *isMult = true;
+        *isMult = TRUE;
       }
       i--;
     }

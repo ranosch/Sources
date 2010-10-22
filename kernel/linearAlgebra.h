@@ -197,7 +197,26 @@ bool luInverseFromLUDecomp(
                                      decomposition                */
        matrix &iMat       /**< [out] inverse of A if invertible   */
                           );
-                          
+
+/**
+ * Computes the rank of a given (m x n)-matrix.
+ *
+ * The matrix may already be given in row echelon form, e.g., when
+ * the user has before called luDecomp and passes the upper triangular
+ * matrix U to luRank. In this case, the second argument can be set to
+ * true in order to pass this piece of information to the method.
+ * Otherwise, luDecomp will be called first to compute the matrix U.
+ * The rank is then read off the matrix U.
+ *
+ * @return the rank as an int
+ * @sa luDecomp(const matrix aMat, matrix &pMat, matrix &lMat, matrix &uMat)
+ **/
+int luRank(
+       const matrix aMat,      /**< [in]  input matrix */
+       const bool isRowEchelon /**< [in]  if true then aMat is assumed to be
+                                          already in row echelon form */
+          );
+
 /**
  * Solves the linear system A*x = b, where A is an (n x n)-matrix
  * which is given by its LU-decomposition.
@@ -210,20 +229,22 @@ bool luInverseFromLUDecomp(
  * Instead of trying to invert A and return x = A^(-1)*b, this
  * method
  * 1) computes b' = pMat * b,
- * 2) solves the easy system L * y = b', and then
- * 3) solves the easy system U * x = y.
+ * 2) solves the simple system L * y = b', and then
+ * 3) solves the simple system U * x = y.
  * Note that steps 1) and 2) will always work, as L is in any case
  * invertible. Moreover, y is uniquely determined. Step 3) will only
  * work if and only if y is in the column span of U. In that case,
  * there may be infinitely many solutions.
  * Thus, there are three cases:<br>
  * 1) There is no solution. Then the method returns false, and &xVec
-      as well as &dim remain unchanged.<br>
+ *    as well as &H remain unchanged.<br>
  * 2) There is a unique solution. Then the method returns true and
- *    the dimension of the affine solution space is zero.<br>
+ *    H is the 1x1 matrix with zero entry.<br>
  * 3) There are infinitely many solutions. Then the method returns
- *    true and some solution. Furthermore, the dimension of the
-      affine solution space is set accordingly.
+ *    true and some solution of the given original linear system.
+ *    Furthermore, the columns of H span the solution space of the
+ *    homogeneous linear system. The dimension of the solution
+ *    space is then the number of columns of H.
  *
  * @return true if there is at least one solution, false otherwise
  **/
@@ -237,9 +258,10 @@ bool luSolveViaLUDecomp(
        const matrix bVec, /**< [in]  right-hand side of the linear
                                      system to be solved          */
        matrix &xVec,      /**< [out] solution of A*x = b          */
-       int* dim           /**< [out] dimension of affine solution
-                                     space                        */
+       matrix &H          /**< [out] matrix with columns spanning
+                                     homogeneous solution space   */
                           );
 
 #endif
 /* LINEAR_ALGEBRA_H */
+

@@ -17,8 +17,8 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <Singular/mod2.h>
-#include <omalloc.h>
+#include <kernel/mod2.h>
+#include <omalloc/omalloc.h>
 #include <Singular/tok.h>
 #include <Singular/ipshell.h>
 #include <kernel/febase.h>
@@ -26,6 +26,7 @@
 #include <kernel/polys.h>
 #include <Singular/feOpt.h>
 #include <Singular/version.h>
+#include <Singular/silink.h>
 
 /* undef, if you don't want GDB to come up on error */
 
@@ -70,6 +71,18 @@
  #endif
 #endif
 
+si_link pipeLastLink=NULL;
+
+void sig_pipe_hdl(int sig)
+{
+ if (pipeLastLink!=NULL)
+ {
+   slClose(pipeLastLink);
+   pipeLastLink=NULL;
+   WerrorS("pipe failed");
+ }
+}
+
 /*---------------------------------------------------------------------*
  * File scope Variables (Variables share by several functions in
  *                       the same file )
@@ -103,10 +116,7 @@ si_hdl_typ si_set_signal ( int sig, si_hdl_typ signal_handler);
  @return value of signal()
 **/
 /*---------------------------------------------------------------------*/
-si_hdl_typ si_set_signal (
-  int sig,
-  si_hdl_typ signal_handler
-  )
+si_hdl_typ si_set_signal ( int sig, si_hdl_typ signal_handler)
 {
   si_hdl_typ retval=signal (sig, (si_hdl_typ)signal_handler);
   if (retval == SIG_ERR)
@@ -246,6 +256,7 @@ void init_signals()
     PrintS("cannot set signal handler for INT\n");
   }
   si_set_signal(SIGCHLD, (si_hdl_typ)sig_ign_hdl);
+  si_set_signal(SIGPIPE, (si_hdl_typ)sig_pipe_hdl);
 }
 
 /*---------------------------------------------------------------------*/
@@ -292,6 +303,7 @@ void init_signals()
   si_set_signal(SIGIOT, sigsegv_handler);
   si_set_signal(SIGINT ,sigint_handler);
   si_set_signal(SIGCHLD, (void (*)(int))SIG_IGN);
+  si_set_signal(SIGPIPE, (si_hdl_typ)sig_pipe_hdl);
 }
 #else
 
@@ -354,6 +366,7 @@ void init_signals()
   #if defined(HPUX_9) || defined(HPUX_10)
   si_set_signal(SIGCHLD, (void (*)(int))SIG_IGN);
   #endif
+  si_set_signal(SIGPIPE, (si_hdl_typ)sig_pipe_hdl);
 }
 #endif
 

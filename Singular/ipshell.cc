@@ -12,12 +12,12 @@
 #include <ctype.h>
 #include <math.h>
 
-#include <Singular/mod2.h>
+#include <kernel/mod2.h>
 #include <Singular/tok.h>
 #include <kernel/options.h>
 #include <Singular/ipid.h>
 #include <kernel/intvec.h>
-#include <omalloc.h>
+#include <omalloc/omalloc.h>
 #include <kernel/febase.h>
 #include <kernel/polys.h>
 #include <kernel/prCopy.h>
@@ -49,7 +49,7 @@
 #include <Singular/ipshell.h>
 #ifdef HAVE_FACTORY
 #define SI_DONT_HAVE_GLOBAL_VARS
-#include <factory.h>
+#include <factory/factory.h>
 #endif
 
 // define this if you want to use the fast_map routine for mapping ideals
@@ -2673,6 +2673,7 @@ BOOLEAN jjIS_SQR_FREE(leftv res, leftv u)
 }
 #endif
 
+#ifdef HAVE_FACTORY
 BOOLEAN jjRESULTANT(leftv res, leftv u, leftv v, leftv w)
 {
   res->data=singclap_resultant((poly)u->Data(),(poly)v->Data(), (poly)w->Data());
@@ -2683,6 +2684,7 @@ BOOLEAN jjCHARSERIES(leftv res, leftv u)
   res->data=singclap_irrCharSeries((ideal)u->Data());
   return (res->data==NULL);
 }
+#endif
 
 // from semic.cc
 #ifdef HAVE_SPECTRUM

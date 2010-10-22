@@ -84,7 +84,7 @@ inline si_link slCopy(si_link l)
   return l;
 }
 
-#include <omalloc.h>
+#include <omalloc/omalloc.h>
 inline char* slString(si_link l)
 {
   if (l->name != NULL)
@@ -101,4 +101,5 @@ extern omBin s_si_link_extension_bin;
 extern omBin sip_link_bin;
 extern omBin ip_link_bin;
 
+int slStatusSsiL(lists L, int timeout);
 #endif // SILINK_H

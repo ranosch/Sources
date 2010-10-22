@@ -147,6 +147,7 @@ void luDecomp(const matrix aMat, matrix &pMat, matrix &lMat, matrix &uMat)
         if (p != NULL)
         {
           n = nDiv(pGetCoeff(p), pivotElement);
+          nNormalize(n);
 
           /* filling lMat;
              old entry was zero, so no need to call pDelete(.) */
@@ -156,9 +157,12 @@ void luDecomp(const matrix aMat, matrix &pMat, matrix &lMat, matrix &uMat)
           MATELEM(uMat, rGauss, r + cOffset) = NULL; pDelete(&p);
           n = nNeg(n);
           for (int cGauss = r + cOffset + 1; cGauss <= cc; cGauss++)
+          {
             MATELEM(uMat, rGauss, cGauss)
               = pAdd(MATELEM(uMat, rGauss, cGauss),
                      ppMult_nn(MATELEM(uMat, r, cGauss), n));
+            pNormalize(MATELEM(uMat, rGauss, cGauss));
+          }
 
           nDelete(&n); /* clean up n */
         }
@@ -181,8 +185,6 @@ void luDecomp(const matrix aMat, matrix &pMat, matrix &lMat, matrix &uMat)
  **/
 bool luInverse(const matrix aMat, matrix &iMat)
 { /* aMat is guaranteed to be an (n x n)-matrix */
-  int d = aMat->rows();
-
   matrix pMat;
   matrix lMat;
   matrix uMat;
@@ -195,6 +197,41 @@ bool luInverse(const matrix aMat, matrix &iMat)
   idDelete((ideal*)&uMat);
 
   return result;
+}
+
+/* Assumes that aMat is already in row echelon form */
+int rankFromRowEchelonForm(const matrix aMat)
+{
+  int rank = 0;
+  int rr = aMat->rows(); int cc = aMat->cols();
+  int r = 1; int c = 1;
+  while ((r <= rr) && (c <= cc))
+  {
+    if (MATELEM(aMat, r, c) == NULL) c++;
+    else { rank++; r++; }
+  }
+  return rank;
+}
+
+int luRank(const matrix aMat, const bool isRowEchelon)
+{
+  if (isRowEchelon) return rankFromRowEchelonForm(aMat);
+  else
+  { /* compute the LU-decomposition and read off the rank from
+       the upper triangular matrix of that decomposition */
+    matrix pMat;
+    matrix lMat;
+    matrix uMat;
+    luDecomp(aMat, pMat, lMat, uMat);
+    int result = rankFromRowEchelonForm(uMat);
+  
+    /* clean-up */
+    idDelete((ideal*)&pMat);
+    idDelete((ideal*)&lMat);
+    idDelete((ideal*)&uMat);
+  
+    return result;
+  }
 }
 
 bool upperRightTriangleInverse(const matrix uMat, matrix &iMat,
@@ -237,6 +274,7 @@ bool upperRightTriangleInverse(const matrix uMat, matrix &iMat,
         }
         p = pNeg(p);
         p = pMult(p, pCopy(MATELEM(iMat, r, r)));
+        pNormalize(p);
         MATELEM(iMat, r, c) = p;
       }
     }
@@ -284,6 +322,7 @@ bool lowerLeftTriangleInverse(const matrix lMat, matrix &iMat,
         }
         p = pNeg(p);
         p = pMult(p, pCopy(MATELEM(iMat, c, c)));
+        pNormalize(p);
         MATELEM(iMat, r, c) = p;
       }
     }
@@ -323,7 +362,7 @@ bool luInverseFromLUDecomp(const matrix pMat, const matrix lMat,
 
 bool luSolveViaLUDecomp(const matrix pMat, const matrix lMat,
                         const matrix uMat, const matrix bVec,
-                        matrix &xVec, int* dim)
+                        matrix &xVec, matrix &H)
 {
   int m = uMat->rows(); int n = uMat->cols();
   matrix cVec = mpNew(m, 1);  /* for storing pMat * bVec */
@@ -348,6 +387,7 @@ bool luSolveViaLUDecomp(const matrix pMat, const matrix lMat,
     for (int c = 1; c < r; c++)
       p = pAdd(p, ppMult_qq(MATELEM(lMat, r, c), MATELEM(yVec, c, 1) ));
     MATELEM(yVec, r, 1) = pNeg(p);
+    pNormalize(MATELEM(yVec, r, 1));
   }
   
   /* determine whether uMat * xVec = yVec is solvable */
@@ -364,26 +404,69 @@ bool luSolveViaLUDecomp(const matrix pMat, const matrix lMat,
     }
     else { nonZeroRowIndex = r; break; }
   }
-  
+
   if (isSolvable)
   {
-    xVec = mpNew(n, 1); *dim = 0;
-    /* solve uMat * xVec = yVec and determine the dimension of the affine
-       solution space */
+    xVec = mpNew(n, 1);
+    matrix N = mpNew(n, n); int dim = 0;
+    poly p; poly q;
+    /* solve uMat * xVec = yVec and determine a basis of the solution
+       space of the homogeneous system uMat * xVec = 0;
+       We do not know in advance what the dimension (dim) of the latter
+       solution space will be. Thus, we start with the possibly too wide
+       matrix N and later copy the relevant columns of N into H. */
     int nonZeroC; int lastNonZeroC = n + 1;
     for (int r = nonZeroRowIndex; r >= 1; r--)
     {
       for (nonZeroC = 1; nonZeroC <= n; nonZeroC++)
         if (MATELEM(uMat, r, nonZeroC) != NULL) break;
-      *dim = *dim + lastNonZeroC - nonZeroC - 1;
-      poly p = pNeg(pCopy(MATELEM(yVec, r, 1)));
+      for (int w = lastNonZeroC - 1; w >= nonZeroC + 1; w--)
+      {
+        /* this loop will only be done when the given linear system has
+           more than one, i.e., infinitely many solutions */
+        dim++;
+        /* now we fill two entries of the dim-th column of N */
+        MATELEM(N, w, dim) = pNeg(pCopy(MATELEM(uMat, r, nonZeroC)));
+        MATELEM(N, nonZeroC, dim) = pCopy(MATELEM(uMat, r, w));
+      }
+      for (int d = 1; d <= dim; d++)
+      {
+        /* here we fill the entry of N at [r, d], for each valid vector
+           that we already have in N;
+           again, this will only be done when the given linear system has
+           more than one, i.e., infinitely many solutions */
+        p = NULL;
+        for (int c = nonZeroC + 1; c <= n; c++)
+          if (MATELEM(N, c, d) != NULL)
+            p = pAdd(p, ppMult_qq(MATELEM(uMat, r, c), MATELEM(N, c, d)));
+        q = pNSet(nInvers(pGetCoeff(MATELEM(uMat, r, nonZeroC))));
+        MATELEM(N, nonZeroC, d) = pMult(pNeg(p), q);;
+      }
+      p = pNeg(pCopy(MATELEM(yVec, r, 1)));
       for (int c = nonZeroC + 1; c <= n; c++)
         if (MATELEM(xVec, c, 1) != NULL)
           p = pAdd(p, ppMult_qq(MATELEM(uMat, r, c), MATELEM(xVec, c, 1)));
-      poly q = pNSet(nInvers(pGetCoeff(MATELEM(uMat, r, nonZeroC))));
+      q = pNSet(nInvers(pGetCoeff(MATELEM(uMat, r, nonZeroC))));
       MATELEM(xVec, nonZeroC, 1) = pMult(pNeg(p), q);
+      pNormalize(MATELEM(xVec, nonZeroC, 1));
       lastNonZeroC = nonZeroC;
     }
+    if (dim == 0)
+    {
+      /* that means the given linear system has exactly one solution;
+         we return as H the 1x1 matrix with entry zero */
+      H = mpNew(1, 1);
+    }
+    else
+    {
+      /* copy the first 'dim' columns of N into H */
+      H = mpNew(n, dim);
+      for (int r = 1; r <= n; r++)
+        for (int c = 1; c <= dim; c++)
+          MATELEM(H, r, c) = pCopy(MATELEM(N, r, c));
+    }
+    /* clean up N */
+    idDelete((ideal*)&N);
   }
 
   idDelete((ideal*)&cVec);

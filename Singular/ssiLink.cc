@@ -17,7 +17,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <ctype.h>   /*for isdigit*/
-#include <unistd.h>
 #include <netdb.h>
 
 
@@ -25,7 +24,7 @@
 
 #include "tok.h"
 #include "ipid.h"
-#include <omalloc.h>
+#include <omalloc/omalloc.h>
 #include <kernel/ring.h>
 #include <kernel/matpol.h>
 #include <kernel/ideals.h>
@@ -89,7 +88,10 @@ void ssiWriteBigInt(const ssiInfo *d, const number n)
   }
   else if (n->s==3)
   {
-    gmp_fprintf(d->f_write,"3 %Zd ",n->z);
+    fprintf(d->f_write,"3 ");
+    mpz_out_str(d->f_write,10,n->z);
+    fprintf(d->f_write," ");
+    //gmp_fprintf(d->f_write,"3 %Zd ",n->z);
     //if (d->f_debug!=NULL) gmp_fprintf(d->f_debug,"bigint: gmp \"%Zd\" ",n->z);
   }
   else Werror("illiegal bigint");
@@ -250,7 +252,7 @@ number ssiReadBigInt(ssiInfo *d)
    case 3:
      {// read int or mpz_t or mpz_t, mpz_t
        number n=nlRInit(0);
-       gmp_fscanf(d->f_read,"%Zd",n->z);
+       mpz_inp_str(n->z,d->f_read,0);
        n->s=sub_type;
        return n;
      }
@@ -994,6 +996,76 @@ const char* slStatusSsi(si_link l, const char* request)
     else return "not ready";
   }
   else return "unknown status request";
+}
+
+int slStatusSsiL(lists L, int timeout)
+{
+  si_link l;
+  ssiInfo *d;
+  fd_set  mask, fdmask;
+  FD_ZERO(&mask);
+  int max_fd=0; /* max fd in fd_set */
+  struct timeval wt;
+  int i;
+  for(i=L->nr-1; i>=0; i--)
+  {
+    if (L->m[i].Typ()!=LINK_CMD)
+    { WerrorS("all elements must be of type link"); return -2;}
+    l=(si_link)L->m[i].Data();
+    if(!SI_LINK_OPEN_P(l))
+    { WerrorS("all links must be open"); return -2;}
+    if ((strcmp(l->m->type,"ssi")!=0)
+    && (strcmp(l->mode,"fork")!=0) || (strcmp(l->mode,"tcp")!=NULL))
+    { WerrorS("all links must be of type ssi:fork or ssi:tcp"); return -2;}
+    d=(ssiInfo*)l->data;
+    FD_SET(d->fd_read, &mask);
+    if (d->fd_read> max_fd) max_fd=d->fd_read;
+  }
+  struct timeval *wt_ptr=&wt;
+  if (timeout== -1)
+  {
+    wt_ptr=NULL;
+  }
+  else
+  {
+    wt.tv_sec  = timeout / 1000000;
+    wt.tv_usec = timeout % 1000000;
+  }
+  /* check with select: chars waiting: no -> not ready */
+  int s= select(max_fd, &mask, NULL, NULL, wt_ptr);
+  if (s==-1) return -2; /*error*/
+  if (s==0) 
+  {
+    return -1; /*poll: not ready */
+  }
+  else /* s>0, at least one ready */
+  {
+    int j=0;
+    while (j<=max_fd) { if (FD_ISSET(j,&mask)) break; j++; }
+    for(i=L->nr-1; i>=0; i--)
+    {
+      l=(si_link)L->m[i].Data();
+      d=(ssiInfo*)l->data;
+      if(j==d->fd_read) break;
+    }
+    loop
+    {
+      /* yes: read 1 char*/
+      /* if \n, check again with select else ungetc(c), ready*/
+      /* setting: d: current ssiInfo, j current fd, i current entry in L*/
+      int c=fgetc(d->f_read);
+      //Print("try c=%d\n",c);
+      if (c== -1) return 0;
+      else if (isdigit(c))
+      { ungetc(c,d->f_read); return i+1; }
+      else if (c>' ')
+      {
+        Werror("unknown char in ssiLink(%d)",c);
+        return -2;
+      }
+      /* else: next char */
+    }
+  }
 }
 
 int ssiBatch(const char *host, const char * port)

@@ -1,25 +1,36 @@
 system("--allow-net", 1);
 system("--min-time", "0.001");
 system("--ticks-per-sec", 1000);
-//LIB"f5ex2.lib";
-LIB"poly.lib";
-//cyclic_n(6);
-//katsura8();
+LIB"f5ex2.lib";
+//LIB"poly.lib";
+cyclic_n(6);
+//katsura5();
 //fmtm();
-ring r = 32003,(x(1..7)),dp;
-ideal j = cyclic(6);
-ideal i = homog(j,x(7));
+//ring r = 32003,(x(1..7)),dp;
+//ideal j = cyclic(6);
+//ideal i = homog(j,x(7));
 
 //f5e(i);
-memory(0);
-memory(1);
-memory(2);
+bigint mem0 = memory(0);
+bigint mem1 = memory(1);
+bigint mem2 = memory(2);
+i;
+std(i);
 //ideal g = system("f5",i,2,1);
 ideal g = f5e(i);
+sprintf("Memory after computations:");
+sprintf("-----------------------------");
 memory(0);
 memory(1);
 memory(2);
+sprintf("-----------------------------");
+sprintf("Memory difference:");
+sprintf("-----------------------------");
+memory(0)-mem0;
+memory(1)-mem1;
+memory(2)-mem2;
+sprintf("-----------------------------");
 g;
+i;
+reduce(std(i),g);
 $
-//reduce(std(i),g);
-

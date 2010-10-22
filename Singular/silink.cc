@@ -13,10 +13,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <Singular/mod2.h>
+#include <kernel/mod2.h>
 #include <Singular/tok.h>
 #include <kernel/options.h>
-#include <omalloc.h>
+#include <omalloc/omalloc.h>
 #include <kernel/febase.h>
 #include <Singular/subexpr.h>
 #include <Singular/ipid.h>
@@ -29,6 +29,7 @@
 #include <kernel/numbers.h>
 #include <kernel/intvec.h>
 #include <Singular/ssiLink.h>
+#include <Singular/pipeLink.h>
 
 // #ifdef HAVE_DBM
 // #ifdef ix86_Win
@@ -834,6 +835,10 @@ static si_link_extension slTypeInit(si_link_extension s, const char* type)
 #if 1
   else if (strcmp(type, "ssi") == 0)
     s->next = slInitSsiExtension(ns);
+#endif
+#if 1
+  else if (strcmp(type, "|") == 0)
+    s->next = slInitPipeExtension(ns);
 #endif
   else
   {

@@ -95,7 +95,7 @@ struct Lpoly
   // -----------------------   
 };
 
- 
+
 
 /// @struct \c Cpair 
 /// @brief \c Cpair is the structure of the list of critical pairs in F5C+
@@ -294,7 +294,8 @@ void computeSpols (
                               ///       linked list of critical pairs is NOT  
                               ///       sorted.
   ideal           redGB,      ///<[in]  reducers of earlier iteration steps
-  Lpoly*          gCurr,      ///<[in]  reducers of the current iteration step
+  Lpoly**         gCurr,      ///<[in,out]  pointer to the list of reducers of the 
+                              ///           current iteration step
   const F5Rules*  f5Rules,    ///<[in]  rules for F5 Criterion checks
   int numVariables,           ///<[in]  global stuff for faster exponent computations
   int* shift,                 ///<[in]  global stuff for faster exponent computations
@@ -322,6 +323,10 @@ inline void kBucketCopyToPoly (
 /// @return the reduced s-polynomial
 /// @sa computeSpols, reducedByRedGBCritPair
 poly currReduction  ( 
+  kStrategy strat,        ///<[in]      strategy to reduce elements w.r.t. \c redGB
+                          ///           needed for possible reduction of newly
+                          ///           generated polys during higher label
+                          ///           reductions  
   poly sp,                ///<[in,out]  s-polynomial to be reduced
   Cpair** cp,             ///<[in,out]  corresponding critical pair: if a new 
                           ///           polynomial is added due to a higher
@@ -335,6 +340,8 @@ poly currReduction  (
   const F5Rules* f5Rules, ///<[in]      rules for F5 Criterion checks
   int*  multTemp,         ///<[in]      integer exponent vector for the mulitples
                           ///           of the reducers
+  int*  multLabelTemp,    ///<[in]      integer exponent vector for the mulitples
+                          ///           of the labels of reducers
   int numVariables,       ///<[in]  global stuff for faster exponent computations
   int* shift,             ///<[in]  global stuff for faster exponent computations
   unsigned long* negBit,  ///<[in]  global stuff for faster exponent computations
