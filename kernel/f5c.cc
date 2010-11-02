@@ -1272,6 +1272,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
           gCurrLast             = newElement;
           Print( "Coming from this pair: %p\n", temp );
           Print( "ELEMENT ADDED TO GCURR: %p -- %p\n", gCurrLast, gCurrLast->p );
+          pWrite( pHead(gCurrLast->p) );
           for( int lala = 1; lala < (currRing->N+1); lala++ )
           {
             Print( "%d  ",rewRulesLast->label[lala] );
@@ -1322,9 +1323,9 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
 #if F5EDEBUG
         Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
         Print("GEN1: %p\n", temp->p1 );
-        //pWrite(temp->p1);
-        //Print("GEN2: ");
-        ////pWrite(temp->p2);
+        pWrite( pHead(temp->p1) );
+        Print("GEN2: ");
+        pWrite( pHead(temp->p2) );
 #endif
 
         // check if the critical pair is a trivial one, i.e. a pair generated 
@@ -1374,6 +1375,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
             gCurrLast             = newElement;
             Print( "Coming from this pair: %p\n", temp );
             Print( "ELEMENT ADDED TO GCURR: %p -- %p\n", gCurrLast, gCurrLast->p );
+            pWrite( pHead(gCurrLast->p) );
             for( int lale = 1; lale < (currRing->N+1); lale++ )
             {
               Print( "%d  ",rewRulesLast->label[lale] );
@@ -1551,7 +1553,7 @@ poly currReduction  ( kStrategy strat, poly sp,
             newPoly = reduceByRedGBPoly( newPoly, strat );
              
             Print("NEWLY AFTER REDGB REDUCTION: %p\n",newPoly);
-            //pWrite(newPoly);
+            pWrite( pHead(newPoly) );
             // if newPoly = 0 nothing has to be done :)
             // else we have to generate a new "trivial" critical pair
             if( newPoly )
@@ -1576,10 +1578,12 @@ poly currReduction  ( kStrategy strat, poly sp,
               }
               for( j=0;j<currRing->N+1;j++ )
               {
-                newPair->mLabel1[j] = multTemp[j];
+                newPair->mLabel1[j] = multLabelTemp[j];
+                Print( "%d  ", newPair->mLabel1[j] );
                 newPair->mult1[j]   = 0;
                 newPair->mult2[j]   = 0;
               }
+              Print( "\n" );
               newPair->smLabel1   = multLabelShortExp;
               newPair->rewRule1   = temp->rewRule;
               newPair->mLabel2    = NULL;
