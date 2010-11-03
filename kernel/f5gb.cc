@@ -187,7 +187,7 @@ LList* F5inc(int i, poly f_i, LList* gPrev, LList* reducers, ideal gbPrev, poly 
           
           
           // check with lower degree bound of F5+
-          /*
+          
           CNode* f5check = critPairsMinDeg;
           bool checker = 1;
           if(highestDegreeGBCriticalPairNotDet != 0 and f5check->getData()->getDeg() > highestDegreeGBCriticalPairNotDet) {
@@ -209,14 +209,14 @@ LList* F5inc(int i, poly f_i, LList* gPrev, LList* reducers, ideal gbPrev, poly 
               //Print("number of useless pairs: %d\n\n",numberUselessPairs);
             //Print("Degree of following reduction: %d\n",critPairsMinDeg->getData()->getDeg());  
           //long degreecheck = critPairsMinDeg->getData()->getDeg(); 
-          */  
+           
             computeSPols(critPairsMinDeg,rTag,rules,sPolyList, rejectedGBList);
-          /*
+         
           }
           else {
             return gPrev;
           }
-          */
+        
         //}
           //}
         //}
@@ -1780,8 +1780,8 @@ void findReducers(testPoly* checkedPrev, testPair* checkedPairs, LList* f5Criter
                             // passing criterion1 ?
                             if(!criterion1(gPrev,u,tempRed,lTag)) {
                                     poly tempRedPoly    =   tempRed->getPoly();
-                                    //Print("REDUCER: ");
-                                    //pWrite(tempRedPoly);
+                                    Print("REDUCER SMALLER INDEX: ");
+                                    pWrite((tempRedPoly));
                                     pIter(tempRedPoly);
                                     int lTempRedPoly    =   pLength(tempRedPoly);
                                     kBucketExtractLm(bucket);
@@ -1841,7 +1841,7 @@ void findReducers(testPoly* checkedPrev, testPair* checkedPairs, LList* f5Criter
                                         kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                                         canonicalize++;
                                         Print("REDUCTION\n");
-                                        pWrite(tempRedPoly);
+                                        pWrite(pHead(tempRedPoly));
                                         addToG  = 1;
                                         if(!(canonicalize % 50)) {
                                             kBucketCanonicalize(bucket);
@@ -1905,7 +1905,7 @@ addToG  = 0;
                         kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                         canonicalize++;
                         Print("Reduction\n");
-                        pWrite(tempRedPoly);
+                        pWrite((tempRedPoly));
                         if(!(canonicalize % 50)) {
                             kBucketCanonicalize(bucket);
                         }
@@ -1949,7 +1949,7 @@ addToG  = 0;
                                     kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                                     canonicalize++;
                                     Print("Reduction\n");
-                                    pWrite( tempRedPoly );
+                                    pWrite( pHead(tempRedPoly) );
                                     if(!(canonicalize % 50)) {
                                         kBucketCanonicalize(bucket);
                                     }
@@ -2000,7 +2000,7 @@ addToG  = 0;
                                         kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                                         canonicalize++;
                                         Print("REDUCTION\n");
-                                        pWrite( tempRedPoly );
+                                        pWrite( pHead(tempRedPoly) );
                                         addToG  = 1;
                                         if(!(canonicalize % 50)) {
                                             kBucketCanonicalize(bucket);
@@ -2152,7 +2152,7 @@ addToG  = 0;
             if(addToG) {
               //Print("----------------HERE?-----------------\n");
               criticalPair(f5CriterionElements,reducers,gbPrev,gPrev,critPairs,lTag,rTag,rules, rejectedGBList,plus);
-              //arsCheck(checkedPrev,checkedPairs);
+              arsCheck(checkedPrev,checkedPairs);
             }
             else {
               notInG++;
@@ -2167,11 +2167,11 @@ addToG  = 0;
             else {
               if(!l->getDel()) {
                 criticalPair(f5CriterionElements,reducers,gbPrev,gPrev,critPairs,lTag,rTag,rules,rejectedGBList,plus);
-              //arsCheck(checkedPrev,checkedPairs);
+              arsCheck(checkedPrev,checkedPairs);
               }
               else {
                 criticalPair2(gPrev,critPairs,lTag,rTag,rules, rejectedGBList);
-              //arsCheck(checkedPrev,checkedPairs);
+              arsCheck(checkedPrev,checkedPairs);
               }
             }
         }
