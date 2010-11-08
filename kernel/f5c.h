@@ -97,6 +97,16 @@ struct Lpoly
 
 
 
+/// @struct \c Spoly 
+/// @brief \c Spoly is the structure of a linked list of s-polynomials, 
+struct Spoly 
+{
+  Spoly*        next;   ///< pointer to the next element in the linked list
+  poly          p;      ///< s-polynomial
+};
+
+
+
 /// @struct \c Cpair 
 /// @brief \c Cpair is the structure of the list of critical pairs in F5C+
 /// containing the corresponding polynomials, the multiplied labels, and the
