@@ -327,25 +327,25 @@ inline void kBucketCopyToPoly (
 
   
   
-/// @brief \c currReduction() reduces the s-polynomial \c sp by those labeled
+/// @brief \c currReduction() reduces a list s-polynomial \c sp by those labeled
 /// polynomials computed in the current iteration step, whose multiples are not
 /// detected by any of F5's criteria.
-/// @return the reduced s-polynomial
+/// Note that if a higher label reduction takes place, possibly new rules 
+/// and s-polynomials are added during the procedure and reduced in the following.
 /// @sa computeSpols, reducedByRedGBCritPair
-poly currReduction  ( 
+void currReduction  ( 
   kStrategy strat,        ///<[in]      strategy to reduce elements w.r.t. \c redGB
                           ///           needed for possible reduction of newly
                           ///           generated polys during higher label
                           ///           reductions  
-  poly sp,                ///<[in,out]  s-polynomial to be reduced
-  Cpair** cp,             ///<[in,out]  corresponding critical pair: if a new 
-                          ///           polynomial is added due to a higher
-                          ///           this address is needed to insert the new
-                          ///           critical pair into the corresponding
-                          ///           list  
-  RewRules* rewRuleLast,  ///<[in,out]  list of rewrite rules, possibly added by 
-                          ///           some elements if higher label reductions 
-                          ///           take place
+  Spoly* spolyFirst,      ///<[in]  first s-polynomial in the list to be reduced
+  Spoly* spolyLast,       ///<[in]  last s-polynomial in the list to be reduced
+  RewRules* rewRuleCurr,  ///<[in,out]  1st rewrite rule in the list of all pre-
+                          ///           computed rewrite rules of this degree 
+                          ///           step
+  RewRules* rewRuleLast,  ///<[in,out]  last rewrite rule in the list of all pre-
+                          ///           computed rewrite rules of this degree step
+                          ///           needed for higher label reductions!
   Lpoly* gCurr,           ///<[in]      reducers of the current iteration step
   const F5Rules* f5Rules, ///<[in]      rules for F5 Criterion checks
   int*  multTemp,         ///<[in]      integer exponent vector for the mulitples

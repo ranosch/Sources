@@ -1227,8 +1227,10 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         newRule->slabel     = ~temp->smLabel1;
         rewRulesLast->next  = newRule;
         rewRulesLast        = newRule; 
-        rewRulesCurr        = newRule; 
-        //whenToCheck         = TRUE;
+        if( NULL == rewRulesCurr )
+        {
+          rewRulesCurr      = newRule; 
+        }
 #if F5EDEBUG
         Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
 #endif
@@ -1301,17 +1303,17 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
     }
     // all rules and s-polynomials of this degree step are computed and 
     // prepared for further reductions in currReduction()
-    currReduction ( strat, spolyFirst, spolyLast, &temp, rewRulesLast, 
-                    gCurrLast, f5Rules, multTemp, multLabelTemp, 
+    currReduction ( strat, spolyFirst, spolyLast, rewRulesCurr, 
+                    rewRulesLast, gCurrLast, f5Rules, multTemp, multLabelTemp, 
                     numVariables, shift, negBitmaskShifted, offsets, &redundant
                   );
     // elements are added to linked list gCurr => start next degree step
   }
   // get back the new list of elements in gCurr, i.e. the list of elements
   // computed in this iteration step
-  *gCurr = gCurrLast;
+  *gCurr        = gCurrLast;
   omFree( multTemp );
-
+  rewRulesCurr  = NULL;
 #if F5EDEBUG
   Print("COMPUTESPOLS-END\n");
 #endif
@@ -1547,10 +1549,11 @@ inline void kBucketCopyToPoly(kBucket_pt bucket, poly *p, int *length)
 
 
 
-poly currReduction  ( kStrategy strat, poly sp, 
-                      Cpair** cp, RewRules* rewRulesLast, Lpoly* gCurr, 
-                      const F5Rules* f5Rules, int* multTemp, int* multLabelTemp,
-                      int numVariables, int* shift, 
+void currReduction  ( 
+                      kStrategy strat, Spoly* spolyFirst, Spoly* spolyLast, 
+                      RewRules* rewRulesCurr, RewRules* rewRulesLast,
+                      Lpoly* gCurr, const F5Rules* f5Rules, int* multTemp, 
+                      int* multLabelTemp, int numVariables, int* shift, 
                       unsigned long* negBitmaskShifted, 
                       int* offsets, BOOLEAN* redundant
                     )
@@ -1564,248 +1567,289 @@ poly currReduction  ( kStrategy strat, poly sp,
   unsigned long multLabelShortExp;
   static int tempLength           = 0;
   unsigned short int canonicalize = 0; 
+  Spoly* spTemp                   = spolyFirst;
   Lpoly* temp                     = gCurr;
   kBucket* bucket                 = kBucketCreate();
   unsigned long bucketExp;
-  kBucketInit( bucket, sp, pLength(sp) );
-  
-  //----------------------------------------
-  // reduction of the leading monomial of sp
-  //----------------------------------------
-  // Note that we need to make this top reduction explicit to be able to decide
-  // if the returned polynomial is redundant or not!
-  // search for reducers in the list gCurr
-  *redundant  = FALSE;
-  while ( temp )
-  {
-    startagainTop:
-    bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
-    Print("POSSIBLE REDUCER %p ",temp);
-    Print("%p\n",temp->p);
-    pTest( temp->p );
-    pWrite(pHead(temp->p));
-    if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
-                            bucketExp, &multTemp, &isMult
-                          ) 
-      )
+  // iterate over all elements in the s-polynomial list
+  while( NULL != spTemp )
+  { 
+    kBucketInit( bucket, spTemp->p, pLength(spTemp->p) );
+    //----------------------------------------
+    // reduction of the leading monomial of sp
+    //----------------------------------------
+    // Note that we need to make this top reduction explicit to be able to decide
+    // if the returned polynomial is redundant or not!
+    // search for reducers in the list gCurr
+    *redundant  = FALSE;
+    while ( temp )
     {
-      *redundant = TRUE;
-      // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
-      // multTemp and check this multiple by both criteria
-      Print("ISMULT %d\n",isMult);
-      if( isMult )
+      startagainTop:
+      bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
+      Print("POSSIBLE REDUCER %p ",temp);
+      Print("%p\n",temp->p);
+      pTest( temp->p );
+      pWrite(pHead(temp->p));
+      if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
+                              bucketExp, &multTemp, &isMult
+                            ) 
+        )
       {
-        // compute the multiple of the rule of temp & multTemp
-        for( i=1;i<(currRing->N)+1; i++ )
+        *redundant = TRUE;
+        // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
+        // multTemp and check this multiple by both criteria
+        Print("ISMULT %d\n",isMult);
+        if( isMult )
         {
-          multLabelTemp[i]  = multTemp[i] + temp->rewRule->label[i];
-        }
-        multLabelTemp[0]    = temp->rewRule->label[0];
-        multLabelShortExp   = getShortExpVecFromArray( multLabelTemp );
-         
-        // test the multiplied label by both criteria 
-        if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules ) && 
-            !criterion2( multLabelTemp, multLabelShortExp, temp->rewRule )
-          )
-        { 
-          static unsigned long* multTempExp = (unsigned long*) 
-                          omAlloc0( NUMVARS*sizeof(unsigned long) );
-          static unsigned long* multLabelTempExp = (unsigned long*) 
-                          omAlloc0( NUMVARS*sizeof(unsigned long) );
-          getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
-                              shift, negBitmaskShifted, offsets
-                            );   
-          // if a higher label reduction takes place we need to create
-          // a new Lpoly with the higher label and store it in a different 
-          // linked list for later reductions
+          // compute the multiple of the rule of temp & multTemp
+          for( i=1;i<(currRing->N)+1; i++ )
+          {
+            multLabelTemp[i]  = multTemp[i] + temp->rewRule->label[i];
+          }
+          multLabelTemp[0]    = temp->rewRule->label[0];
+          multLabelShortExp   = getShortExpVecFromArray( multLabelTemp );
+          
+          // test the multiplied label by both criteria 
+          if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules ) && 
+              !criterion2( multLabelTemp, multLabelShortExp, temp->rewRule )
+            )
+          { 
+            static unsigned long* multTempExp = (unsigned long*) 
+                            omAlloc0( NUMVARS*sizeof(unsigned long) );
+            static unsigned long* multLabelTempExp = (unsigned long*) 
+                            omAlloc0( NUMVARS*sizeof(unsigned long) );
+            getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
+                                shift, negBitmaskShifted, offsets
+                              );   
+            // if a higher label reduction takes place we need to create
+            // a new Lpoly with the higher label and store it in a different 
+            // linked list for later reductions
 
-          if( expCmp( multLabelTempExp, (*cp)->mLabelExp ) == 1 )
-          {            
+            if( expCmp( multLabelTempExp, (*cp)->mLabelExp ) == 1 )
+            {            
 //#if F5EDEBUG
             Print("HIGHER LABEL REDUCTION \n");
 //#endif
-            poly newPoly  = pInit();
-            int length;
-            int cano            = kBucketCanonicalize( bucket );
-            kBucket* newBucket  = kBucketCreate();
-            kBucketInit ( newBucket, pCopy(bucket->buckets[cano]), 
-                          bucket->buckets_length[cano] 
-                        );
-            Print("NEW POLYNOMIAL FROM BUCKET: ");
-            //pWrite(kBucketGetLm(newBucket));
-            Print("HERE?\n");
-            //pWrite(kBucketGetLm(newBucket));
-            //multiplier->exp       = multTempExp;
-            //getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
-            //                    negBitmaskShifted, offsets
-            //                  );
+              poly newPoly  = pInit();
+              int length;
+              int cano            = kBucketCanonicalize( bucket );
+              kBucket* newBucket  = kBucketCreate();
+              kBucketInit ( newBucket, pCopy(bucket->buckets[cano]), 
+                            bucket->buckets_length[cano] 
+                          );
+              Print("NEW POLYNOMIAL FROM BUCKET: ");
+              //pWrite(kBucketGetLm(newBucket));
+              Print("HERE?\n");
+              //pWrite(kBucketGetLm(newBucket));
+              //multiplier->exp       = multTempExp;
+              //getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+              //                    negBitmaskShifted, offsets
+              //                  );
 
+              static poly multiplier = pOne();
+              getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                                  negBitmaskShifted, offsets
+                                );
+              // throw away the leading monomials of reducer and bucket
+              pSetm( multiplier );
+              p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(newBucket)), currRing );
+              tempLength = pLength( temp->p->next );
+              kBucketExtractLm(newBucket);
+              Print("MULTIPLIER: ");
+              pWrite(multiplier);
+              Print("REDUCER: ");
+              pWrite( pHead(temp->p) );
+              kBucket_Minus_m_Mult_p( newBucket, multiplier, temp->p->next, 
+                                      &tempLength 
+                                    ); 
+              // get monomials out of bucket and save the poly as first generator 
+              // of a new critical pair
+              int length2 = 0;
+              //pWrite( kBucketGetLm(newBucket) );
+              kBucketClear( newBucket, &newPoly, &length2 );
+              Print("NEWPOLY: ");
+              //pWrite( newPoly );
+              newPoly = reduceByRedGBPoly( newPoly, strat );
+              
+              // add the new rule even when newPoly is zero!
+              RewRules* newRule   = (RewRules*) omAlloc( sizeof(RewRules) );
+              newRule->next       = NULL;
+              newRule->label = (int*) omAlloc( (currRing->N+1) * sizeof(int) );
+              int j = 0;
+              for( j=0;j<currRing->N+1;j++ )
+              {
+                newRule->label[j] = multLabelTemp[j];
+              }
+              newRule->slabel     = multLabelShortExp;
+              rewRulesLast->next  = newRule;
+              rewRulesLast        = newRule; 
+              
+              Print("NEWLY AFTER REDGB REDUCTION: %p\n",newPoly);
+              pWrite( pHead(newPoly) );
+              // if newPoly = 0 nothing has to be done :)
+              // else we have to generate a new "trivial" critical pair
+              if( newPoly )
+              {
+                pNorm( newPoly );
+                // generate a new critical for further reduction steps
+                // note: this will be a "trivial" critical pair, as the 2nd
+                // generator will be 1
+                Print("NEW PAIR COMPUTED?\n"); 
+                Cpair* newPair      = (Cpair*) omAlloc( sizeof(Cpair) );
+                Print("%p\n",newPair);
+                newPair->mLabelExp  = (unsigned long*) omAlloc0( NUMVARS*
+                                        sizeof(unsigned long) );
+                newPair->mLabel1  = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                newPair->mult1    = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                newPair->mult2    = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                for( j=0;j<NUMVARS;j++ )
+                {
+                  newPair->mLabelExp[j] = multLabelTempExp[j];
+                  multiplier->exp[j]    = multTempExp[j];
+                }
+                for( j=0;j<currRing->N+1;j++ )
+                {
+                  newPair->mLabel1[j] = multLabelTemp[j];
+                  Print( "%d  ", newPair->mLabel1[j] );
+                  newPair->mult1[j]   = 0;
+                  newPair->mult2[j]   = 0;
+                }
+                Print( "\n" );
+                newPair->smLabel1   = multLabelShortExp;
+                //newPair->rewRule1   = temp->rewRule;
+                newPair->rewRule1   = rewRulesLast;
+                newPair->mLabel2    = NULL;
+                newPair->smLabel2   = 0;
+                newPair->mult2      = NULL;
+                newPair->p1         = newPoly;
+                newPair->p2         = NULL;
+                // this is ok since p2 is never tested by the 2nd criterion
+                newPair->rewRule2   = NULL;
+                
+                //newPair->p1 =  kBucketExtractLm( bucket );
+                //newPair->p1 =  p_Merge_q ( newPair->p1, kBucketExtractLm(bucket), 
+                //                            currRing 
+                //                          );
+                // insertion sort of newPair to the list of critical pairs waiting
+                // to be reduced, sorted by increasing labels
+                //kBucketInit( bucket, oldPoly, length ); 
+                //pDelete( &oldPoly );  
+                Cpair* temp = (*cp)->next;
+                if( temp )
+                { 
+                  if( (expCmp(newPair->mLabelExp, temp->mLabelExp) == -1) )
+                  {
+                    (*cp)->next = newPair;
+                    newPair->next = temp;
+                  }
+                  else
+                  {
+                    while ( temp->next && (expCmp(newPair->mLabelExp, temp->next->mLabelExp) == 1) )
+                    {
+                      temp  = temp->next;
+                    }
+                    newPair->next = temp->next;
+                    temp->next    = newPair;
+                  }
+                }
+                else
+                {
+                  newPair->next = NULL;
+                  (*cp)->next   = newPair;
+                }  
+                Print("NEW PAIR ADDRESS: %p -- %p\n",newPair,newPair->next);
+              }
+              // newPoly = 0 => free memory
+              else
+              {
+                Print("HERE WE ARE DELETING POLYS IS FUN!\n");
+                pDelete( &newPoly );
+              }
+              // get back on track for the old poly which has to be checked for 
+              // reductions by the following element in gCurr
+              Print("Poly copying: ");
+              //pWrite(kBucketGetLm( bucket ) );
+              isMult      = FALSE;
+              *redundant  = TRUE;
+              temp        = temp->next;
+              goto startagainTop;
+            }
+            // else we can go on and reduce sp
+            // The multiplied reducer will be reduced w.r.t. strat before the 
+            // bucket reduction starts!
             static poly multiplier = pOne();
+            static poly multReducer;
             getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
                                 negBitmaskShifted, offsets
                               );
             // throw away the leading monomials of reducer and bucket
             pSetm( multiplier );
-            p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(newBucket)), currRing );
-            tempLength = pLength( temp->p->next );
-            kBucketExtractLm(newBucket);
-            Print("MULTIPLIER: ");
-            pWrite(multiplier);
-            Print("REDUCER: ");
-            pWrite( pHead(temp->p) );
-            kBucket_Minus_m_Mult_p( newBucket, multiplier, temp->p->next, 
-                                    &tempLength 
-                                  ); 
-            // get monomials out of bucket and save the poly as first generator 
-            // of a new critical pair
-            int length2 = 0;
-            //pWrite( kBucketGetLm(newBucket) );
-            kBucketClear( newBucket, &newPoly, &length2 );
-            Print("NEWPOLY: ");
-            //pWrite( newPoly );
-            newPoly = reduceByRedGBPoly( newPoly, strat );
-             
-            // add the new rule even when newPoly is zero!
-            RewRules* newRule   = (RewRules*) omAlloc( sizeof(RewRules) );
-            newRule->next       = NULL;
-            newRule->label = (int*) omAlloc( (currRing->N+1) * sizeof(int) );
-            int j = 0;
-            for( j=0;j<currRing->N+1;j++ )
-            {
-              newRule->label[j] = multLabelTemp[j];
-            }
-            newRule->slabel     = multLabelShortExp;
-            rewRulesLast->next  = newRule;
-            rewRulesLast        = newRule; 
+            p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+            kBucketExtractLm(bucket);
+            // build the multiplied reducer (note that we do not need the leading
+            // term at all!
+            Print("LETS SEE -----------------------\n");
+            Print("MULT: %p\n", multiplier );
+            //pWrite( multiplier );
+            //pWrite( temp->p->next );
+            multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
+            Print("MULTRED: %p\n", *multReducer );
+            pWrite( pHead(multReducer) );
+            multReducer = reduceByRedGBPoly( multReducer, strat );
+            //  length must be computed after the reduction with 
+            //  redGB!
+            tempLength = pLength( multReducer );
             
-            Print("NEWLY AFTER REDGB REDUCTION: %p\n",newPoly);
-            pWrite( pHead(newPoly) );
-            // if newPoly = 0 nothing has to be done :)
-            // else we have to generate a new "trivial" critical pair
-            if( newPoly )
+            Print("AFTER REDUCTION STEP: ");
+            //pWrite( multReducer );
+            //pWrite( temp->p );
+            kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+            pWrite( kBucketGetLm(bucket) );
+            //pDelete( &multReducer );
+            if( canonicalize++ % 40 )
             {
-              pNorm( newPoly );
-              // generate a new critical for further reduction steps
-              // note: this will be a "trivial" critical pair, as the 2nd
-              // generator will be 1
-              Print("NEW PAIR COMPUTED?\n"); 
-              Cpair* newPair      = (Cpair*) omAlloc( sizeof(Cpair) );
-              Print("%p\n",newPair);
-              newPair->mLabelExp  = (unsigned long*) omAlloc0( NUMVARS*
-                                      sizeof(unsigned long) );
-              newPair->mLabel1  = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-              newPair->mult1    = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-              newPair->mult2    = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-              for( j=0;j<NUMVARS;j++ )
-              {
-                newPair->mLabelExp[j] = multLabelTempExp[j];
-                multiplier->exp[j]    = multTempExp[j];
-              }
-              for( j=0;j<currRing->N+1;j++ )
-              {
-                newPair->mLabel1[j] = multLabelTemp[j];
-                Print( "%d  ", newPair->mLabel1[j] );
-                newPair->mult1[j]   = 0;
-                newPair->mult2[j]   = 0;
-              }
-              Print( "\n" );
-              newPair->smLabel1   = multLabelShortExp;
-              //newPair->rewRule1   = temp->rewRule;
-              newPair->rewRule1   = rewRulesLast;
-              newPair->mLabel2    = NULL;
-              newPair->smLabel2   = 0;
-              newPair->mult2      = NULL;
-              newPair->p1         = newPoly;
-              newPair->p2         = NULL;
-              // this is ok since p2 is never tested by the 2nd criterion
-              newPair->rewRule2   = NULL;
-              
-              //newPair->p1 =  kBucketExtractLm( bucket );
-              //newPair->p1 =  p_Merge_q ( newPair->p1, kBucketExtractLm(bucket), 
-              //                            currRing 
-              //                          );
-              // insertion sort of newPair to the list of critical pairs waiting
-              // to be reduced, sorted by increasing labels
-              //kBucketInit( bucket, oldPoly, length ); 
-              //pDelete( &oldPoly );  
-              Cpair* temp = (*cp)->next;
-              if( temp )
-              { 
-                if( (expCmp(newPair->mLabelExp, temp->mLabelExp) == -1) )
-                {
-                  (*cp)->next = newPair;
-                  newPair->next = temp;
-                }
-                else
-                {
-                  while ( temp->next && (expCmp(newPair->mLabelExp, temp->next->mLabelExp) == 1) )
-                  {
-                    temp  = temp->next;
-                  }
-                  newPair->next = temp->next;
-                  temp->next    = newPair;
-                }
-              }
-              else
-              {
-                newPair->next = NULL;
-                (*cp)->next   = newPair;
-              }  
-              Print("NEW PAIR ADDRESS: %p -- %p\n",newPair,newPair->next);
+              kBucketCanonicalize( bucket );
+              canonicalize = 0;
             }
-            // newPoly = 0 => free memory
+            isMult      = FALSE;
+            *redundant  = FALSE;
+            if( kBucketGetLm( bucket ) )
+            {
+              temp  = gCurr;
+            }
             else
             {
-              Print("HERE WE ARE DELETING POLYS IS FUN!\n");
-              pDelete( &newPoly );
+              break;
             }
-            // get back on track for the old poly which has to be checked for 
-            // reductions by the following element in gCurr
-            Print("Poly copying: ");
-            //pWrite(kBucketGetLm( bucket ) );
-            isMult      = FALSE;
-            *redundant  = TRUE;
-            temp        = temp->next;
             goto startagainTop;
           }
-          // else we can go on and reduce sp
-          // The multiplied reducer will be reduced w.r.t. strat before the 
-          // bucket reduction starts!
-          static poly multiplier = pOne();
-          static poly multReducer;
-          getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
-                              negBitmaskShifted, offsets
-                            );
+        }
+        // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
+        // criterion again => go on with reduction steps
+        else
+        {
+          //pWrite(kBucketGetLm(bucket));
+          number coeff  = pGetCoeff(kBucketGetLm(bucket));
+          static poly tempNeg  = pInit();
           // throw away the leading monomials of reducer and bucket
-          pSetm( multiplier );
-          p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+          tempNeg       = pCopy( temp->p );
+          tempLength    = pLength( tempNeg->next );
+          Print("HERE\n");
+          //pWrite(kBucketGetLm(bucket));
+          p_Mult_nn( tempNeg, coeff, currRing );
+          pSetm( tempNeg );
           kBucketExtractLm(bucket);
-          // build the multiplied reducer (note that we do not need the leading
-          // term at all!
-          Print("LETS SEE -----------------------\n");
-          Print("MULT: %p\n", multiplier );
-          //pWrite( multiplier );
-          //pWrite( temp->p->next );
-          multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
-          Print("MULTRED: %p\n", *multReducer );
-          pWrite( pHead(multReducer) );
-          multReducer = reduceByRedGBPoly( multReducer, strat );
-          //  length must be computed after the reduction with 
-          //  redGB!
-          tempLength = pLength( multReducer );
-           
+            Print("REDUCTION WITH: ");
+            pWrite( temp->p );
+          kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
           Print("AFTER REDUCTION STEP: ");
-          //pWrite( multReducer );
-          //pWrite( temp->p );
-          kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
           pWrite( kBucketGetLm(bucket) );
-          //pDelete( &multReducer );
           if( canonicalize++ % 40 )
           {
             kBucketCanonicalize( bucket );
             canonicalize = 0;
           }
-          isMult      = FALSE;
+          //pDelete( &tempNeg );
           *redundant  = FALSE;
           if( kBucketGetLm( bucket ) )
           {
@@ -1816,206 +1860,219 @@ poly currReduction  ( kStrategy strat, poly sp,
             break;
           }
           goto startagainTop;
-        }
+        } 
       }
-      // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
-      // criterion again => go on with reduction steps
-      else
-      {
-        //pWrite(kBucketGetLm(bucket));
-        number coeff  = pGetCoeff(kBucketGetLm(bucket));
-        static poly tempNeg  = pInit();
-        // throw away the leading monomials of reducer and bucket
-        tempNeg       = pCopy( temp->p );
-        tempLength    = pLength( tempNeg->next );
-        Print("HERE\n");
-        //pWrite(kBucketGetLm(bucket));
-        p_Mult_nn( tempNeg, coeff, currRing );
-        pSetm( tempNeg );
-        kBucketExtractLm(bucket);
-          Print("REDUCTION WITH: ");
-          pWrite( temp->p );
-        kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
-        Print("AFTER REDUCTION STEP: ");
-        pWrite( kBucketGetLm(bucket) );
-        if( canonicalize++ % 40 )
-        {
-          kBucketCanonicalize( bucket );
-          canonicalize = 0;
-        }
-        //pDelete( &tempNeg );
-        *redundant  = FALSE;
-        if( kBucketGetLm( bucket ) )
-        {
-          temp  = gCurr;
-        }
-        else
-        {
-          break;
-        }
-        goto startagainTop;
-      } 
+      temp  = temp->next;
     }
-    temp  = temp->next;
-  }
-  // we know that sp = 0 at this point!
-  //pWrite(kBucketGetLm(bucket));
-  sp  = kBucketExtractLm( bucket );
-//#if F5EDEBUG
-  Print("END OF TOP REDUCTION:  ");
-//#endif
-  // for testing of correctness of ordering!
-  //int testLength = 0;
-  //kBucketClear( bucket, &sp, &testLength ); 
-  // ---------------------------------------
-  pTest( sp );
-  pWrite( pHead(sp) ); 
-  // for testing of correctness of ordering!
-  //kBucketInit( bucket, sp, 0 ); 
-  //sp = kBucketExtractLm( bucket );
-  // ---------------------------------------
-  //-------------------------------------------
-  // now the reduction of the tail of sp starts
-  //-------------------------------------------
-  // reduce sp completely (Faugere does only top reductions!)
-  while ( kBucketGetLm( bucket ) )
-  {
-    // search for reducers in the list gCurr
-    temp = gCurr;
-    while ( temp )
+    // we know that sp = 0 at this point!
+    //pWrite(kBucketGetLm(bucket));
+    spTemp->p  = kBucketExtractLm( bucket );
+  //#if F5EDEBUG
+    Print("END OF TOP REDUCTION:  ");
+  //#endif
+    // for testing of correctness of ordering!
+    //int testLength = 0;
+    //kBucketClear( bucket, &sp, &testLength ); 
+    // ---------------------------------------
+    pTest( spTemp->p );
+    pWrite( pHead(spTemp->p) ); 
+    // for testing of correctness of ordering!
+    //kBucketInit( bucket, sp, 0 ); 
+    //sp = kBucketExtractLm( bucket );
+    // ---------------------------------------
+    //-------------------------------------------
+    // now the reduction of the tail of sp starts
+    //-------------------------------------------
+    // reduce sp completely (Faugere does only top reductions!)
+    while ( kBucketGetLm( bucket ) )
     {
-      startagainTail:
-      bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
-            Print("HERE TAILREDUCTION AGAIN %p\n",temp);
-            Print("SPOLY RIGHT NOW: ");
-            //pWrite( sp );
-            pTest( sp );
-      if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
-                              bucketExp, &multTemp, &isMult
-                            ) 
-        )
+      // search for reducers in the list gCurr
+      temp = gCurr;
+      while ( temp )
       {
-        // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
-        // multTemp and check this multiple by both criteria
-        if( isMult )
+        startagainTail:
+        bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
+              Print("HERE TAILREDUCTION AGAIN %p\n",temp);
+              Print("SPOLY RIGHT NOW: ");
+              //pWrite( sp );
+              pTest( sp );
+        if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
+                                bucketExp, &multTemp, &isMult
+                              ) 
+          )
         {
-          // compute the multiple of the rule of temp & multTemp
-          for( i=1; i<(currRing->N)+1; i++ )
+          // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
+          // multTemp and check this multiple by both criteria
+          if( isMult )
           {
-            multLabelTemp[i]  = multTemp[i] + temp->rewRule->label[i];
-          }
-          
-          multLabelShortExp  = getShortExpVecFromArray( multLabelTemp );
-          
-          // test the multiplied label by both criteria 
-          if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules ) && 
-              !criterion2( multLabelTemp, multLabelShortExp, temp->rewRule )
-            )
-          {  
-            static unsigned long* multTempExp = (unsigned long*) 
-                            omAlloc0( NUMVARS*sizeof(unsigned long) );
-            static unsigned long* multLabelTempExp = (unsigned long*) 
-                            omAlloc0( NUMVARS*sizeof(unsigned long) );
-          
-            getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
-                                shift, negBitmaskShifted, offsets
-                              );   
+            // compute the multiple of the rule of temp & multTemp
+            for( i=1; i<(currRing->N)+1; i++ )
+            {
+              multLabelTemp[i]  = multTemp[i] + temp->rewRule->label[i];
+            }
+            
+            multLabelShortExp  = getShortExpVecFromArray( multLabelTemp );
+            
+            // test the multiplied label by both criteria 
+            if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules ) && 
+                !criterion2( multLabelTemp, multLabelShortExp, temp->rewRule )
+              )
+            {  
+              static unsigned long* multTempExp = (unsigned long*) 
+                              omAlloc0( NUMVARS*sizeof(unsigned long) );
+              static unsigned long* multLabelTempExp = (unsigned long*) 
+                              omAlloc0( NUMVARS*sizeof(unsigned long) );
+            
+              getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
+                                  shift, negBitmaskShifted, offsets
+                                );   
 
-            // if a higher label reduction should be done we do NOT reduce at all
-            // we want to be fast in the tail reduction part
-            if( expCmp( multLabelTempExp, (*cp)->mLabelExp ) == 1 )
-            {            
-              isMult      = FALSE;
-              *redundant  = TRUE;
-              temp        = temp->next;
-              Print("HERE TAILREDUCTION\n");
-              if( temp )
+              // if a higher label reduction should be done we do NOT reduce at all
+              // we want to be fast in the tail reduction part
+              if( expCmp( multLabelTempExp, (*cp)->mLabelExp ) == 1 )
+              {            
+                isMult      = FALSE;
+                *redundant  = TRUE;
+                temp        = temp->next;
+                Print("HERE TAILREDUCTION\n");
+                if( temp )
+                {
+                  goto startagainTail;
+                }
+                else
+                {
+                  break;
+                }
+              }
+              Print("HERE TAILREDUCTION2\n");
+              poly multiplier = pOne();
+              getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                                  negBitmaskShifted, offsets
+                                );
+              // throw away the leading monomials of reducer and bucket
+              p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+              pSetm( multiplier );
+              pTest( multiplier );
+              tempLength = pLength( temp->p->next );
+
+              kBucketExtractLm(bucket);
+              kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p->next, 
+                                      &tempLength 
+                                    ); 
+              if( canonicalize++ % 40 )
               {
-                goto startagainTail;
+                kBucketCanonicalize( bucket );
+                canonicalize = 0;
+              }
+              isMult  = FALSE;
+    Print("alalalaHERE1\n");
+              if( kBucketGetLm( bucket ) )
+              {
+                temp  = gCurr;
               }
               else
               {
-                break;
+    Print("HERE2\n");
+                kBucketDeleteAndDestroy( &bucket );
+                return sp;
               }
+              goto startagainTail;
             }
-            Print("HERE TAILREDUCTION2\n");
-            poly multiplier = pOne();
-            getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
-                                negBitmaskShifted, offsets
-                              );
+          }
+          // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
+          // criterion again => go on with reduction steps
+          else
+          {
+            number coeff  = pGetCoeff(kBucketGetLm(bucket));
+            poly tempNeg  = pInit();
             // throw away the leading monomials of reducer and bucket
-            p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
-            pSetm( multiplier );
-            pTest( multiplier );
-            tempLength = pLength( temp->p->next );
-
+            tempNeg       = pCopy( temp->p );
+          p_Mult_nn( tempNeg, coeff, currRing );
+          pSetm( tempNeg );
+            tempLength    = pLength( tempNeg->next );
             kBucketExtractLm(bucket);
-            kBucket_Minus_m_Mult_p( bucket, multiplier, temp->p->next, 
-                                    &tempLength 
-                                  ); 
+            kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
             if( canonicalize++ % 40 )
             {
               kBucketCanonicalize( bucket );
               canonicalize = 0;
             }
-            isMult  = FALSE;
-  Print("alalalaHERE1\n");
             if( kBucketGetLm( bucket ) )
             {
               temp  = gCurr;
             }
             else
             {
-  Print("HERE2\n");
-              kBucketDeleteAndDestroy( &bucket );
-              return sp;
+    Print("HERE2\n");
+                kBucketDeleteAndDestroy( &bucket );
+                return sp;
             }
             goto startagainTail;
-          }
+          } 
         }
-        // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
-        // criterion again => go on with reduction steps
-        else
-        {
-          number coeff  = pGetCoeff(kBucketGetLm(bucket));
-          poly tempNeg  = pInit();
-          // throw away the leading monomials of reducer and bucket
-          tempNeg       = pCopy( temp->p );
-        p_Mult_nn( tempNeg, coeff, currRing );
-        pSetm( tempNeg );
-          tempLength    = pLength( tempNeg->next );
-          kBucketExtractLm(bucket);
-          kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
-          if( canonicalize++ % 40 )
-          {
-            kBucketCanonicalize( bucket );
-            canonicalize = 0;
-          }
-          if( kBucketGetLm( bucket ) )
-          {
-            temp  = gCurr;
-          }
-          else
-          {
-  Print("HERE2\n");
-              kBucketDeleteAndDestroy( &bucket );
-              return sp;
-          }
-          goto startagainTail;
-        } 
+        temp  = temp->next;
       }
-      temp  = temp->next;
+      // here we know that 
+    Print("HERE1\n");
+      //pWrite( sp );
+      //pWrite( kBucketGetLm( bucket ) );
+      spTemp->p =  p_Merge_q( spTemp->p, kBucketExtractLm(bucket), currRing );
+    Print("HERE1\n");
+      pTest(spTemp->sp);
+    
+      // otherwise sp is reduced to zero and we do not need to add it to gCurr
+      // Note that even in this case the corresponding rule is already added to
+      // rewRules list!
+      if( spTemp->p )
+      {
+        Print("ORDER %ld -- %ld\n",p_GetOrder(spTemp->p,currRing), spTemp->p->exp[currRing->pOrdIndex]);
+        pNorm( spTemp->p ); 
+        // add sp together with rewRulesLast to gCurr!!!
+        Lpoly* newElement     = (Lpoly*) omAlloc( sizeof(Lpoly) );
+        newElement->next      = gCurrLast;
+        newElement->p         = spTemp->p; 
+        newElement->sExp      = pGetShortExpVector(spTemp->p); 
+        newElement->rewRule   = rewRulesCurr; 
+        newElement->redundant = redundant;
+        // update pointer to last element in gCurr list
+        gCurrLast             = newElement;
+        Print( "ELEMENT ADDED TO GCURR: %p -- %p\n", gCurrLast, gCurrLast->p );
+        pWrite( gCurrLast->p );
+        for( int lale = 1; lale < (currRing->N+1); lale++ )
+        {
+          Print( "%d  ",rewRulesLast->label[lale] );
+        }
+        Print("\n"); 
+        Print("SLABEL: %ld\n", rewRulesLast->slabel);
+        pTest( gCurrLast->p );
+        //pWrite( gCurrLast->p );
+        criticalPairPrev( gCurrLast, redGB, *f5Rules, &cp, numVariables, 
+                          shift, negBitmaskShifted, offsets 
+                        );
+        criticalPairCurr( gCurrLast, *f5Rules, &cp, numVariables, 
+                          shift, negBitmaskShifted, offsets 
+                        );
+      }
+      else // spTemp->p == 0
+      {
+        pDelete( &spTemp->p );
+      }
+    //////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////
+    // We need to add spTemp->p to gCurr
+    // We need to get the corresponding rule for this!!!
+    //////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////
     }
-    // here we know that 
-  Print("HERE1\n");
-    //pWrite( sp );
-    //pWrite( kBucketGetLm( bucket ) );
-    sp =  p_Merge_q( sp, kBucketExtractLm(bucket), currRing );
-  Print("HERE1\n");
+    // go on to the next s-polynomial & rew rule in the list
+    rewRulesCurr  = rewRulesCurr->next;
+    spTemp        = spTemp->next;
   }
 #if F5EDEBUG
     Print("CURRREDUCTION-END \n");
 #endif
+  
+
   kBucketDeleteAndDestroy( &bucket );
   return sp;
 }
