@@ -1440,7 +1440,7 @@ void currReduction  (
           { 
             static unsigned long* multTempExp = (unsigned long*) 
                             omAlloc0( NUMVARS*sizeof(unsigned long) );
-            static unsigned long* multLabelTempExp = (unsigned long*) 
+            unsigned long* multLabelTempExp = (unsigned long*) 
                             omAlloc0( NUMVARS*sizeof(unsigned long) );
             getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
                                 shift, negBitmaskShifted, offsets
@@ -1517,10 +1517,11 @@ void currReduction  (
               }
               // even if newPoly = 0 we need to add it to the list of s-polynomials
               // to keep it with the list of rew rules synchronized!
-              Spoly* spNew    = (Spoly*) omAlloc( sizeof(struct Spoly) );
-              spNew->p        = newPoly;
-              spolysLast->next = spNew;
-              spolysLast       = spNew;
+              Spoly* spNew      = (Spoly*) omAlloc( sizeof(struct Spoly) );
+              spNew->p          = newPoly;
+              spNew->labelExp   = multLabelTempExp;
+              spolysLast->next  = spNew;
+              spolysLast        = spNew;
               
               // get back on track for the old poly which has to be checked for 
               // reductions by the following element in gCurr
