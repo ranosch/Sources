@@ -77,7 +77,7 @@ struct Lpoly
 {
   Lpoly*        next;   ///< pointer to the next element in the linked list
   poly          p;      ///< polynomial part
-  unsigned long sExp;   ///< short exponent vector of \c p
+  unsigned long sExp;   ///< short exponent vector of the leading monomial of \c p
   RewRules* rewRule;    ///< exponent vector, i.e. the label/signature
   BOOLEAN   redundant;  ///< Lpoly redundant?
   // NOTE: You do not need the short exponent vector as you never check
@@ -101,8 +101,13 @@ struct Lpoly
 /// @brief \c Spoly is the structure of a linked list of s-polynomials, 
 struct Spoly 
 {
-  Spoly*        next;   ///< pointer to the next element in the linked list
-  poly          p;      ///< s-polynomial
+  Spoly*          next;     ///<  pointer to the next element in the linked list
+  unsigned long*  labelExp; ///<  exponent vector of the corresponding critical pair
+                            ///   Note that this has to be stored, although we have 
+                            ///   already computed the corresponding rewriting rule 
+                            ///   as this rule does not include Singular's internal 
+                            ///   exponent representation.
+  poly            p;        ///<  s-polynomial
 };
 
 
@@ -138,7 +143,7 @@ struct Cpair
 /// @brief This is the structure of linked list of linked lists of critical
 /// pairs.
 /// Each node of the linked list is a linked list of critical pairs of degree
-/// \c deg. Thi
+/// \c deg. This structure is sorted by degree,
 /// whereas the deg-lists themselves are not sorted at this point. This will 
 /// be done by a merge sort in \c computeSpols.
 /// @sa computeSpols
@@ -346,7 +351,15 @@ void currReduction  (
   RewRules* rewRuleLast,  ///<[in,out]  last rewrite rule in the list of all pre-
                           ///           computed rewrite rules of this degree step
                           ///           needed for higher label reductions!
-  Lpoly* gCurr,           ///<[in]      reducers of the current iteration step
+  ideal redGB,            ///<[in]  previous GB for reduction & generation of new 
+                          ///       critical pairs 
+  CpairDegBound** cp,     ///<[in,out]  pointer of the deg bound critical pair list,
+                          ///           needed for sorting of newly computed critical
+                          ///           pairs
+  Lpoly** gCurrFirst,     ///<[in,out]  reducers of the current iteration step.
+                          ///           Note this has to be a pointer of a pointer
+                          ///           as the corresponding value is changed when
+                          ///           new elements are added to gCurr.
   const F5Rules* f5Rules, ///<[in]      rules for F5 Criterion checks
   int*  multTemp,         ///<[in]      integer exponent vector for the mulitples
                           ///           of the reducers
@@ -355,12 +368,7 @@ void currReduction  (
   int numVariables,       ///<[in]  global stuff for faster exponent computations
   int* shift,             ///<[in]  global stuff for faster exponent computations
   unsigned long* negBit,  ///<[in]  global stuff for faster exponent computations
-  int* offsets,           ///<[in]  global stuff for faster exponent computations
-  BOOLEAN* redundant      ///<[in,out]  states if the returned polynomial is 
-                          ///           redundant for the Groebner basis or not;
-                          ///           note that this information is needed for
-                          ///           ensuring termination of F5 (see F5+
-                          ///           paper)
+  int* offsets           ///<[in]  global stuff for faster exponent computations
                     );
 
 
