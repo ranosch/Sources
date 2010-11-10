@@ -1219,7 +1219,12 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
       Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,
               rewRulesLast->next);
       Print("COMPUTED PAIR: %p -- NEXT PAIR %p\n",temp, temp->next);
-      if( !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1)  )
+      // if the pair is not rewritable add the corresponding rule and 
+      // and compute the corresponding s-polynomial (and pre-reduce it
+      // w.r.t. redGB
+      if( !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1) ||
+          (temp->mLabel2 && !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1)) 
+        )
       {
         Print("HERE RULES\n");
         RewRules* newRule   = (RewRules*) omAlloc( sizeof(RewRules) );
@@ -1392,10 +1397,23 @@ void currReduction  (
   kBucket* bucket                 = kBucketCreate();
   Lpoly* temp;
   unsigned long bucketExp;
+#if F5EDEBUG
+  Print("LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
+  while( spTemp )
+  {
+    Print("%p -- ");
+    pWrite( pHead(spTemp->p) );
+    spTemp = spTemp->next;
+  }
+  Print("---------------\n");
+  spTemp = spolysFirst;
+#endif
   // iterate over all elements in the s-polynomial list
   while( NULL != spTemp )
   { 
+    Print("DABEI?\n");
     Print("SPTEMP TO BE REDUCED: %p -- ", spTemp->p );
+    Print("DABEI?\n");
     pWrite( pHead(spTemp->p) );
     kBucketInit( bucket, spTemp->p, pLength(spTemp->p) );
     temp  = *gCurrFirst;
@@ -1518,10 +1536,17 @@ void currReduction  (
               // even if newPoly = 0 we need to add it to the list of s-polynomials
               // to keep it with the list of rew rules synchronized!
               Spoly* spNew      = (Spoly*) omAlloc( sizeof(struct Spoly) );
+              spNew->next       = NULL;
               spNew->p          = newPoly;
               spNew->labelExp   = multLabelTempExp;
               spolysLast->next  = spNew;
               spolysLast        = spNew;
+#if F5EDEBUG
+  Print("ADDED TO LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
+    Print("%p -- ",spolysLast);
+    pWrite( pHead(newPoly) );
+  Print("---------------\n");
+#endif
               
               // get back on track for the old poly which has to be checked for 
               // reductions by the following element in gCurr
@@ -1829,7 +1854,9 @@ void currReduction  (
     //////////////////////////////////////////////////////////
     // go on to the next s-polynomial & rew rule in the list
     rewRulesCurr  = rewRulesCurr->next;
+    Print("SPTEMP %p\n", spTemp);
     spTemp        = spTemp->next;
+    Print("SPTEMP %p\n", spTemp);
   }
 #if F5EDEBUG
     Print("CURRREDUCTION-END \n");
