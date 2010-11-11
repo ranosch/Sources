@@ -349,7 +349,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
   cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
   cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
   int temp;
-  long critPairDeg  = 0; // degree of the label of the pair in the following
+  long critPairDeg; // degree of the label of the pair in the following
   for(i=0; i<IDELEMS(redGB)-1; i++)
   {
     pGetExpV(redGB->m[i], expVecTemp); 
@@ -359,6 +359,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
     // steps, i.e. elements already in redGB
     cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = 0; 
     cpTemp->mult2[0]    = 0; 
+    critPairDeg = 0;
     for(j=1; j<=currRing->N; j++)
     {
       temp  = expVecNewElement[j] - expVecTemp[j];
@@ -413,7 +414,6 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
     }
-    critPairDeg = 0;
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -424,6 +424,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
   // steps, i.e. elements already in redGB
   cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetComp(cpTemp->p1); 
   cpTemp->mult2[0]    = pGetComp(redGB->m[IDELEMS(redGB)-1]); 
+  critPairDeg = 0;
   for(j=1; j<=currRing->N; j++)
   {
     temp  = expVecNewElement[j] - expVecTemp[j];
@@ -509,7 +510,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
   cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
   cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
   int temp;
-  long critPairDeg = 0; // degree of the label of the critical pair in the following
+  long critPairDeg; // degree of the label of the critical pair in the following
   for(i=0; i<IDELEMS(redGB)-1; i++)
   {
     pGetExpV(redGB->m[i], expVecTemp); 
@@ -518,6 +519,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
     // steps, i.e. elements already in redGB
     cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
     cpTemp->mult2[0]    = pGetExp(redGB->m[i], 0); 
+    critPairDeg = 0;
     for(j=1; j<=currRing->N; j++)
     {
       temp  = expVecNewElement[j] - expVecTemp[j];
@@ -571,7 +573,6 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
       cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
     }
-    critPairDeg = 0;
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -582,6 +583,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
   // steps, i.e. elements already in redGB
   cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
   cpTemp->mult2[0]    = pGetExp(redGB->m[IDELEMS(redGB)-1], 0); 
+  critPairDeg = 0;
   for(j=1; j<=currRing->N; j++)
   {
     temp  = expVecNewElement[j] - expVecTemp[j];
@@ -682,7 +684,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
   Print("dddd\n");
   unsigned long* checkExp = (unsigned long*) omAlloc0(NUMVARS*sizeof(unsigned long));
   int temp;
-  long critPairDeg = 0; // degree of the label of the pair in the following
+  long critPairDeg; // degree of the label of the pair in the following
   //pWrite( gCurrIter->p );
   while(gCurrIter->next)
   {
@@ -696,6 +698,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
     // steps, i.e. elements already in redGB
     cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
     cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetExp(cpTemp->p2, 0); 
+    critPairDeg = 0;
     for(j=1; j<currRing->N+1; j++)
     {
       temp  = expVecNewElement[j] - expVecTemp[j];
@@ -794,7 +797,6 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
         cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
         cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
       }
-      critPairDeg = 0;
     }
     pairNeeded  = FALSE;
     gCurrIter   = gCurrIter->next;
@@ -814,6 +816,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
     //pWrite(gCurrIter->p);
   cpTemp->rewRule2  = gCurrIter->rewRule;
   cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetExp(gCurrIter->p, 0); 
+  critPairDeg = 0;
   for(j=1; j<=currRing->N; j++)
   {
     temp  = expVecNewElement[j] - expVecTemp[j];
@@ -826,6 +829,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j] - temp;
       cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j];
       critPairDeg         +=  cpTemp->rewRule1->label[j] - temp;
+      Print("CRITDEG: %d -- %d drauf\n", critPairDeg, cpTemp->mLabel1[j]);
     }
     else
     {
@@ -834,6 +838,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
       cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
       cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j] + temp;
       critPairDeg         +=  cpTemp->rewRule1->label[j];
+      Print("CRITDEG: %d -- %d drauf\n", critPairDeg, cpTemp->mLabel1[j]);
     }
   }
   if( pairNeeded )
