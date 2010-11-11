@@ -348,9 +348,11 @@ void currReduction  (
   RewRules* rewRuleCurr,  ///<[in,out]  1st rewrite rule in the list of all pre-
                           ///           computed rewrite rules of this degree 
                           ///           step
-  RewRules* rewRuleLast,  ///<[in,out]  last rewrite rule in the list of all pre-
+  RewRules** rewRuleLast, ///<[in,out]  last rewrite rule in the list of all pre-
                           ///           computed rewrite rules of this degree step
                           ///           needed for higher label reductions!
+                          ///           Note that it can change due to higher label 
+                          ///           reductions!
   ideal redGB,            ///<[in]  previous GB for reduction & generation of new 
                           ///       critical pairs 
   CpairDegBound** cp,     ///<[in,out]  pointer of the deg bound critical pair list,

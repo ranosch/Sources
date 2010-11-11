@@ -65,8 +65,8 @@ ideal f5cMain(ideal F, ideal Q)
     return idInit(1, F->rank);
   }
   // interreduction of the input ideal F
-  //ideal FRed      = idCopy( F );
-  ideal FRed      = F;
+  ideal FRed      = idCopy( F );
+  //ideal FRed      = F;
   ideal FRedTemp  = kInterRed( FRed );
   idDelete( &FRed );
   FRed            = FRedTemp;
@@ -1184,6 +1184,9 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
 #if F5EDEBUG
   Print("COMPUTESPOLS-BEGINNING\n");
 #endif
+  // check whether a new deg step starts or not
+  // needed to keep the synchronization of RewRules list and Spoly list alive
+  BOOLEAN newStep         = TRUE; 
   Cpair* temp             = NULL;
   Cpair* tempDel          = NULL;
   RewRules* rewRulesLast  = NULL;
@@ -1233,9 +1236,10 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         newRule->slabel     = ~temp->smLabel1;
         rewRulesLast->next  = newRule;
         rewRulesLast        = newRule; 
-        if( NULL == rewRulesCurr )
+        if( newStep )
         {
-          rewRulesCurr      = newRule; 
+          rewRulesCurr  = newRule; 
+          newStep       = FALSE;
         }
 #if F5EDEBUG
         Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
@@ -1292,6 +1296,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
           newSpoly->p         = sp;
           newSpoly->labelExp  = temp->mLabelExp;
           newSpoly->next      = NULL;
+          Print("ALLOC MEMORY: %p -- %p\n", newSpoly, newSpoly->p);
           if( NULL == spolysFirst )
           {
             spolysFirst  = newSpoly;
@@ -1319,13 +1324,25 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
     }
     // all rules and s-polynomials of this degree step are computed and 
     // prepared for further reductions in currReduction()
-    currReduction ( strat, spolysFirst, spolysLast, rewRulesCurr, rewRulesLast, 
+    Print("REWRULES BEFORE CURRRED: %p -- %p\n", rewRulesCurr, rewRulesLast);
+    currReduction ( strat, spolysFirst, spolysLast, rewRulesCurr, &rewRulesLast, 
                     redGB, &cp, gCurr, f5Rules, multTemp, multLabelTemp, 
                     numVariables, shift, negBitmaskShifted, offsets
                   );
     // elements are added to linked list gCurr => start next degree step
-    spolysFirst   = spolysLast  = NULL;
-    rewRulesCurr                = NULL;
+    spolysFirst = spolysLast  = NULL;
+    Print("REWRULES AFTER CURRRED: %p -- %p\n", rewRulesCurr, rewRulesLast);
+    newStep     = TRUE; 
+#if F5EDEBUG
+  Print("DEGREE STEP DONE:\n------\n");
+  Lpoly* gCurrTemp = *gCurr;
+  while( gCurrTemp )
+  {
+    pWrite( pHead(gCurrTemp->p) );
+    gCurrTemp = gCurrTemp->next;
+  }
+  Print("-------\n");
+#endif
   }
   // get back the new list of elements in gCurr, i.e. the list of elements
   // computed in this iteration step
@@ -1373,7 +1390,7 @@ inline void kBucketCopyToPoly(kBucket_pt bucket, poly *p, int *length)
 
 void currReduction  ( 
                       kStrategy strat, Spoly* spolysFirst, Spoly* spolysLast, 
-                      RewRules* rewRulesCurr, RewRules* rewRulesLast,
+                      RewRules* rewRulesCurr, RewRules** rewRulesLast,
                       ideal redGB, CpairDegBound** cp, Lpoly** gCurrFirst, 
                       const F5Rules* f5Rules, int* multTemp, 
                       int* multLabelTemp, int numVariables, int* shift, 
@@ -1401,7 +1418,7 @@ void currReduction  (
   Print("LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
   while( spTemp )
   {
-    Print("%p -- ");
+    Print("%p -- ",spTemp->p);
     pWrite( pHead(spTemp->p) );
     spTemp = spTemp->next;
   }
@@ -1412,7 +1429,8 @@ void currReduction  (
   while( NULL != spTemp )
   { 
     Print("DABEI?\n");
-    Print("SPTEMP TO BE REDUCED: %p -- ", spTemp->p );
+    Print("SPTEMP TO BE REDUCED: %p : %p -- ", spTemp, spTemp->p );
+    Print("SPTEMP NEXT?: %p\n", spTemp->next );
     Print("DABEI?\n");
     pWrite( pHead(spTemp->p) );
     kBucketInit( bucket, spTemp->p, pLength(spTemp->p) );
@@ -1522,9 +1540,9 @@ void currReduction  (
               {
                 newRule->label[j] = multLabelTemp[j];
               }
-              newRule->slabel     = multLabelShortExp;
-              rewRulesLast->next  = newRule;
-              rewRulesLast        = newRule; 
+              newRule->slabel       = multLabelShortExp;
+              (*rewRulesLast)->next = newRule;
+              (*rewRulesLast)       = newRule; 
               
               Print("NEWLY AFTER REDGB REDUCTION: %p\n",newPoly);
               pWrite( pHead(newPoly) );
