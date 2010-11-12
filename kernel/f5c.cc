@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include "options.h"
 #include "structs.h"
-#include "omAlloc.h"
+#include "omalloc.h"
 #include "polys.h"
 #include "timer.h"
 #include "p_polys.h"
