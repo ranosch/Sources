@@ -136,9 +136,9 @@ ideal f5cMain(ideal F, ideal Q)
 */
 #endif
     Print("aHERE1\n");
-    //ideal rTemp = kInterRed(r);
-    //idDelete( &r );
-    //r = rTemp;
+    ideal rTemp = kInterRed(r);
+    idDelete( &r );
+    r = rTemp;
     Print("HERE2\n");
 #if F5EDEBUG
 /*    for( k=0; k<IDELEMS(r); k++ )
@@ -1207,8 +1207,8 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
   rewRulesLast            = (*gCurr)->rewRule;
   // this will go on for the complete current iteration step!
   // => after computeSpols() terminates this iteration step is done!
-  int* multTemp           = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-  int* multLabelTemp      = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+  int* multTemp           = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
+  int* multLabelTemp      = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
   poly sp;
   while( cp )
   {
@@ -1546,8 +1546,23 @@ void currReduction  (
                 newRule->label[j] = multLabelTemp[j];
               }
               newRule->slabel       = multLabelShortExp;
-              (*rewRulesLast)->next = newRule;
-              (*rewRulesLast)       = newRule; 
+              // insert the new element at the right position, i.e.
+              // ordered w.r.t. the corresponding rewrite rule
+              RewRules* tempRew     = rewRulesCurr;
+              Spoly* tempSpoly      = spTemp;
+              while ( NULL != tempSpoly->next && 
+                      expCmp( multLabelTempExp, tempSpoly->next->labelExp ) == 1 
+                    )
+              {
+                tempSpoly = tempSpoly->next;
+                tempRew   = tempRew->next;
+              }
+              newRule->next = tempRew->next;
+              tempRew->next = newRule;
+              if( NULL == tempRew->next )
+              {
+                (*rewRulesLast) = newRule; 
+              }
               
               Print("NEWLY AFTER REDGB REDUCTION: %p\n",newPoly);
               pWrite( pHead(newPoly) );
@@ -1559,11 +1574,10 @@ void currReduction  (
               // even if newPoly = 0 we need to add it to the list of s-polynomials
               // to keep it with the list of rew rules synchronized!
               Spoly* spNew      = (Spoly*) omAlloc( sizeof(struct Spoly) );
-              spNew->next       = NULL;
               spNew->p          = newPoly;
               spNew->labelExp   = multLabelTempExp;
-              spolysLast->next  = spNew;
-              spolysLast        = spNew;
+              spNew->next       = tempSpoly->next;
+              tempSpoly->next   = spNew;
 #if F5EDEBUG
   Print("ADDED TO LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
     Print("%p -- ",spolysLast);
