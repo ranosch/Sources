@@ -48,7 +48,7 @@
 #endif
 #ifdef PDEBUG
 #undef PDEBUG
-#define PDEBUG 0 
+#define PDEBUG 3 
 #endif
 #define F5EDEBUG  1 
 #define setMaxIdeal 64
@@ -1797,7 +1797,7 @@ void currReduction  (
               else
               {
     Print("HERE2\n");
-                break;
+                goto kBucketLmZero;
               }
               goto startagainTail;
             }
@@ -1827,7 +1827,7 @@ void currReduction  (
             else
             {
     Print("HERE2\n");
-              break;
+              goto kBucketLmZero;
             }
             goto startagainTail;
           } 
@@ -1838,14 +1838,15 @@ void currReduction  (
       }
       // here we know that 
     Print("HERE1\n");
-      //pWrite( sp );
-      //pWrite( kBucketGetLm( bucket ) );
+      pWrite( spTemp->p );
+      pWrite( kBucketGetLm( bucket ) );
       spTemp->p =  p_Merge_q( spTemp->p, kBucketExtractLm(bucket), currRing );
     Print("HERE1\n");
       pWrite( spTemp->p );
       pTest(spTemp->p);
     }
-  
+    
+    kBucketLmZero: 
     // otherwise sp is reduced to zero and we do not need to add it to gCurr
     // Note that even in this case the corresponding rule is already added to
     // rewRules list!
