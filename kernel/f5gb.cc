@@ -597,7 +597,7 @@ build critical pairs with all other elements in gPrev
 ================================================================
 */
 inline void criticalPair(LList* f5CriterionElements, LList* reducers, ideal gbPrev, LList* gPrev, CListOld* critPairs, LTagList* lTag, RTagList* rTag, RList* rules, PList* rejectedGBList, int plus) {
-    Print("IN CRITPAIRS: index %d\n",gPrev->getLast()->getIndex());
+    //Print("IN CRITPAIRS: index %d\n",gPrev->getLast()->getIndex());
     // initialization for usage in pLcm()
     number nOne         =   nInit(1);
     LNode* newElement   =   gPrev->getLast();
@@ -1066,7 +1066,7 @@ void computeSPols(CNode* first, RTagList* rTag, RList* rules, LList* sPolyList, 
     //  temp = temp->getNext();
     //}
     //if(temp->getData()->getDeg() == 11) {
-      Print("PAIRS OF DEG %ld:\n",temp->getData()->getDeg());
+      //Print("PAIRS OF DEG %ld:\n",temp->getData()->getDeg());
     //}
     RList* f5rules = new RList();
     CListOld* f5pairs = new CListOld();
@@ -1079,12 +1079,12 @@ void computeSPols(CNode* first, RTagList* rTag, RList* rules, LList* sPolyList, 
  */
     while(NULL != temp) {
     //  if(temp->getData()->getDeg() == 11) {
-        Print("--------------------------\n");
+        //Print("--------------------------\n");
         //Print("redundant? %d\n",temp->getDel());
-              pWrite(ppMult_qq(temp->getT1(),temp->getLp1Term()));
-        pWrite(pHead(temp->getLp1Poly()));
+        //      pWrite(ppMult_qq(temp->getT1(),temp->getLp1Term()));
+        //pWrite(pHead(temp->getLp1Poly()));
         //Print("redundant: %d\n",temp->getAdLp1()->getDel());
-        pWrite(pHead(temp->getLp2Poly()));
+        //pWrite(pHead(temp->getLp2Poly()));
         //Print("redundant: %d\n",temp->getAdLp2()->getDel());
         //pWrite(pHead(ppMult_qq(temp->getT1(),temp->getLp1Poly())));
         //  sp      =   ksOldSpolyRedNew(ppMult_qq(temp->getT1(),temp->getLp1Poly()),
@@ -1113,10 +1113,10 @@ void computeSPols(CNode* first, RTagList* rTag, RList* rules, LList* sPolyList, 
                 rules->insert(temp->getLp1Index(),ppMult_qq(temp->getT1(),temp->getLp1Term()));
                 numberOfRules++;
                 sPolyList->insertByLabel(temp->getDel(),ppMult_qq(temp->getT1(),temp->getLp1Term()),temp->getLp1Index(),sp,rules->getFirst()->getRuleOld());
-              Print("INSERTED\n");
-              pWrite(ppMult_qq(temp->getT1(),temp->getLp1Term()));
-              pWrite(pHead(temp->getLp1Poly()));
-              pWrite(pHead(temp->getLp2Poly()));
+              //Print("INSERTED\n");
+              //pWrite(ppMult_qq(temp->getT1(),temp->getLp1Term()));
+              //pWrite(pHead(temp->getLp1Poly()));
+              //pWrite(pHead(temp->getLp2Poly()));
                 numberOfSpolys++;
               //}
             }
@@ -1781,20 +1781,20 @@ void findReducers(testPoly* checkedPrev, testPair* checkedPairs, LList* f5Criter
                             // passing criterion1 ?
                             if(!criterion1(gPrev,u,tempRed,lTag)) {
                                     poly tempRedPoly    =   tempRed->getPoly();
-                                    Print("REDUCER SMALLER INDEX: ");
-                                    pWrite((tempRedPoly));
+                                    //Print("REDUCER SMALLER INDEX: ");
+                                    //pWrite((tempRedPoly));
                                     pIter(tempRedPoly);
                                     int lTempRedPoly    =   pLength(tempRedPoly);
                                     kBucketExtractLm(bucket);
                                     kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                                     canonicalize++;
-                                    Print("Reduction\n");
+                                    //Print("Reduction\n");
                                     if(!(canonicalize % 50)) {
                                         kBucketCanonicalize(bucket);
                                     }
                                     tempPoly    =   kBucketGetLm(bucket);
                                     //Print("TEMPPOLY:  ");
-                                    pWrite(tempPoly);
+                                    //pWrite(tempPoly);
                                     if(NULL != tempPoly) {
                                         tempRed     =   gPrev->getFirst();
                                         continue;
@@ -1841,14 +1841,14 @@ void findReducers(testPoly* checkedPrev, testPair* checkedPairs, LList* f5Criter
                                         kBucketExtractLm(bucket);
                                         kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                                         canonicalize++;
-                                        Print("REDUCTION\n");
-                                        pWrite(pHead(tempRedPoly));
+                                        //Print("REDUCTION\n");
+                                        //pWrite(pHead(tempRedPoly));
                                         addToG  = 1;
                                         if(!(canonicalize % 50)) {
                                             kBucketCanonicalize(bucket);
                                         }
-                                        Print("HEAD MONOMIAL KBUCKET: ");
-                                        pWrite(kBucketGetLm(bucket));
+                                        //Print("HEAD MONOMIAL KBUCKET: ");
+                                        //pWrite(kBucketGetLm(bucket));
                                         tempPoly    =   kBucketGetLm(bucket);
                                         //Print("TEMPPOLY:  ");
                                         //pWrite(tempPoly);
@@ -1905,14 +1905,14 @@ addToG  = 0;
                         kBucketExtractLm(bucket);
                         kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                         canonicalize++;
-                        Print("Reduction\n");
-                        pWrite((tempRedPoly));
+                        //Print("Reduction\n");
+                        //pWrite((tempRedPoly));
                         if(!(canonicalize % 50)) {
                             kBucketCanonicalize(bucket);
                         }
                         tempPoly    =   kBucketGetLm(bucket);
                         //Print("TEMPPOLY:  ");
-                        pWrite(tempPoly);
+                        //pWrite(tempPoly);
                         if(NULL != tempPoly) {
                             tempRed     =   gPrev->getFirst();
                             continue;
@@ -1949,14 +1949,14 @@ addToG  = 0;
                                     kBucketExtractLm(bucket);
                                     kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                                     canonicalize++;
-                                    Print("Reduction\n");
-                                    pWrite( pHead(tempRedPoly) );
+                                    //Print("Reduction\n");
+                                    //pWrite( pHead(tempRedPoly) );
                                     if(!(canonicalize % 50)) {
                                         kBucketCanonicalize(bucket);
                                     }
                                     tempPoly    =   kBucketGetLm(bucket);
                                     //Print("TEMPPOLY:  ");
-                                    pWrite(tempPoly);
+                                    //pWrite(tempPoly);
                                     if(NULL != tempPoly) {
                                         tempRed     =   gPrev->getFirst();
                                         continue;
@@ -2000,14 +2000,14 @@ addToG  = 0;
                                         kBucketExtractLm(bucket);
                                         kBucket_Minus_m_Mult_p(bucket,u,tempRedPoly,&lTempRedPoly);
                                         canonicalize++;
-                                        Print("REDUCTION\n");
-                                        pWrite( pHead(tempRedPoly) );
+                                        //Print("REDUCTION\n");
+                                        //pWrite( pHead(tempRedPoly) );
                                         addToG  = 1;
                                         if(!(canonicalize % 50)) {
                                             kBucketCanonicalize(bucket);
                                         }
                                         //Print("HEAD MONOMIAL KBUCKET: ");
-                                        pWrite(kBucketGetLm(bucket));
+                                        //pWrite(kBucketGetLm(bucket));
                                         tempPoly    =   kBucketGetLm(bucket);
                                         //Print("TEMPPOLY:  ");
                                         //pWrite(tempPoly);
@@ -2077,12 +2077,12 @@ addToG  = 0;
             //pDelete(&redPoly);
         }
         else {
-            Print("\nELEMENT ADDED TO GPREV: ");
+            Print("\nELEMENT ADDED TO GCURR: ");
             pNorm(redPoly);
               if(highestDegree < pDeg(redPoly)) { 
                   highestDegree   = pDeg(redPoly);
               }   
-            pWrite(redPoly);
+            pWrite(pHead(redPoly));
             pWrite(l->getTerm());
             //Print("%d\n",canonicalize);
             l->setPoly(redPoly);
@@ -2395,8 +2395,8 @@ void topReduction(LList* reducers, LNode* l, LList* sPolyList, LList* gPrev, CLi
         else {
             if(NULL != l->getPoly()) {
                 pNorm(l->getPoly());
-                Print("ELEMENT ADDED TO GPREV: ");
-                pWrite(l->getPoly());
+                Print("ELEMENT ADDED TO GCURR: ");
+                pWrite(pHead(l->getPoly()));
                 gPrev->insert(l->getLPolyOld());
                 
                 //Print("TEMP RED == 0  ");
