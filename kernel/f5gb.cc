@@ -1079,12 +1079,12 @@ void computeSPols(CNode* first, RTagList* rTag, RList* rules, LList* sPolyList, 
  */
     while(NULL != temp) {
     //  if(temp->getData()->getDeg() == 11) {
-        //Print("--------------------------\n");
+        Print("--------------------------\n");
         //Print("redundant? %d\n",temp->getDel());
-        //      pWrite(ppMult_qq(temp->getT1(),temp->getLp1Term()));
-        //pWrite(pHead(temp->getLp1Poly()));
+        pWrite(ppMult_qq(temp->getT1(),temp->getLp1Term()));
+        pWrite(pHead(temp->getLp1Poly()));
         //Print("redundant: %d\n",temp->getAdLp1()->getDel());
-        //pWrite(pHead(temp->getLp2Poly()));
+        pWrite(pHead(temp->getLp2Poly()));
         //Print("redundant: %d\n",temp->getAdLp2()->getDel());
         //pWrite(pHead(ppMult_qq(temp->getT1(),temp->getLp1Poly())));
         //  sp      =   ksOldSpolyRedNew(ppMult_qq(temp->getT1(),temp->getLp1Poly()),
@@ -1092,7 +1092,7 @@ void computeSPols(CNode* first, RTagList* rTag, RList* rules, LList* sPolyList, 
           //Print("BEGIN SPOLY2\n====================\n");
         //  pNorm(sp);
         //  pWrite(pHead(sp));
-        //Print("--------------------------\n");
+        Print("--------------------------\n");
       //}
       if(!criterion2(temp->getT1(),temp->getAdLp1(),rules,temp->getTestedRuleOld())) {
       //if(temp->getDel() == 0 && !criterion2(temp->getT1(),temp->getAdLp1(),rules,temp->getTestedRuleOld())) {

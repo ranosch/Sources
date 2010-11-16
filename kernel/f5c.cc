@@ -1029,21 +1029,21 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
 #if F5EDEBUG
   ////pWrite( (*bound)->cp->p2 );
   CpairDegBound* test = *bound;
-  //Print("-------------------------------------\n");
+  Print("-------------------------------------\n");
   while( test )
   {
-    //Print("DEGREE %d\n",test->deg);
+    Print("DEGREE %d\n",test->deg);
     Cpair* testcp = test->cp;
     while( testcp )
     {
-      //Print("Pairs: %p\n",testcp);
-      //pWrite(pHead(testcp->p1));
-      //pWrite(pHead(testcp->p2));
+      Print("Pairs: %p\n",testcp);
+      pWrite(pHead(testcp->p1));
+      pWrite(pHead(testcp->p2));
       testcp = testcp->next;
     }
     test  = test->next;
   }
-  //Print("-------------------------------------\n");
+  Print("-------------------------------------\n");
   Print("INSERTCRITPAIR-END deg bound %p\n",*bound);
 #endif
 }
@@ -1213,8 +1213,8 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
   while( cp )
   {
 #if F5EDEBUG
-    //Print("START OF NEW DEG ROUND: CP %ld | %p -- %p: # %d\n",cp->deg,cp->cp,cp,cp->length);
-    //Print("NEW CPDEG? %p\n",cp->next);
+    Print("START OF NEW DEG ROUND: CP %ld | %p -- %p: # %d\n",cp->deg,cp->cp,cp,cp->length);
+    Print("NEW CPDEG? %p\n",cp->next);
 #endif
     temp  = sort(cp->cp, cp->length); 
     CpairDegBound* cpDel  = cp;
@@ -1238,8 +1238,10 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         newRule->next       = NULL;
         newRule->label      = temp->mLabel1;
         newRule->slabel     = ~temp->smLabel1;
+#if F5EDEBUG2
         Print("CPSLABEL: %ld\n", temp->smLabel1);
         Print("NRSLABEL: %ld\n", newRule->slabel);
+#endif
         rewRulesLast->next  = newRule;
         rewRulesLast        = newRule; 
         if( newStep )
@@ -1248,7 +1250,7 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
           newStep       = FALSE;
         }
 #if F5EDEBUG
-        //Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
+        Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
 #endif
 
         // from this point on, rewRulesLast != NULL, thus we do not need to test this
@@ -1286,17 +1288,15 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
         {
           sp = temp->p1;
         }
-#if F5EDEBUG
-        //Print("BEFORE:  ");
-        //pWrite( sp );
+#if F5EDEBUG2
+        Print("AFTER REDUCTION W.R.T. REDGB:  ");
+        pWrite( sp );
         pTest(sp);
-      //Print("TEMPSBEFORE OK? %p -- %p\n",temp,temp->next);
 #endif
         if( sp )
         {
           // store the s-polynomial in the linked list for further
           // reductions in currReduction()
-      //Print("HERE\n");
           pNorm( sp ); 
           Spoly* newSpoly     = (Spoly*) omAlloc( sizeof(struct Spoly) );
           newSpoly->p         = sp;
@@ -1420,25 +1420,24 @@ void currReduction  (
   kBucket* bucket                 = kBucketCreate();
   Lpoly* temp;
   unsigned long bucketExp;
-#if F5EDEBUG
-  //Print("LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
+#if F5EDEBUG2
+  Print("LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
   while( spTemp )
   {
-    //Print("%p -- ",spTemp->p);
-    //pWrite( pHead(spTemp->p) );
+    Print("%p -- ",spTemp->p);
+    pWrite( pHead(spTemp->p) );
     spTemp = spTemp->next;
   }
-  //Print("---------------\n");
+  Print("---------------\n");
   spTemp = spolysFirst;
 #endif
   // iterate over all elements in the s-polynomial list
   while( NULL != spTemp )
   { 
-    //Print("DABEI?\n");
-    //Print("SPTEMP TO BE REDUCED: %p : %p -- ", spTemp, spTemp->p );
-    //Print("SPTEMP NEXT?: %p\n", spTemp->next );
-    //Print("DABEI?\n");
-    //pWrite( pHead(spTemp->p) );
+#if F5EDEBUG2
+    Print("SPTEMP TO BE REDUCED: %p : %p -- ", spTemp, spTemp->p );
+    pWrite( pHead(spTemp->p) );
+#endif
     kBucketInit( bucket, spTemp->p, pLength(spTemp->p) );
     temp  = *gCurrFirst;
     //----------------------------------------
@@ -1452,10 +1451,14 @@ void currReduction  (
     {
       startagainTop:
       bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
-      //Print("POSSIBLE REDUCER %p ",temp);
+#if F5EDEBUG2
+      Print("TO BE REDUCED: ");
+      pWrite( kBucketGetLm(bucket) );
+      Print("POSSIBLE REDUCER %p ",temp);
       //Print("%p\n",temp->p);
       pTest( temp->p );
-      //pWrite(pHead(temp->p));
+      pWrite(pHead(temp->p));
+#endif
       if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
                               bucketExp, &multTemp, &isMult
                             ) 
@@ -1580,10 +1583,10 @@ void currReduction  (
               spNew->next       = tempSpoly->next;
               tempSpoly->next   = spNew;
 #if F5EDEBUG
-  //Print("ADDED TO LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
-    //Print("%p -- ",spolysLast);
-    //pWrite( pHead(newPoly) );
-  //Print("---------------\n");
+              Print("ADDED TO LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
+              Print("%p -- ",spolysLast);
+              pWrite( pHead(newPoly) );
+              Print("---------------\n");
 #endif
               
               // get back on track for the old poly which has to be checked for 
@@ -1621,9 +1624,15 @@ void currReduction  (
             ////pWrite( multiplier );
             ////pWrite( temp->p->next );
             multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
-            //Print("MULTRED: %p\n", *multReducer );
-            //pWrite( pHead(multReducer) );
+#if F5EDEBUG2
+            Print("MULTRED BEFORE: %p\n", *multReducer );
+            pWrite( pHead(multReducer) );
+#endif
             multReducer = reduceByRedGBPoly( multReducer, strat );
+#if F5EDEBUG2
+            Print("MULTRED AFTER: %p\n", *multReducer );
+            pWrite( pHead(multReducer) );
+#endif
             //  length must be computed after the reduction with 
             //  redGB!
             tempLength = pLength( multReducer );
@@ -1667,8 +1676,10 @@ void currReduction  (
           p_Mult_nn( tempNeg, coeff, currRing );
           pSetm( tempNeg );
           kBucketExtractLm(bucket);
-            //Print("REDUCTION WITH: ");
-            //pWrite( temp->p );
+#if F5EDEBUG2
+          Print("REDUCTION WITH: ");
+          pWrite( temp->p );
+#endif
           kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
           //Print("AFTER REDUCTION STEP: ");
           //pWrite( kBucketGetLm(bucket) );
@@ -1693,11 +1704,11 @@ void currReduction  (
       temp  = temp->next;
     }
     // we know that sp = 0 at this point!
-    ////pWrite(kBucketGetLm(bucket));
     spTemp->p  = kBucketExtractLm( bucket );
-  //#if F5EDEBUG
-    //Print("END OF TOP REDUCTION:  ");
-  //#endif
+#if F5EDEBUG
+    Print("END OF TOP REDUCTION:  ");
+    pWrite(kBucketGetLm(bucket));
+#endif
     // for testing of correctness of ordering!
     //int testLength = 0;
     //kBucketClear( bucket, &sp, &testLength ); 
@@ -1720,14 +1731,16 @@ void currReduction  (
       {
         startagainTail:
         bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
-              //Print("HERE TAILREDUCTION AGAIN %p -- %p\n",temp, temp->next);
+#if F5EDEBUG2
+              Print("HERE TAILREDUCTION AGAIN %p -- %p\n",temp, temp->next);
               //Print("SPOLY RIGHT NOW: ");
               //pWrite( spTemp->p );
-              //Print("POSSIBLE REDUCER: ");
-              //pWrite( temp->p );
-              //Print("BUCKET LM: ");
-              //pWrite( kBucketGetLm(bucket) );
+              Print("POSSIBLE REDUCER: ");
+              pWrite( temp->p );
+              Print("BUCKET LM: ");
+              pWrite( kBucketGetLm(bucket) );
               pTest( spTemp->p );
+#endif
         if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
                                 bucketExp, &multTemp, &isMult
                               ) 
@@ -1861,6 +1874,10 @@ void currReduction  (
     if( spTemp->p )
     {
       //Print("ORDER %ld -- %ld\n",p_GetOrder(spTemp->p,currRing), spTemp->p->exp[currRing->pOrdIndex]);
+      // we have not reduced the tail w.r.t. redGB as in this case it is not really necessary to have
+      // the "right" leading monomial
+      //  => now we have to reduce w.r.t. redGB again!
+      spTemp->p = reduceByRedGBPoly( spTemp->p, strat );
       pNorm( spTemp->p ); 
       // add sp together with rewRulesLast to gCurr!!!
       Lpoly* newElement     = (Lpoly*) omAlloc( sizeof(Lpoly) );
@@ -1872,6 +1889,7 @@ void currReduction  (
       // update pointer to last element in gCurr list
       *gCurrFirst           = newElement;
       //Print( "ELEMENT ADDED TO GCURR: %p -- %p -- %p\n", *gCurrFirst, (*gCurrFirst)->p, rewRulesCurr );
+#if F5EDEBUG
       Print("ELEMENT ADDED TO GCURR: ");
       pWrite( pHead((*gCurrFirst)->p) );
       for( int lale = 1; lale < (currRing->N+1); lale++ )
@@ -1882,6 +1900,7 @@ void currReduction  (
       //Print("SLABEL: %ld\n", rewRulesCurr->slabel);
       pTest( (*gCurrFirst)->p );
       ////pWrite( gCurrLast->p );
+#endif
       criticalPairPrev( *gCurrFirst, redGB, *f5Rules, cp, numVariables, 
                         shift, negBitmaskShifted, offsets 
                       );
