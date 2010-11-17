@@ -1308,7 +1308,6 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
   }
   // get back the new list of elements in gCurr, i.e. the list of elements
   // computed in this iteration step
-  omFree( multTemp );
 #if F5EDEBUG2
   Print("ITERATION STEP DONE: \n");
   Lpoly* gCurrTemp = *gCurr;
@@ -1319,6 +1318,9 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
   }
   Print("COMPUTESPOLS-END\n");
 #endif
+  // free memory
+  omFree( multTemp );
+  omFree( multLabelTemp );
 }
 
 /////////////////////////////////////////////////////////////
