@@ -50,7 +50,7 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
-#define F5EDEBUG0 1 
+#define F5EDEBUG0 0 
 #define F5EDEBUG1 0 
 #define F5EDEBUG2 0 
 #define F5EDEBUG3 0 
@@ -68,7 +68,6 @@ ideal f5cMain(ideal F, ideal Q)
   }
   // interreduction of the input ideal F
   ideal FRed      = idCopy( F );
-  //ideal FRed      = F;
   ideal FRedTemp  = kInterRed( FRed );
   idDelete( &FRed );
   FRed            = FRedTemp;
@@ -186,10 +185,8 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   int i;
   // create array of leading monomials of previously computed elements in redGB
   F5Rules* f5Rules        = (F5Rules*) omAlloc(sizeof(struct F5Rules));
-  pTest( p );
   // malloc memory for slabel
   f5Rules->label  = (int**) omAlloc(IDELEMS(redGB)*sizeof(int*));
-  pTest( p );
   f5Rules->slabel = (unsigned long*) omAlloc0(IDELEMS(redGB)*
                     sizeof(unsigned long)); 
   pTest( redGB->m[0] );
@@ -433,6 +430,9 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
   else 
   {
     // we can delete the memory reserved for cpTemp
+    omFree( cpTemp->mult1 );
+    omFree( cpTemp->mult2 );
+    omFree( cpTemp->mLabel1 );
     omFree( cpTemp );
   }
   omFree(expVecTemp);
@@ -592,6 +592,9 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
   else 
   {
     // we can delete the memory reserved for cpTemp
+    omFree( cpTemp->mult1 );
+    omFree( cpTemp->mult2 );
+    omFree( cpTemp->mLabel1 );
     omFree( cpTemp );
   }
   omFree(expVecTemp);
@@ -853,6 +856,10 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
     else 
     {
       // we can delete the memory reserved for cpTemp
+      omFree( cpTemp->mult1 );
+      omFree( cpTemp->mult2 );
+      omFree( cpTemp->mLabel1 );
+      omFree( cpTemp->mLabel2 );
       omFree( cpTemp );
     }
   }
