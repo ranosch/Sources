@@ -982,27 +982,26 @@ Criterion 2, i.e. Rewritten Criterion, for its second call in computeSPols(), wi
 inline bool criterion2(poly t, LPolyOld* l, RList* rules, RuleOld* testedRuleOld) {
     //Print("------------------------------IN CRITERION 2/2-----------------------------------------\n");
     //Print("LAST RuleOld TESTED: %p",testedRuleOld);
-    /*
-    Print("RULES: \n");
+  /*  Print("RULES: \n#######################################\n");
         RNode* tempR    =   rules->getFirst();
         while(NULL != tempR) {
-            pWrite(tempR->getRuleTerm());
-            Print("%d\n\n",tempR->getRuleIndex());
+            pWrite(tempR->getRuleOldTerm());
+           // Print("%d\n\n",tempR->getRuleOldIndex());
             tempR   =   tempR->getNext();
         }
-        //Print("TESTED ELEMENT: ");
+        Print("##############################\n\nTESTED ELEMENT: ");
         //pWrite(l->getPoly());
         //pWrite(l->getTerm());
-        //pWrite(ppMult_qq(t,l->getTerm()));
+        pWrite(ppMult_qq(t,l->getTerm()));
         //Print("%d\n\n",l->getIndex());
-    */
+  */
 // start at the previously added element to gPrev, as all other elements will have the same index for sure
 	RNode* testNode =   rules->getFirst();
     // save the monom t1*label_term(l) as it is tested various times in the following
     poly u1 = ppMult_qq(t,l->getTerm());
 	// first element added to rTag was NULL, check for this
-	while(NULL != testNode && testNode->getRuleOld() != testedRuleOld) {
-        //pWrite(testNode->getRuleTerm());
+	while(NULL != testNode && testNode->getRuleOld() != l->getRuleOld()) {
+        //pWrite(testNode->getRuleOldTerm());
         if(pLmDivisibleByNoComp(testNode->getRuleOldTerm(),u1)) {
             //pWrite(testNode->getRuleOldTerm());
             //Print("--------------------------Criterion 2 NOT passed!------------------------------\n");
@@ -1093,7 +1092,7 @@ void computeSPols(CNode* first, RTagList* rTag, RList* rules, LList* sPolyList, 
         //  pNorm(sp);
         //  pWrite(pHead(sp));
         Print("--------------------------\n");
-      //}
+       //}
       if(!criterion2(temp->getT1(),temp->getAdLp1(),rules,temp->getTestedRuleOld())) {
       //if(temp->getDel() == 0 && !criterion2(temp->getT1(),temp->getAdLp1(),rules,temp->getTestedRuleOld())) {
         if(temp->getLp2Index() == temp->getLp1Index()) {
@@ -1159,7 +1158,11 @@ void computeSPols(CNode* first, RTagList* rTag, RList* rules, LList* sPolyList, 
             //}
           }
         }
-     }
+      }
+      else
+      {
+        //Print("NOT ADDED DUE TO CRITERION2\n"); 
+      }
       /*      
       if(temp->getDel() == 0 && criterion2(temp->getT1(),temp->getAdLp1(),rules,temp->getTestedRuleOld())) {
         //Print("rejected!\n");  
@@ -1239,7 +1242,6 @@ void computeSPols(CNode* first, RTagList* rTag, RList* rules, LList* sPolyList, 
         temp    =   temp->getNext();
 
       }
-      
       /* 
       temp = f5pairs->getFirst();
       RNode* tempRule = f5rules->getFirst();
@@ -2198,7 +2200,8 @@ addToG  = 0;
                     if(!criterion2(gPrev->getFirst()->getIndex(), u,tempBad,rules,rTag)) {
                         // passing criterion1 ?
                         if(!criterion1(gPrev,u,tempBad,lTag)) {
-                            //Print("HIERHIERHIERHIERHIERHIER\n");
+                            Print("HIERHIERHIERHIERHIERHIER\n");
+                            pWrite( ppMult_qq(u,tempBad->getTerm()) );
                             rules->insert(tempBad->getIndex(),ppMult_qq(u,tempBad->getTerm()));
                             numberOfRules++;
                             //gPrev->print();
