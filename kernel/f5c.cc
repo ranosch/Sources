@@ -1725,7 +1725,9 @@ void currReduction  (
               // throw away the leading monomials of reducer and bucket
               p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
               pSetm( multiplier );
+#if F5EDEBUG3
               pTest( multiplier );
+#endif
               tempLength = pLength( temp->p->next );
 
               kBucketExtractLm(bucket);
@@ -1835,6 +1837,7 @@ void currReduction  (
     rewRulesCurr  = rewRulesCurr->next;
     spTemp        = spTemp->next;
   }
+  // free memory
 #if F5EDEBUG1
     Print("CURRREDUCTION-END \n");
 #endif
@@ -1932,6 +1935,7 @@ inline poly multInit( const int* exp, int numVariables, int* shift,
   pNext(np) = NULL;
   pSetCoeff0(np, n);
   p_Setm( np, currRing );
+  omFree( expTemp );
   return np;
 }
 
