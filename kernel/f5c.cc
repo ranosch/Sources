@@ -1290,12 +1290,29 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
           pDelete( &sp );
         }
       }
+      else
+      {
+        //  free memory of mLabel1 which would have been the corresponding
+        //  rewrite rule, but which was detected by one of F5's criteria
+        omFree( temp->mLabel1 );
+      }
+      // free memory
       tempDel  = temp;
       temp     = temp->next;
       // note that this has no influence on the address of temp->label!
       // its memory was allocated at a different place and we still need these:
       // those are just the rewrite rules for the newly computed elements!
-      omFree(tempDel);
+      omFree( tempDel->mult1 );
+      omFree( tempDel->mult2 );
+      // (a) mLabel1 is the corresponding rewrite rule! If the rewrite rule was detected
+      //     by F5's criteria than mLabel1 is deleted in the above else branch!
+      // (b) mlabel2 is possibly NULL if the 2nd generator is from a 
+      //     previous iteration step, i.e. already in redGB
+      if( tempDel->mLabel2 )
+      {
+        omFree( tempDel->mLabel2 );
+      }
+      omFree( tempDel );
     }
     // all rules and s-polynomials of this degree step are computed and 
     // prepared for further reductions in currReduction()
