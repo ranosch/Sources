@@ -249,7 +249,9 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
     omFree( f5Rules );
     // next all new elements are added to redGB & redGB is being reduced
     Lpoly* temp;
+#if F5EDEBUG2
     int counter = 1;
+#endif
     while( gCurr )
     {
 #if F5EDEBUG3
@@ -270,7 +272,9 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
       temp = gCurr;
       gCurr = gCurr->next;
       omFree(temp);
+#if F5EDEBUG2
       counter++;
+#endif
     }
     idSkipZeroes( redGB );
   }
@@ -1152,9 +1156,11 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
 #endif
   // check whether a new deg step starts or not
   // needed to keep the synchronization of RewRules list and Spoly list alive
+  BOOLEAN start           = TRUE; 
   BOOLEAN newStep         = TRUE; 
   Cpair* temp             = NULL;
   Cpair* tempDel          = NULL;
+  RewRules* rewRulesFirst = NULL;
   RewRules* rewRulesLast  = NULL;
   // if a higher label reduction happens we need
   // to store rule corresponding to the current computed
@@ -1205,6 +1211,11 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
 #endif
         rewRulesLast->next  = newRule;
         rewRulesLast        = newRule; 
+        if( start )
+        {
+          rewRulesFirst = newRule; 
+          start         = FALSE;
+        }
         if( newStep )
         {
           rewRulesCurr  = newRule; 
@@ -1321,6 +1332,14 @@ void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCu
   // free memory
   omFree( multTemp );
   omFree( multLabelTemp );
+  RewRules* tempRule;
+  while( rewRulesFirst )
+  {
+    tempRule      = rewRulesFirst;
+    rewRulesFirst = rewRulesFirst->next;
+    omFree( tempRule->label );
+    omFree( tempRule );
+  }
 }
 
 /////////////////////////////////////////////////////////////
@@ -2426,10 +2445,6 @@ poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
   int   j;
   int   o;
   BITSET save_test=test;
-  ////////////////////////////////////////////////////////
-  // TODO: critical pair -> s-polynomial
-  //       q should be the s-polynomial!!!!
-  ////////////////////////////////////////////////////////
   
   /*- compute------------------------------------------- -*/
 #if F5EDEBUG3
