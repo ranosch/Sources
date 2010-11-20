@@ -1411,7 +1411,6 @@ void currReduction  (
   static int tempLength           = 0;
   unsigned short int canonicalize = 0; 
   Spoly* spTemp                   = spolysFirst;
-  kBucket* bucket                 = kBucketCreate();
   Lpoly* temp;
   unsigned long bucketExp;
 #if F5EDEBUG2
@@ -1432,6 +1431,7 @@ void currReduction  (
     Print("SPTEMP TO BE REDUCED: %p : %p -- ", spTemp, spTemp->p );
     pWrite( pHead(spTemp->p) );
 #endif
+    kBucket* bucket                 = kBucketCreate();
     kBucketInit( bucket, spTemp->p, pLength(spTemp->p) );
     temp  = *gCurrFirst;
     //----------------------------------------
@@ -1492,7 +1492,7 @@ void currReduction  (
             if( expCmp( multLabelTempExp, spTemp->labelExp ) == 1 )
             {            
 #if F5EDEBUG1
-            Print("HIGHER LABEL REDUCTION \n");
+              Print("HIGHER LABEL REDUCTION \n");
 #endif
               poly newPoly  = pInit();
               int length;
@@ -1522,7 +1522,10 @@ void currReduction  (
               // get monomials out of bucket and save the poly as first generator 
               // of a new critical pair
               int length2 = 0;
+              // write bucket to poly & destroy bucket
               kBucketClear( newBucket, &newPoly, &length2 );
+              kBucketDeleteAndDestroy( &newBucket );
+              
               newPoly = reduceByRedGBPoly( newPoly, strat );
               
               // add the new rule even when newPoly is zero!
@@ -1871,7 +1874,18 @@ void currReduction  (
       pDelete( &spTemp->p );
     }
     rewRulesCurr  = rewRulesCurr->next;
+    Spoly* spDel  = spTemp;
     spTemp        = spTemp->next;
+    // free memory of spTemp stuff
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// why is the deletion of spTemp->labelExp not working?
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+    omFree( spDel->labelExp );
+    omFree( spDel );
+    // free memory of bucket
+    kBucketDeleteAndDestroy( &bucket );
   }
   // free memory
 #if F5EDEBUG1
