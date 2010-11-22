@@ -4816,6 +4816,36 @@ static BOOLEAN jjRPAR(leftv res, leftv v)
   res->data = (char *)(long)rPar(((ring)v->Data()));
   return FALSE;
 }
+
+
+static BOOLEAN jjF5C(leftv res, leftv v)
+{
+  ideal result;
+  ideal v_id  = (ideal)v->Data();
+  intvec *w   = (intvec *)atGet( v, "isHomog", INTVEC_CMD );
+  tHomog hom  = testHomog;
+  if( w != NULL )
+  {
+    if( !idTestHomModule( v_id, currQuotient, w ) )
+    {
+      WarnS( "wrong weights" );
+      w = NULL;
+    }
+    else
+    {
+      hom = isHomog;
+      w   = ivCopy( w );
+    }
+  }
+  result  = f5cMain( v_id, currQuotient );
+  idSkipZeroes( result );
+  res->data = (char *)result;
+  if( !TEST_OPT_DEGBOUND ) setFlag( res, FLAG_STD );
+  if( w!= NULL ) atSet( res, omStrDup( "isHomog" ), w, INTVEC_CMD );
+  return FALSE;    
+}
+
+
 static BOOLEAN jjSLIM_GB(leftv res, leftv u)
 {
 #ifdef HAVE_PLURAL
