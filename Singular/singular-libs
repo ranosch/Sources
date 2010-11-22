@@ -1,5 +1,6 @@
 #
 # Singular libraries which go into distribution
+# (they should be ordered alphabetically)
 # MAKE SURE THAT THIS IS UP_TO_DATE
 # and use:
 # svn propset svn:keywords "Id" yourlib.lib
@@ -7,14 +8,14 @@
 #
 
 SLIB0 = absfact.lib  ainvar.lib  aksaka.lib  alexpoly.lib  algebra.lib \
-	arcpoint.lib  assprime.lib atkins.lib  brnoeth.lib \
+	arcpoint.lib  assprimeszerodim.lib atkins.lib  brnoeth.lib \
 	cimonom.lib  classify.lib \
 	compregb.lib  control.lib  crypto.lib  curvepar.lib  decodegb.lib \
 	deform.lib elim.lib  equising.lib  finvar.lib  general.lib gmspoly.lib \
 	gmssing.lib  graphics.lib  groups.lib  grwalk.lib  hnoether.lib \
 	homolog.lib  hyperel.lib  inout.lib  intprog.lib  jacobson.lib \
 	kskernel.lib  latex.lib  linalg.lib  lll.lib  makedbm.lib \
-	matrix.lib  modstd.lib  mondromy.lib  monomial.lib \
+	matrix.lib  modstd.lib  mondromy.lib  monomialideal.lib \
 	mprimdec.lib  mregular.lib \
 	noether.lib normal.lib normaliz.lib   ntsolve.lib phindex.lib \
 	pointid.lib poly.lib \
@@ -25,13 +26,19 @@ SLIB0 = absfact.lib  ainvar.lib  aksaka.lib  alexpoly.lib  algebra.lib \
 	reszeta.lib  ring.lib  rinvar.lib  rootsmr.lib  rootsur.lib \
 	sagbi.lib  sheafcoh.lib  sing.lib  sing4ti2.lib  signcond.lib \
 	solve.lib  spcurve.lib  spectrum.lib  standard.lib  stratify.lib \
-	surf.lib  surfex.lib  teachstd.lib  toric.lib  triang.lib \
+	surf.lib  surfex.lib \
+	teachstd.lib  toric.lib  triang.lib \
 	tropical.lib weierstr.lib  zeroset.lib
 
 # libs in beta testing:
 # the will be included in share.tar.gz, but not in all.lib
+# (they should be ordered alphabetically)
+# and use:
+# svn propset svn:keywords "Id" yourlib.lib
+# for new libs
 
-SLIBS1 = findiff.lib
+SLIB1 = findiff.lib integralbasis.lib multigrading.lib paraplanecurves.lib \
+         primdecint.lib resjung.lib surfacesignature.lib fpadim.lib
 
 PLIBS = bfun.lib  central.lib  dmod.lib  dmodapp.lib dmodvar.lib \
 	freegb.lib  gkdim.lib  involut.lib  ncalg.lib  ncdecomp.lib \

@@ -11,12 +11,6 @@
 #include <math.h>
 #include <kernel/mod2.h>
 
-#ifndef NDEBUG
-# define MYTEST 0
-#else /* ifndef NDEBUG */
-# define MYTEST 0
-#endif /* ifndef NDEBUG */
-
 #include <kernel/options.h>
 #include <omalloc/omalloc.h>
 #include <kernel/polys.h>
@@ -37,6 +31,7 @@
 #include <kernel/maps.h>
 #include <kernel/matpol.h>
 #ifdef HAVE_FACTORY
+#define SI_DONT_HAVE_GLOBAL_VARS
 #  include <factory/factory.h>
 #endif
 
@@ -428,7 +423,7 @@ void rWrite(ring r)
       }
     }
     else PrintS(" ...");
-#ifdef PDEBUG
+#if 0  /*Singularg should not differ from Singular except in error case*/
     Print("\n//   noncommutative type:%d", (int)ncRingType(r));
     Print("\n//      is skew constant:%d",r->GetNC()->IsSkewConstant);
     if( rIsSCA(r) )
@@ -660,7 +655,6 @@ char * rCharStr(ring r)
     char* s = (char*) omAlloc(l);
     gmp_sprintf(s,"integer,%Zd^%lu",r->ringflaga,r->ringflagb);
     return s;
-    
   }
 #endif
   if (r->parameter==NULL)
@@ -1358,8 +1352,6 @@ int rSumInternal(ring r1, ring r2, ring &sum, BOOLEAN vartest, BOOLEAN dp_dp)
                  sum->names, rVar(sum), sum->parameter, rPar(sum),
                  perm2, par_perm2, sum->ch);
 
-      nMapFunc nMap1 = nSetMap(R1);
-      nMapFunc nMap2 = nSetMap(R2);
 
       matrix C1 = R1->GetNC()->C, C2 = R2->GetNC()->C;
       matrix D1 = R1->GetNC()->D, D2 = R2->GetNC()->D;
@@ -1381,6 +1373,7 @@ int rSumInternal(ring r1, ring r2, ring &sum, BOOLEAN vartest, BOOLEAN dp_dp)
 
       idTest((ideal)C);
 
+      nMapFunc nMap1 = nSetMap(R1); // can change something global: not usable after the next nSetMap call :(
       // Create blocked C and D matrices:
       for (i=1; i<= rVar(R1); i++)
         for (j=i+1; j<=rVar(R1); j++)
@@ -1396,6 +1389,7 @@ int rSumInternal(ring r1, ring r2, ring &sum, BOOLEAN vartest, BOOLEAN dp_dp)
       idTest((ideal)D);
 
 
+      nMapFunc nMap2 = nSetMap(R2); // can change something global: not usable after the next nSetMap call :(
       for (i=1; i<= rVar(R2); i++)
         for (j=i+1; j<=rVar(R2); j++)
         {
@@ -2071,10 +2065,12 @@ BOOLEAN rDBTest(ring r, const char* fn, const int l)
   omCheckAddrSize(r->block0,i*sizeof(int));
   omCheckAddrSize(r->block1,i*sizeof(int));
   if (r->wvhdl!=NULL)
-    omCheckAddrSize(r->wvhdl,i*sizeof(int *));
-  for (j=0;j<i; j++)
   {
-    if (r->wvhdl[j] != NULL) omCheckAddr(r->wvhdl[j]);
+    omCheckAddrSize(r->wvhdl,i*sizeof(int *));
+    for (j=0;j<i; j++)
+    {
+      if (r->wvhdl[j] != NULL) omCheckAddr(r->wvhdl[j]);
+    }
   }
 #endif
   if (r->VarOffset == NULL)
@@ -2413,6 +2409,11 @@ static void rO_Syz(int &place, int &bitplace, int &prev_ord,
   place++;
 }
 
+#ifndef NDEBUG
+# define MYTEST 0
+#else /* ifndef NDEBUG */
+# define MYTEST 0
+#endif /* ifndef NDEBUG */
 
 static void rO_ISPrefix(int &place, int &bitplace, int &prev_ord,
     long *o, int N, int *v, sro_ord &ord_struct)
@@ -2485,7 +2486,7 @@ static void rO_ISSuffix(int &place, int &bitplace, int &prev_ord, long *o,
 
 
 #if MYTEST
-  PrintS("Changes in v: {");
+  PrintS("Changes in v: { ");
 #endif
 
   for( int i = 0; i <= N; i++ ) // Note [0] == component !!! No Skip?
@@ -2497,7 +2498,7 @@ static void rO_ISSuffix(int &place, int &bitplace, int &prev_ord, long *o,
       v[i] = -1; // Undo!
       assume( pVarOffset[i] != -1 );
 #if MYTEST
-      Print("v[%d]: %010x", i, pVarOffset[i]);
+      Print("v[%d]: %010x; ", i, pVarOffset[i]);
 #endif
     }
     else
@@ -2508,7 +2509,7 @@ static void rO_ISSuffix(int &place, int &bitplace, int &prev_ord, long *o,
     pVarOffset[0] &= 0x0fff;
 
 #if MYTEST
-  PrintS("}!\n");
+  PrintS(" }!\n");
 #endif
   sro_ord &ord_struct = tmp_typ[typ_j];
 
@@ -2784,7 +2785,7 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
       {
         if (omit_comp)
         {
-          dReportError("Error: WRONG USAGE of rModifyRing: cannot omit component due to the ordering block [%d]: %d", i, r_ord);
+          dReportError("Error: WRONG USAGE of rModifyRing: cannot omit component due to the ordering block [%d]: %d (ringorder_IS)", i, r_ord);
           omit_comp = FALSE;
         }
         order[j]=r_ord; /*r->order[i];*/
@@ -2797,7 +2798,7 @@ ring rModifyRing(ring r, BOOLEAN omit_degree,
         if (omit_comp)
         {
 #ifndef NDEBUG
-          Warn("WRONG USAGE? of rModifyRing: omitting component due to the ordering block [%d]: %d", i, r_ord);
+          Warn("WRONG USAGE? of rModifyRing: omitting component due to the ordering block [%d]: %d (ringorder_s)", i, r_ord);
 #endif
           omit_comp = FALSE;
         }
@@ -3075,7 +3076,7 @@ static void rSetOutParams(ring r)
   r->ShortOut = TRUE;
   {
     int i;
-    if ((r->parameter!=NULL) && (r->ch<2))
+    if (r->parameter!=NULL)
     {
       for (i=0;i<rPar(r);i++)
       {
@@ -3089,7 +3090,7 @@ static void rSetOutParams(ring r)
     if (r->ShortOut)
     {
       // Hmm... sometimes (e.g., from maGetPreimage) new variables
-      // are intorduced, but their names are never set
+      // are introduced, but their names are never set
       // hence, we do the following awkward trick
       int N = omSizeWOfAddr(r->names);
       if (r->N < N) N = r->N;
@@ -3302,7 +3303,7 @@ static void rSetDegStuff(ring r)
       r->pFDeg = p_Totaldegree;
     }
     r->firstBlockEnds=block1[1];
-    r->firstwv = wvhdl[1];
+    if (wvhdl!=NULL) r->firstwv = wvhdl[1];
     if ((order[1] == ringorder_a)
     || (order[1] == ringorder_wp)
     || (order[1] == ringorder_Wp)
@@ -3995,7 +3996,7 @@ void rDebugPrint(ring r)
     {
       Print("  start (level) %d, suffixpos: %d, VO: ",r->typ[j].data.isTemp.start, r->typ[j].data.isTemp.suffixpos);
 
-#if MYTEST
+#ifndef NDEBUG
       for( int k = 0; k <= r->N; k++)
         if (r->typ[j].data.isTemp.pVarOffset[k] != -1)
           Print("[%2d]: %09x; ", k, r->typ[j].data.isTemp.pVarOffset[k]);

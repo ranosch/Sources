@@ -11,9 +11,7 @@
 #include "int_pp.h"
 #include "cf_primes.h"
 #include "cf_binom.h"
-#ifdef SINGULAR
-#include "singext.h"
-#endif
+#include "cf_util.h"
 
 static int theCharacteristic = 0;
 static int theDegree = 1;
@@ -39,9 +37,7 @@ void setCharacteristic( int c )
         CFFactory::settype( FiniteFieldDomain );
         theCharacteristic = c;
         ff_big = c > cf_getSmallPrime( cf_getNumSmallPrimes()-1 );
-#ifdef SINGULAR
-	if (!errorreported && (c > 536870909)) Werror("characteristic %d is too large(max is 2^29)",c);
-#endif
+        if (c > 536870909) factoryError("characteristic is too large(max is 2^29)");
         ff_setprime( c );
         resetFPT();
     }

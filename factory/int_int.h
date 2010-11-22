@@ -22,13 +22,8 @@
 #include "cf_gmp.h"
 #include "gmpext.h"
 
-#ifdef SINGULAR
-#ifndef OM_NDEBUG
-#define OM_NDEBUG
-#endif
-#endif
-
 #ifdef HAVE_OMALLOC
+#define OM_NDEBUG
 #  include <omalloc/omalloc.h>
 #endif
 
@@ -125,10 +120,8 @@ public:
     int ilog2();
 
     friend class InternalRational;
-#ifdef SINGULAR
     friend void gmp_numerator ( const CanonicalForm & f, mpz_ptr result);
     friend void gmp_denominator ( const CanonicalForm & f, mpz_ptr result );
-#endif /* SINGULAR */
     friend MP_INT getmpi ( InternalCF * value, bool symmetric );
 };
 

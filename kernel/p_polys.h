@@ -192,15 +192,13 @@ PINLINE1 BOOLEAN p_LmExpVectorAddIsOk(const poly p1, const poly p2, ring r);
 // return the maximal exponent of p
 PINLINE2 unsigned long p_GetMaxExp(poly p, ring r);
 // return the maximal exponent of p in form of the maximal long var
-unsigned long p_GetMaxExpL(poly p, ring r, unsigned long l_max = 0);
+unsigned long p_GetMaxExpL(poly p, const ring r, unsigned long l_max = 0);
 // return monomial r such that GetExp(r,i) is maximum of all
 // monomials in p; coeff == 0, next == NULL, ord is not set
 poly p_GetMaxExpP(poly p, ring r);
 
 // suppose that l is a long var in r, return maximal exponent of l
-PINLINE2 unsigned long p_GetMaxExp(unsigned long l, ring r);
-// similar, except assume that l constains number_of_exps exponents
-PINLINE2 unsigned long p_GetMaxExp(const unsigned long l, const ring r, const int number_of_exps);
+PINLINE2 unsigned long p_GetMaxExp(const unsigned long l, const ring r);
 
 // return the TotalDegree of the long var l
 PINLINE2 unsigned long p_GetTotalDegree(const unsigned long l, const ring r);
@@ -332,8 +330,8 @@ p_SetmProc p_GetSetmProc(ring r);
 #define p_SetmComp  p_Setm
 
 // sets component of poly a to i, returns length of a
-PINLINE0   int p_SetCompP(poly a, int i, ring r);
-PINLINE0   int p_SetCompP(poly a, int i, ring lmRing, ring tailRing);
+PINLINE0   void p_SetCompP(poly a, int i, ring r);
+PINLINE0   void p_SetCompP(poly a, int i, ring lmRing, ring tailRing);
 PINLINE0   long p_MaxComp(poly p, ring lmRing, ring tailRing);
 inline long p_MaxComp(poly p,ring lmRing) {return p_MaxComp(p,lmRing,lmRing);}
 PINLINE0   long p_MinComp(poly p, ring lmRing, ring tailRing);

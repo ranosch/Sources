@@ -12,13 +12,6 @@
 
 #include <kernel/mod2.h>
 
-#ifndef NDEBUG
-# define MYTEST 0
-#else /* ifndef NDEBUG */
-# define MYTEST 0
-#endif /* ifndef NDEBUG */
-
-#include <kernel/structs.h>
 #include <kernel/structs.h>
 #include <kernel/p_polys.h>
 #include <kernel/ring.h>
@@ -39,6 +32,12 @@ static long* _ShiftedComponents = NULL;
 static int _ExternalComponents = 0;
 
 BOOLEAN pSetm_error=0;
+
+#ifndef NDEBUG
+# define MYTEST 0
+#else /* ifndef NDEBUG */
+# define MYTEST 0
+#endif /* ifndef NDEBUG */
 
 void p_Setm_General(poly p, const ring r)
 {

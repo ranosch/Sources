@@ -1,9 +1,9 @@
 /*****************************************************************************\
- * Computer Algebra System SINGULAR    
+ * Computer Algebra System SINGULAR
 \*****************************************************************************/
 /** @file ExtensionInfo.cc
- * 
- * This file provides member functions for ExtensionInfo      
+ *
+ * This file provides member functions for ExtensionInfo
  *
  * @author Martin Lee
  *
@@ -27,8 +27,8 @@ ExtensionInfo::ExtensionInfo (const bool extension)
   m_extension= extension;
 }
 
-ExtensionInfo::ExtensionInfo (const Variable& alpha, const Variable& beta, 
-                              const CanonicalForm& gamma, const CanonicalForm& 
+ExtensionInfo::ExtensionInfo (const Variable& alpha, const Variable& beta,
+                              const CanonicalForm& gamma, const CanonicalForm&
                               delta, const int nGFDegree, const char cGFName,
                               const bool extension)
 {
@@ -41,8 +41,8 @@ ExtensionInfo::ExtensionInfo (const Variable& alpha, const Variable& beta,
   m_extension= extension;
 }
 
-ExtensionInfo::ExtensionInfo (const Variable& alpha, const Variable& beta, 
-                              const CanonicalForm& gamma, const CanonicalForm& 
+ExtensionInfo::ExtensionInfo (const Variable& alpha, const Variable& beta,
+                              const CanonicalForm& gamma, const CanonicalForm&
                               delta)
 {
   m_alpha= alpha;

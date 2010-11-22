@@ -546,14 +546,10 @@ EXAMPLE: decision shows an example
    //recursion of variables
    ///////////////////////////////////////////////////////////////////////////
    ///////////////////////////////////////////////////////////////////////////
-   perm="varlist="+varstr(r)+";";
-   execute(perm);
-   varlist=delete(varlist,n);
-   for (@z=1;@z<n;@z++)
-   {
-     lessvar=lessvar+","+string(varlist[@z]);
-   }
-   lessvar=lessvar[2..size(lessvar)];
+   ideal II = maxideal(1);
+   varlist = II[1..n-1];
+   lessvar=string(varlist);
+
    parvar=string(var(n));
    ri="ring r_neu="+charstr(r)+",(@t,"+parvar+","+lessvar+"),dp;";
    execute(ri);
@@ -838,21 +834,6 @@ static proc binlog(number i)
   return(erg);
  }
 }
-static proc exp(int a, int b)
-{
-   number res = 1;
-   while (b > 0) {
-   if (b mod 2 == 1) {
-       res = res * a;
-       b = b-1;
-   }
-   a = a * a;
-   b = b div 2;
-   }
-   return(res);
-}
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 ///////diverse Hilfsprozeduren ///////////////////////////////////////////////
@@ -1086,7 +1067,7 @@ EXAMPLE:subsets(n) shows an example;
  {
    return(l);
  }
- int grenze=int(exp(2,n))-1;
+ int grenze=2**n-1;
  for (i=1;i<=grenze;i++)
  {
   binzahl=i;

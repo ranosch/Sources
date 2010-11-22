@@ -37,8 +37,10 @@
 #include <kernel/syz.h>
 #include <Singular/attrib.h>
 #include <Singular/subexpr.h>
-#include <Singular/Fan.h>
-#include <Singular/Cone.h>
+
+#ifdef HAVE_FANS
+#include <gfanlib/gfanlib.h>
+#endif
 
 omBin sSubexpr_bin = omGetSpecBin(sizeof(_ssubexpr));
 omBin sleftv_bin = omGetSpecBin(sizeof(sleftv));
@@ -63,6 +65,81 @@ int sleftv::listLength()
   }
   return n;
 }
+
+#ifdef HAVE_FANS
+#include <sstream>
+std::string toString(gfan::ZMatrix const &m, char *tab=0)
+{
+  std::stringstream s;
+
+  for(int i=0;i<m.getHeight();i++)
+    {
+      if(tab)s<<tab;
+      for(int j=0;j<m.getWidth();j++)
+	{
+	  s<<m[i][j];
+	  if(i+1!=m.getHeight() || j+1!=m.getWidth())
+	    {
+	      s<<",";
+	    }
+	}
+      s<<std::endl;
+    }
+  return s.str();
+}
+
+std::string toPrintString(gfan::ZMatrix const &m, int fieldWidth, char *tab=0)
+{
+  std::stringstream s;
+
+  for(int i=0;i<m.getHeight();i++)
+    {
+      if(tab)s<<tab;
+      for(int j=0;j<m.getWidth();j++)
+	{
+	  std::stringstream temp;
+	  temp<<m[i][j];
+	  std::string temp2=temp.str();
+	  for(int k=temp2.size();k<fieldWidth;k++)s<<" ";
+	  s<<temp2;  
+	  if(i+1!=m.getHeight() || j+1!=m.getWidth())
+	    {
+	      s<<" ";
+	    }
+	}
+      s<<std::endl;
+    }
+  return s.str();
+}
+
+std::string toString(gfan::ZCone const &c)
+{
+  std::stringstream s;
+  gfan::ZMatrix i=c.getInequalities();
+  gfan::ZMatrix e=c.getEquations();
+  s<<"AMBIENT_DIM"<<std::endl;
+  s<<c.ambientDimension()<<std::endl;
+  s<<"INEQUALITIES"<<std::endl;
+  s<<toString(i);
+  s<<"EQUATIONS"<<std::endl;
+  s<<toString(e);
+  return s.str();
+}
+
+std::string toPrintString(gfan::ZCone const &c, char *nameOfCone)
+{
+  std::stringstream s;
+  gfan::ZMatrix i=c.getInequalities();
+  gfan::ZMatrix e=c.getEquations();
+  s<<nameOfCone<<"[1]:"<<std::endl;
+  s<<c.ambientDimension()<<std::endl;
+  s<<nameOfCone<<"[2]:"<<std::endl;
+  s<<toPrintString(i,6,"   ");
+  s<<nameOfCone<<"[3]:"<<std::endl;
+  s<<toPrintString(e,6,"   ");
+  return s.str();
+}
+#endif
 
 void sleftv::Print(leftv store, int spaces)
 {
@@ -156,7 +233,7 @@ void sleftv::Print(leftv store, int spaces)
           break;
 #ifdef HAVE_FANS
        case CONE_CMD:
-       case FAN_CMD:
+       //case FAN_CMD:
           PrintNSpaces(spaces);
           {
             char *s = String();
@@ -368,9 +445,7 @@ void sleftv::CleanUp(ring r)
       case VPRINTLEVEL:
       case VCOLMAX:
       case VTIMER:
-#ifdef HAVE_RTIMER
       case VRTIMER:
-#endif
       case VOICE:
       case VMAXDEG:
       case VMAXMULT:
@@ -378,7 +453,6 @@ void sleftv::CleanUp(ring r)
       case VSHORTOUT:
       case VNOETHER:
       case VMINPOLY:
-      case LIB_CMD:
       case 0:
       case INT_CMD:
         break;
@@ -400,9 +474,7 @@ void sleftv::CleanUp(ring r)
       case VPRINTLEVEL:
       case VCOLMAX:
       case VTIMER:
-#ifdef HAVE_RTIMER
       case VRTIMER:
-#endif
       case VOICE:
       case VMAXDEG:
       case VMAXMULT:
@@ -503,17 +575,17 @@ static inline void * s_internalCopy(const int t,  void *d)
         return d;
       }
 #ifdef HAVE_FANS
-    case FAN_CMD:
+/*    case FAN_CMD:
       {
         Fan* fff = (Fan*)d;
         Fan* ggg = new Fan(*fff);
         return ggg;
-      }
+      }*/
     case CONE_CMD:
       {
-        Cone* ccc = (Cone*)d;
-        Cone* ggg = new Cone(*ccc);
-        return ggg;
+        gfan::ZCone* zc = (gfan::ZCone*)d;
+        gfan::ZCone* newZc = new gfan::ZCone(*zc);
+        return newZc;
       }
 #endif /* HAVE_FANS */
     case RESOLUTION_CMD:
@@ -591,8 +663,6 @@ void * sleftv::CopyD(int t)
     if (iiCheckRing(t)) return NULL;
     void *x=data;
     if (rtyp==VNOETHER) x=(void *)pCopy(ppNoether);
-    else if (rtyp==LIB_CMD)
-      x=(void *)omStrDup((char *)Data());
     else if ((rtyp==VMINPOLY)&& (currRing->minpoly!=NULL)&&(!rField_is_GF()))
       x=(void *)nCopy(currRing->minpoly);
     data=NULL;
@@ -803,7 +873,7 @@ char *  sleftv::String(void *d, BOOLEAN typed, int dim)
           }
           return s;
 #ifdef HAVE_FANS
-        case FAN_CMD:
+/*        case FAN_CMD:
         {
           Fan* fff = (Fan*)d;
           s = fff->toString();
@@ -812,15 +882,14 @@ char *  sleftv::String(void *d, BOOLEAN typed, int dim)
           omCheckAddr(ns);
           omFree(s);
           return ns;
-        }
+        }*/
         case CONE_CMD:
         {
-          Cone* ccc = (Cone*)d;
-          s = ccc->toString();
-          char* ns = (char*) omAlloc(strlen(s) + 10);
-          sprintf(ns, "%s", s);
+          gfan::ZCone* zc = (gfan::ZCone*)d;
+          std::string s = toString(*zc);
+          char* ns = (char*) omAlloc(strlen(s.c_str()) + 10);
+          sprintf(ns, "%s", s.c_str());
           omCheckAddr(ns);
-          omFree(s);
           return ns;
         }
 #endif /* HAVE_FANS */
@@ -886,17 +955,13 @@ int  sleftv::Typ()
       case VPRINTLEVEL:
       case VCOLMAX:
       case VTIMER:
-#ifdef HAVE_RTIMER
       case VRTIMER:
-#endif
       case VOICE:
       case VMAXDEG:
       case VMAXMULT:
       case TRACE:
       case VSHORTOUT:
         return INT_CMD;
-      case LIB_CMD:
-        return STRING_CMD;
       case VMINPOLY:
         return NUMBER_CMD;
       case VNOETHER:
@@ -986,18 +1051,6 @@ int  sleftv::LTyp()
   return Typ();
 }
 
-void sleftv::SetData(void* what)
-{
-  if (rtyp == IDHDL)
-  {
-    IDDATA((idhdl)data) = (char *)what;
-  }
-  else
-  {
-    data = what;
-  }
-}
-
 void * sleftv::Data()
 {
   if ((rtyp!=IDHDL) && iiCheckRing(rtyp))
@@ -1015,9 +1068,7 @@ void * sleftv::Data()
       case VPRINTLEVEL:return (void *)printlevel;
       case VCOLMAX:    return (void *)colmax;
       case VTIMER:     return (void *)getTimer();
-#ifdef HAVE_RTIMER
       case VRTIMER:    return (void *)getRTimer();
-#endif
       case VOICE:      return (void *)(myynest+1);
       case VMAXDEG:    return (void *)Kstd1_deg;
       case VMAXMULT:   return (void *)Kstd1_mu;
@@ -1030,9 +1081,6 @@ void * sleftv::Data()
                        else
                          return (void *)nNULL;
       case VNOETHER:   return (void *) ppNoether;
-      case LIB_CMD:    {
-                         return (void *)sNoName;
-                       }
       case IDHDL:
         return IDDATA((idhdl)data);
       case POINTER_CMD:

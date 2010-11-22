@@ -1,4 +1,3 @@
-// Last change 12.02.2001 (Eric Westenberger)
 ///////////////////////////////////////////////////////////////////////////////
 version="$Id$";
 category="Symbolic-numerical solving";
@@ -30,7 +29,6 @@ PROCEDURES:
  sqfrNorm(f)    norm of f (f must be squarefree)
  zeroSet(I)    zero-set of the 0-dim. ideal I
 
-AUXILIARY PROCEDURES:
  egcdMain(f, g)    gcd over an algebraic extension field of Q
  factorMain(f)    factorization of f over an algebraic extension field
  invertNumberMain(c)  inverts an element of an algebraic extension field

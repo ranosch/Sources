@@ -202,11 +202,6 @@
 /* procedures to compute with units */
 #define HAVE_UNITS
 
-/* Define to use old mechanismen for saving currRing with procedures
- */
-#undef USE_IILOCALRING
-
-
 /* Define to use scanner when loading libraries */
 #define HAVE_LIBPARSER
 
@@ -222,11 +217,6 @@
  ******************************************************************/
 /* Spectrum needs GMP */
 #define HAVE_SPECTRUM 1
-
-/* Undefine to disable real time measurments  */
-#ifdef HAVE_GETTIMEOFDAY
-#define HAVE_RTIMER
-#endif
 
 #if SIZEOF_VOIDP == 8
 /* SIZEOF_LONG == SIZEOF_VOIDP is guaranteed by configure */
@@ -244,7 +234,7 @@
 
 #define BIT_SIZEOF_LONG CHAR_BIT*SIZEOF_LONG
 
-#define SINGULAR_PATCHLEVEL 5
+#define SINGULAR_PATCHLEVEL 0
 #define SINGULAR_VERSION ((SINGULAR_MAJOR_VERSION*1000 + SINGULAR_MINOR_VERSION*100 + SINGULAR_SUB_VERSION*10)+SINGULAR_PATCHLEVEL)
 
 /*******************************************************************
@@ -308,8 +298,6 @@ int hpux9_system(const char* system);
  * routines and defines  */
 #undef DO_DEEP_PROFILE
 #endif
-
-#define buildin_rand 1
 
 /* define to enable assume */
 #ifndef HAVE_ASSUME
@@ -507,12 +495,6 @@ int hpux9_system(const char* system);
 #define MPSR_DEBUG
 #endif
 
-
-#ifdef TEST
-#ifndef buildin_rand
-#define buildin_rand 1
-#endif
-#endif
 
 /* define SPECTRUM_DEBUG and SPECTRUM_PRINT for debugging the spectrum code */
 /* define SPECTRUM_IOSTREAM to use C++ iostream for error messages          */

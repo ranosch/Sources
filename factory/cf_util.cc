@@ -46,3 +46,15 @@ int ilog2 (int a)
   }
   return n;
 }
+
+#include<stdio.h>
+#include<stdlib.h>
+
+void factoryError_intern(const char *s)
+{
+  fprintf(stderr,s);
+  abort();
+}
+void (*factoryError)(const char *s) = factoryError_intern;
+
+

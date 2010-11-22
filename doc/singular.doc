@@ -48,7 +48,7 @@ This is the texinfo file describing Singular (version @value{VERSION})
 @center Version @value{VERSION}, @value{VERSION_DATE}
 @sp 2
 @center @sc{Singular} is created and its development is directed and coordinated by
-@center G.-M. Greuel, G. Pfister, and H. Sch@"onemann
+@center W. Decker, G.-M. Greuel, G. Pfister, and H. Sch@"onemann
 @sp 2
 @c @center with contributions by
 @center Principal developers:
@@ -229,6 +229,7 @@ See also @ref{Non-commutative libraries}.
 * General purpose::
 * Linear algebra::
 * Commutative algebra::
+* Algebraic geometry::
 * Singularities::
 * Invariant theory::
 * Symbolic-numerical solving::
@@ -237,9 +238,12 @@ See also @ref{Non-commutative libraries}.
 * System and Control theory::
 * Teaching::
 * Tropical Geometry::
-* Contributed::
-* Submitted::
+* Miscellaneous libraries::
+* Experimental libraries::
 @end menu
+@ifset withplural
+@xref{Non-commutative libraries}.
+@end ifset
 @c ----------------------------------------------------------
 @node standard_lib, General purpose, SINGULAR libraries, SINGULAR libraries
 @section standard_lib
@@ -299,11 +303,11 @@ LIB "all.lib";
 @c ----------------------------------------------------------
 @node compregb_lib, general_lib, all_lib, General purpose
 @subsection compregb_lib
-@c lib  compregb.lib
+@c lib compregb.lib
 @c ----------------------------------------------------------
 @node general_lib, inout_lib, compregb_lib, General purpose
 @subsection general_lib
-@c lib  general.lib no_ex
+@c lib general.lib
 @c ----------------------------------------------------------
 @node inout_lib, poly_lib, general_lib, General purpose
 @subsection inout_lib
@@ -343,14 +347,14 @@ LIB "all.lib";
 @subsection linalg_lib
 @c lib linalg.lib
 @c ----------------------------------------------------------------------------
-@node Commutative algebra, Singularities, Linear algebra, SINGULAR libraries
+@node Commutative algebra, Algebraic geometry, Linear algebra, SINGULAR libraries
 @section Commutative algebra
 @cindex Commutative algebra
 
 @menu
 * absfact_lib:: absolute factorization for characteristic 0
 * algebra_lib:: procedures for computing with algebras and maps
-* assprime_lib:: associated primes of a zero-dimensional ideal
+* assprimeszerodim_lib:: associated primes of a zero-dimensional ideal
 * cimonom_lib:: is the toric ideal of an affine monomial curve a complete intersection ?
 * elim_lib:: procedures for elimination, saturation and blowing up
 * grwalk_lib:: Groebner walk and Fraktal walk
@@ -358,7 +362,6 @@ LIB "all.lib";
 * intprog_lib:: Integer Programming
 * lll_lib:: Integral LLL-Algorithm
 * modstd_lib:: Groebner basis of ideals via modular computations
-* monomial_lib:: Primary and irreducible decompositions of monomial ideals
 * mprimdec_lib:: procedures for primary decomposition of modules
 * mregular_lib:: procedures for Castelnuovo-Mumford regularity
 * noether_lib:: Noether normalization of an ideal
@@ -369,11 +372,7 @@ LIB "all.lib";
 * primitiv_lib:: procedures for finding a primitive element
 * realrad_lib:: procedures for finding the real radical
 * reesclos_lib:: Rees Algebra and integral closure of an ideal
-* resbin_lib:: Resolution of singularities of binomial ideals
-* resolve_lib:: Resolution of Singularities
-* reszeta_lib:: Applications of Resolution of Singularities
 * sagbi_lib:: Subalgebras bases Analogous to Groebner bases for ideals
-* sheafcoh_lib:: Procedures for Computing Sheaf Cohomology
 * sing4ti2_lib:: interface to program 4ti2
 * toric_lib:: toric ideals
 @end menu
@@ -383,15 +382,15 @@ LIB "all.lib";
 @subsection absfact_lib
 @c lib absfact.lib
 @c ---------------------------------------------------------
-@node algebra_lib, assprime_lib, absfact_lib, Commutative algebra
+@node algebra_lib, assprimeszerodim_lib, absfact_lib, Commutative algebra
 @subsection algebra_lib
 @c lib algebra.lib
 @c ---------------------------------------------------------
-@node assprime_lib, cimonom_lib, algebra_lib, Commutative algebra
-@subsection assprime_lib
-@c lib assprime.lib
+@node assprimeszerodim_lib, cimonom_lib, algebra_lib, Commutative algebra
+@subsection assprimeszerodim_lib
+@c lib assprimeszerodim.lib
 @c ---------------------------------------------------------
-@node cimonom_lib, elim_lib, assprime_lib, Commutative algebra
+@node cimonom_lib, elim_lib, assprimeszerodim_lib, Commutative algebra
 @subsection cimonom_lib
 @c lib cimonom.lib
 @c ----------------------------------------------------------
@@ -415,15 +414,11 @@ LIB "all.lib";
 @subsection lll_lib
 @c lib lll.lib
 @c ---------------------------------------------------------
-@node modstd_lib, monomial_lib, lll_lib, Commutative algebra
+@node modstd_lib, mprimdec_lib, lll_lib, Commutative algebra
 @subsection modstd_lib
 @c lib modstd.lib
 @c ---------------------------------------------------------
-@node monomial_lib, mprimdec_lib, modstd_lib, Commutative algebra
-@subsection monomial_lib
-@c lib monomial.lib
-@c ---------------------------------------------------------
-@node mprimdec_lib, mregular_lib, monomial_lib, Commutative algebra
+@node mprimdec_lib, mregular_lib, modstd_lib, Commutative algebra
 @subsection mprimdec_lib
 @c lib mprimdec.lib
 @c ----------------------------------------------------------
@@ -459,40 +454,51 @@ LIB "all.lib";
 @subsection realrad_lib
 @c lib realrad.lib
 @c ---------------------------------------------------------
-@node reesclos_lib, resbin_lib, realrad_lib, Commutative algebra
+@node reesclos_lib, sagbi_lib, realrad_lib, Commutative algebra
 @subsection reesclos_lib
 @c lib reesclos.lib
 @c ---------------------------------------------------------
-@node resbin_lib, resolve_lib, reesclos_lib, Commutative algebra
-@subsection resbin_lib
-@c lib resbin.lib
-@c ---------------------------------------------------------
-@node resolve_lib, reszeta_lib, resbin_lib, Commutative algebra
-@subsection resolve_lib
-@c lib resolve.lib
-@c ---------------------------------------------------------
-@node reszeta_lib, sagbi_lib , resolve_lib, Commutative algebra
-@subsection reszeta_lib
-@c lib reszeta.lib
-@c ---------------------------------------------------------
-@node sagbi_lib, sheafcoh_lib , reszeta_lib, Commutative algebra
+@node sagbi_lib, sing4ti2_lib, reesclos_lib, Commutative algebra
 @subsection sagbi_lib
 @c lib sagbi.lib
 @c ---------------------------------------------------------
-@node sheafcoh_lib, sing4ti2_lib, sagbi_lib, Commutative algebra
-@subsection sheafcoh_lib
-@c lib sheafcoh.lib
-@c ---------------------------------------------------------
-@node sing4ti2_lib, toric_lib, sheafcoh_lib, Commutative algebra
+@node sing4ti2_lib, toric_lib, sagbi_lib, Commutative algebra
 @subsection sing4ti2_lib
 @c lib sing4ti2.lib
 @c ---------------------------------------------------------
 @node toric_lib, , sing4ti2_lib, Commutative algebra
 @subsection toric_lib
 @c lib toric.lib
+@c ---------------------------------------------------------
+@node Algebraic geometry, Singularities, Commutative algebra, SINGULAR libraries
+@section Algebraic geometry
+@cindex Algebraic geometry
 
+@menu
+* resgraph_lib:: Visualization of Resolution data
+* resolve_lib:: Resolution of Singularities
+* reszeta_lib:: Applications of Resolution of Singularities
+* sheafcoh_lib:: Procedures for Computing Sheaf Cohomology
+@end menu
+
+@c ---------------------------------------------------------
+@node resgraph_lib, resolve_lib, Algebraic geometry, Algebraic geometry
+@subsection resgraph_lib
+@c lib resgraph.lib
+@c ---------------------------------------------------------
+@node resolve_lib, reszeta_lib, resgraph_lib, Algebraic geometry
+@subsection resolve_lib
+@c lib resolve.lib
+@c ---------------------------------------------------------
+@node reszeta_lib, sheafcoh_lib, resolve_lib, Algebraic geometry
+@subsection reszeta_lib
+@c lib reszeta.lib
+@c ---------------------------------------------------------
+@node sheafcoh_lib, ,reszeta_lib, Algebraic geometry
+@subsection sheafcoh_lib
+@c lib sheafcoh.lib
 @c ----------------------------------------------------------------------------
-@node Singularities, Invariant theory, Commutative algebra, SINGULAR libraries
+@node Singularities, Invariant theory, Algebraic geometry, SINGULAR libraries
 @section Singularities
 @cindex Singularities
 
@@ -648,7 +654,6 @@ LIB "all.lib";
 @menu
 * graphics_lib:: procedures to draw  with Mathematica
 * latex_lib:: procedures for typesetting in TeX
-* resgraph_lib:: visualization of resolution data
 * surf_lib:: interface to the surf programm
 * surfex_lib:: Procedures for Visualizing Surfaces
 @end menu
@@ -658,15 +663,11 @@ LIB "all.lib";
 @subsection graphics_lib
 @c lib graphics.lib no_ex
 @c ---------------------------------------------------------
-@node latex_lib, resgraph_lib, graphics_lib, Visualization
+@node latex_lib, surf_lib, graphics_lib, Visualization
 @subsection latex_lib
 @c lib latex.lib
 @c ---------------------------------------------------------
-@node resgraph_lib, surf_lib, latex_lib, Visualization
-@subsection resgraph_lib
-@c lib resgraph.lib
-@c ---------------------------------------------------------
-@node surf_lib,surfex_lib, resgraph_lib, Visualization
+@node surf_lib,surfex_lib, latex_lib, Visualization
 @subsection surf_lib
 @c lib surf.lib no_ex
 @c ---------------------------------------------------------
@@ -822,7 +823,7 @@ but not for serious computations.
 @c lib rootsur.lib
 
 @c ----------------------------------------------------------------------------
-@node Tropical Geometry, Contributed, Teaching, SINGULAR libraries
+@node Tropical Geometry, Miscellaneous libraries, Teaching, SINGULAR libraries
 @section Tropical Geometry
 @cindex Tropical Geometry
 
@@ -844,38 +845,56 @@ but not for serious computations.
 @c lib tropical.lib no_ex
 
 @c ----------------------------------------------------------------------------
-@node Contributed,Submitted,Tropical Geometry, SINGULAR libraries
-@section Contributed
-@cindex Contributed libraries
+@node  Miscellaneous libraries,Experimental libraries,Tropical Geometry, SINGULAR libraries
+@section  Miscellaneous libraries
+@cindex  Miscellaneous libraries
 
 @menu
 * phindex_lib::
 @end menu
 @c ----------------------------------------------------------
-@node phindex_lib,,, Contributed
+@node phindex_lib,,, Miscellaneous libraries
 @subsection phindex_lib
 @cindex phindex_lib
 
 @c lib phindex.lib
 
 @c ----------------------------------------------------------------------------
-@node Submitted,,Contributed, SINGULAR libraries
-@section Submitted
-@cindex Submitted libraries
+@node Experimental libraries,,Miscellaneous libraries, SINGULAR libraries
+@section Experimental libraries
+@cindex Experimental libraries
 
 This sections collect libraries in the beta test phase.
-Everything in  these libraries may change.
+Everything in these libraries may change.
 
 For the minimal requirements and guidelines
-see @ref{Guidelines for writing a library}.
+see @ref{Libraries}.
 
 Comments should be send to the author of the library directly.
 
 @menu
-* findiff_lib::
+* fpadim_lib::  Algorithms for quotient algebras in the letterplace case
+* findiff_lib:: finite difference schemes for linear differential equations
+* integralbasis_lib:: Integral basis in algebraic function fields
+* monomialideal_lib:: Primary and irreducible decompositions of monomial ideals
+* multigrading_lib:: Multigradings and related computations
+* paraplanecurves_lib:: Rational parametrization of rational plane curves
+* primdecint_lib:: primary decomposition over the integers
+* resbin_lib:: Resolution of singularities of binomial ideals
+* resjung_lib:: Resolution of Surface Singularities by Jung's Algorithm
+* surfacesignature_lib:: signature of surface singularities
+* ncfactor_lib::Tools for factorization in some noncommutative algebras
 @end menu
 @c ----------------------------------------------------------
-@node findiff_lib,,, Submitted
+
+@node fpadim_lib, findiff_lib, , Experimental libraries
+@subsection fpadim_lib
+@cindex fpadim_lib
+
+@c lib fpadim.lib
+@c ----------------------------------------------------------
+
+@node findiff_lib, integralbasis_lib,fpadim_lib, Experimental libraries
 @subsection findiff_lib
 @cindex findiff_lib
 
@@ -887,9 +906,81 @@ Issues:
 @item temporary files needs to be cleaned
 @item temporary file names need to be unique (think about multiple instances)
 @item pollution of global Top namespace must be solved
+@item u is not a good name for a procedure
 @end itemize
 
 @c lib findiff.lib
+
+@c ----------------------------------------------------------
+
+@node integralbasis_lib, monomialideal_lib,findiff_lib, Experimental libraries
+@subsection integralbasis_lib
+@cindex integralbasis_lib
+
+@c lib integralbasis.lib
+
+@c ---------------------------------------------------------
+@node monomialideal_lib, multigrading_lib, integralbasis_lib,  Experimental libraries
+@subsection monomialideal_lib
+@c lib monomialideal.lib
+@c ----------------------------------------------------------
+@node multigrading_lib,paraplanecurves_lib,monomialideal_lib, Experimental libraries
+@subsection multigrading_lib
+@cindex multigrading_lib
+
+Todos/Issues:
+@itemize
+@item See @url{http://code.google.com/p/convex-singular/wiki/Multigrading}
+@end itemize
+
+@c lib multigrading.lib
+
+@c ----------------------------------------------------------
+@node paraplanecurves_lib,primdecint_lib,multigrading_lib, Experimental libraries
+@subsection paraplanecurves_lib
+@cindex paraplanecurves_lib
+
+@c lib paraplanecurves.lib
+
+@c ----------------------------------------------------------
+@node primdecint_lib,resbin_lib,paraplanecurves_lib, Experimental libraries
+@subsection primdecint_lib
+@cindex primdecint_lib
+
+@c lib primdecint.lib
+
+@c ---------------------------------------------------------
+@node resbin_lib, resjung_lib, primdecint_lib, Experimental libraries
+@subsection resbin_lib
+
+Todos/Issues:
+@itemize
+@item formatting is inapprociate
+@item avoid export
+@item bad names(or should be static):
+inidata, data, identifyvars, elimrep, convertdata, lcmofall, genoutput, salida,
+iniD, reslist, sumlist, dividelist, createlist, list0
+@end itemize
+
+@c lib resbin.lib
+@c ---------------------------------------------------------
+@node resjung_lib, surfacesignature_lib, resbin_lib, Experimental libraries
+@subsection resjung_lib
+
+@c lib resjung.lib
+@c ----------------------------------------------------------
+@node surfacesignature_lib,ncfactor_lib,resjung_lib, Experimental libraries
+@subsection surfacesignature_lib
+@cindex surfacesignature_lib
+
+@c lib surfacesignature.lib
+
+@c ----------------------------------------------------------
+@node ncfactor_lib,,surfacesignature_lib, Experimental libraries
+@subsection ncfactor_lib
+@cindex ncfactor_lib
+
+@c lib ncfactor.lib
 
 @c ----------------------------------------------------------
 @node Release Notes, Index, SINGULAR libraries, Top

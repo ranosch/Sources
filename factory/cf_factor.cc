@@ -29,14 +29,11 @@
 #include "facFqFactorize.h"
 #include "cf_map.h"
 #include "algext.h"
+#include "facAlgExt.h"
 
 #include "int_int.h"
 #ifdef HAVE_NTL
 #include "NTLconvert.h"
-#endif
-
-#ifdef SINGULAR
-#include "singext.h"
 #endif
 
 int getExp(); /* cf_char.cc */
@@ -128,31 +125,32 @@ void out_cf(const char *s1,const CanonicalForm &f,const char *s2)
     else
     {
     #ifdef NOSTREAMIO
-      #ifdef SINGULAR
       if (f.inZ())
       {
-        MP_INT m=gmp_numerator(f);
-        char * str = new char[mpz_sizeinbase( &m, 10 ) + 2];
-        str = mpz_get_str( str, 10, &m );
+        mpz_t m;
+        gmp_numerator(f,m);
+        char * str = new char[mpz_sizeinbase( m, 10 ) + 2];
+        str = mpz_get_str( str, 10, m );
         printf("%s",str);
         delete[] str;
+        mpz_clear(m);
       }
       else if (f.inQ())
       {
-        MP_INT m=gmp_numerator(f);
-        char * str = new char[mpz_sizeinbase( &m, 10 ) + 2];
-        str = mpz_get_str( str, 10, &m );
+        mpz_t m;
+        gmp_numerator(f,m);
+        char * str = new char[mpz_sizeinbase( m, 10 ) + 2];
+        str = mpz_get_str( str, 10, m );
         printf("%s/",str);
         delete[] str;
-        m=gmp_denominator(f);
-        str = new char[mpz_sizeinbase( &m, 10 ) + 2];
-        str = mpz_get_str( str, 10, &m );
+        mpz_clear(m);
+        gmp_denominator(f,m);
+        str = new char[mpz_sizeinbase( m, 10 ) + 2];
+        str = mpz_get_str( str, 10, m );
         printf("%s",str);
         delete[] str;
+        mpz_clear(m);
       }
-      #else
-      printf("+...");
-      #endif
     #else
        std::cout << f;
     #endif
@@ -358,11 +356,8 @@ homogenize( const CanonicalForm & f, const Variable & x, const Variable & v1, co
 #endif
 }
 
-#ifdef SINGULAR
-extern int singular_homog_flag;
-#else
-#define singular_homog_flag 1
-#endif
+int singular_homog_flag=1;
+
 int cmpCF( const CFFactor & f, const CFFactor & g )
 {
   if (f.exp() > g.exp()) return 1;
@@ -795,13 +790,13 @@ CFFList factorize ( const CanonicalForm & f, const Variable & alpha )
     #endif
 
   }
-  else // Q(a)-
+  else if (f.isUnivariate() && ch == 0) // Q(a)[x]
   {
-  #ifdef SINGULAR
-      WerrorS("not implemented");
-  #else
-      abort();
-  #endif
+    F= AlgExtFactorize (f, alpha);
+  }
+  else //Q(a)[x1,...,xn]
+  {
+      factoryError("not implemented");
   }
   return F;
 }

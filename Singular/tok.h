@@ -42,11 +42,6 @@ extern int  yyparse(void);
 enum {
   ALIAS_CMD     = UMINUS + 15,
   ATTRIB_CMD,
-//#ifdef HAVE_FANS
-  ADDADJ_CMD,
-  ADDMCONE_CMD,
-  ADJACENCY_CMD,
-//#endif /* HAVE_FANS */
   BAREISS_CMD,
   BIGINT_CMD,
   BRACKET_CMD,
@@ -58,6 +53,14 @@ enum {
   COLS_CMD,
 //#ifdef HAVE_FANS
   CONE_CMD,
+  CONELINK_CMD,
+  CONERAYS_CMD,
+  CONENORMALS_CMD,
+  CONTAINS_CMD,
+  FACECONT_CMD,
+  INTERSC_CMD,
+  GETPROP_CMD,
+  SETPROP_CMD,
 //#endif /* HAVE_FANS */
   CONTENT_CMD,
   COUNT_CMD,
@@ -65,9 +68,6 @@ enum {
   DEF_CMD,
   DEFINED_CMD,
   DELETE_CMD,
-//#ifdef HAVE_FANS
-  DELMCONE_CMD,
-//#endif /* HAVE_FANS */
   DET_CMD,
   DUMP_CMD,
   END_GRAMMAR,
@@ -77,10 +77,6 @@ enum {
   EXPORTTO_CMD,
   EXTGCD_CMD,
   FAC_CMD,
-//#ifdef HAVE_FANS
-  FACETNS_CMD,
-  FAN_CMD,
-//#endif /* HAVE_FANS */
   FIND_CMD,
   FACSTD_CMD,
   FWALK_CMD,
@@ -89,9 +85,6 @@ enum {
   FINDUNI_CMD,
   GCD_CMD,
   GETDUMP_CMD,
-//#ifdef HAVE_FANS
-  GETPROP_CMD,
-//#endif /* HAVE_FANS */
   HIGHCORNER_CMD,
   HRES_CMD,
   IMPART_CMD,
@@ -109,19 +102,12 @@ enum {
   KRES_CMD,
   LAGSOLVE_CMD,
   LINK_CMD,
-//#ifdef HAVE_FANS
-  LINSPACE_CMD,
-//#endif /* HAVE_FANS */
   LIST_CMD,
   LOAD_CMD,
   LRES_CMD,
   LU_CMD,
   LUI_CMD,
   LUS_CMD,
-//#ifdef HAVE_FANS
-  MAXCONE_CMD,
-  MAXRAYS_CMD,
-//#endif /* HAVE_FANS */
   MEMORY_CMD,
   MONITOR_CMD,
   MPRES_CMD,
@@ -146,6 +132,7 @@ enum {
   PRINT_CMD,
   PRUNE_CMD,
   QRING_CMD,
+  QRDS_CMD,
   RANDOM_CMD,
   RANK_CMD,
   READ_CMD,
@@ -154,9 +141,6 @@ enum {
   RESULTANT_CMD,
   RINGLIST_CMD,
   ROWS_CMD,
-//#ifdef HAVE_FANS
-  SETPROP_CMD,
-//#endif /* HAVE_FANS */
   SIMPLEX_CMD,
   SLIM_GB_CMD,
   SQR_FREE_CMD,
@@ -174,6 +158,8 @@ enum {
   VANDER_CMD,
   VARIABLES_CMD,
   VARSTR_CMD,
+  WAIT1ST_CMD,
+  WAITALL_CMD,
   WRITE_CMD,
   /* start system var section: VECHO */
   VECHO,

@@ -1,4 +1,3 @@
-// $Id$
 ///////////////////////////////////////////////////////////////////////////////
 version="$Id$";
 category = "General purpose";
@@ -16,7 +15,7 @@ LIB "aksaka.lib";
 LIB "alexpoly.lib";
 LIB "algebra.lib";
 LIB "arcpoint.lib";
-LIB "assprime.lib";
+LIB "assprimeszerodim.lib";
 LIB "atkins.lib";
 LIB "brnoeth.lib";
 LIB "cimonom.lib";
@@ -50,7 +49,7 @@ LIB "makedbm.lib";
 LIB "matrix.lib";
 LIB "modstd.lib";
 LIB "mondromy.lib";
-LIB "monomial.lib";
+LIB "monomialideal.lib";
 LIB "mprimdec.lib";
 LIB "mregular.lib";
 LIB "noether.lib";

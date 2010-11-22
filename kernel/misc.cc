@@ -25,13 +25,12 @@
 #include <kernel/ring.h>
 #include <kernel/p_Procs.h>
 
-#define SI_DONT_HAVE_GLOBAL_VARS
-
 //#ifdef HAVE_LIBPARSER
 //#  include "libparse.h"
 //#endif /* HAVE_LIBPARSER */
 
 #ifdef HAVE_FACTORY
+#define SI_DONT_HAVE_GLOBAL_VARS
 #  include <factory/factory.h>
 /* libfac version strings */
   extern const char * libfac_version;
@@ -67,7 +66,6 @@ omBin char_ptr_bin = omGetSpecBin(sizeof(char_ptr));
 */
 
 /*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
-#ifdef buildin_rand
 /*
  *
  *  A prime modulus multiplicative linear congruential
@@ -105,5 +103,4 @@ int siRand()
 
   return( siSeed );
 }
-#endif
 

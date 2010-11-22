@@ -4,9 +4,9 @@ category="Commutative Algebra";
 info="
 LIBRARY:  sheafcoh.lib   Procedures for Computing Sheaf Cohomology
 AUTHORS:  Wolfram Decker, decker@mathematik.uni-kl.de
-@*        Christoph Lossen,  lossen@mathematik.uni-kl.de
-@*        Gerhard Pfister,  pfister@mathematik.uni-kl.de
-@*        Oleksandr Motsak, U@D, where U={motsak}, D={mathematik.uni-kl.de}
+          Christoph Lossen,  lossen@mathematik.uni-kl.de
+          Gerhard Pfister,  pfister@mathematik.uni-kl.de
+          Oleksandr Motsak, U@D, where U={motsak}, D={mathematik.uni-kl.de}
 
 PROCEDURES:
  truncate(phi,d);        truncation of coker(phi) at d
@@ -18,7 +18,6 @@ PROCEDURES:
  dimH(i,M,d);            compute h^i(F(d)), F sheaf associated to coker(M)
  dimGradedPart()
 
-AUXILIARY PROCEDURES:
  displayCohom(B,l,h,n);  display intmat as Betti diagram (with zero rows)
 
 KEYWORDS: sheaf cohomology

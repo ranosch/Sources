@@ -28,8 +28,10 @@
 #include <Singular/silink.h>
 #include <kernel/syz.h>
 #include <Singular/ipid.h>
-#include <Singular/Fan.h>
-#include <Singular/Cone.h>
+
+#ifdef HAVE_FANS
+#include <gfanlib/gfanlib.h>
+#endif
 
 #ifdef HAVE_DYNAMIC_LOADING
 #include <kernel/mod_raw.h>
@@ -200,6 +202,17 @@ idhdl idrec::set(const char * s, int lev, int t, BOOLEAN init)
       IDPACKAGE(h)->language=LANG_NONE;
       IDPACKAGE(h)->loaded = FALSE;
     }
+#ifdef HAVE_FANS
+/*
+    else if (t == FAN_CMD)
+    {
+      IDSTRING(h) = (char*)(new Fan());
+    }*/
+    else if (t == CONE_CMD)
+    {
+      IDSTRING(h) = (char*)(new gfan::ZCone());
+    }
+#endif /* HAVE_FANS */
   }
   // --------------------------------------------------------
   return  h;
@@ -215,8 +228,7 @@ char * idrec::String()
   return tmp.String();
 }
 
-//#define KAI
-idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init)
+idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init, BOOLEAN search)
 {
   idhdl h;
   s=omStrDup(s);
@@ -241,27 +253,8 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init)
         goto errlabel;
     }
   }
-  // is it already defined in idroot ?
-  else if (*root != IDROOT)
-  {
-    if ((h=IDROOT->get(s,lev))!=NULL)
-    {
-      if (IDLEV(h)==lev)
-      {
-        if ((IDTYP(h) == t)||(t==DEF_CMD))
-        {
-          if (BVERBOSE(V_REDEFINE))
-            Warn("redefining %s **",s);
-          if (s==IDID(h)) IDID(h)=NULL;
-          killhdl2(h,&IDROOT,NULL);
-        }
-        else
-          goto errlabel;
-      }
-    }
-  }
   // is it already defined in currRing->idroot ?
-  else if ((currRing!=NULL)&&((*root) != currRing->idroot))
+  else if (search && (currRing!=NULL)&&((*root) != currRing->idroot))
   {
     if ((h=currRing->idroot->get(s,lev))!=NULL)
     {
@@ -273,6 +266,25 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init)
             Warn("redefining %s **",s);
           IDID(h)=NULL;
           killhdl2(h,&currRing->idroot,currRing);
+        }
+        else
+          goto errlabel;
+      }
+    }
+  }
+  // is it already defined in idroot ?
+  else if (search && (*root != IDROOT))
+  {
+    if ((h=IDROOT->get(s,lev))!=NULL)
+    {
+      if (IDLEV(h)==lev)
+      {
+        if ((IDTYP(h) == t)||(t==DEF_CMD))
+        {
+          if (BVERBOSE(V_REDEFINE))
+            Warn("redefining `%s` **",s);
+          if (s==IDID(h)) IDID(h)=NULL;
+          killhdl2(h,&IDROOT,NULL);
         }
         else
           goto errlabel;
@@ -292,7 +304,6 @@ idhdl enterid(const char * s, int lev, int t, idhdl* root, BOOLEAN init)
     omFree((ADDRESS)s);
     return NULL;
 }
-
 void killid(const char * id, idhdl * ih)
 {
   if (id!=NULL)
@@ -467,17 +478,17 @@ void killhdl2(idhdl h, idhdl * ih, ring r)
   }
 #ifdef HAVE_FANS
   // fan -------------------------------------------------------------
-  else if (IDTYP(h) == FAN_CMD)
+/*  else if (IDTYP(h) == FAN_CMD)
   {
     Fan* fff = (Fan*)IDDATA(h);
     delete fff;
     IDDATA(h) = NULL;
-  }
+  }*/
   // cone ------------------------------------------------------------
   else if (IDTYP(h) == CONE_CMD)
   {
-    Cone* ccc = (Cone*)IDDATA(h);
-    delete ccc;
+    gfan::ZCone* zc = (gfan::ZCone*)IDDATA(h);
+    delete zc;
     IDDATA(h) = NULL;
   }
 #endif /* HAVE_FANS */
@@ -491,13 +502,6 @@ void killhdl2(idhdl h, idhdl * ih, ring r)
 
   //  general  -------------------------------------------------------------
   // now dechain it and delete idrec
-#ifdef KAI
-  if(h->next != NULL)
-    Print("=======>%s(%x) -> %s<====\n", IDID(h), IDID(h), IDID(h->next));
-  else
-    Print("=======>%s(%x)<====\n", IDID(h), IDID(h));
-#endif
-
   if (IDID(h)!=NULL) // OB: ?????
     omFree((ADDRESS)IDID(h));
   IDID(h)=NULL;
@@ -721,56 +725,6 @@ void paCleanUp(package pack)
     pack->language=LANG_NONE;
   }
 }
-
-char *idhdl2id(idhdl pck, idhdl h)
-{
-  char *name = (char *)omAlloc(strlen(pck->id) + strlen(h->id) + 3);
-  sprintf(name, "%s::%s", pck->id, h->id);
-  return(name);
-}
-
-void iiname2hdl(const char *name, idhdl *pck, idhdl *h)
-{
-  const char *q = strchr(name, ':');
-  char *p, *i;
-
-  if(q==NULL)
-  {
-    p = omStrDup("");
-    i = (char *)omAlloc(strlen(name)+1);
-    *i = '\0';
-    sscanf(name, "%s", i);
-  }
-  else {
-    if( *(q+1) != ':') return;
-    i = (char *)omAlloc(strlen(name)+1);
-    *i = '\0';
-    if(name == q)
-    {
-      p = omStrDup("");
-      sscanf(name, "::%s", i);
-    }
-    else
-    {
-      p = (char *)omAlloc(strlen(name)+1);
-      sscanf(name, "%[^:]::%s", p, i);
-    }
-  }
-  //printf("Package: '%s'\n", p);
-  //printf("Id Rec : '%s'\n", i);
-  omFree(p);
-  omFree(i);
-}
-
-#if 0
-char *getnamelev()
-{
-  char buf[256];
-  sprintf(buf, "(%s:%d)", namespaceroot->name,namespaceroot->lev);
-  return(buf);
-}
-// warning: address of local variable `buf' returned
-#endif
 
 void proclevel::push(char *n)
 {

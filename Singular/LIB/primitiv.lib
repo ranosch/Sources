@@ -1,6 +1,4 @@
-// last change ML: 12.08.99
 ///////////////////////////////////////////////////////////////////////////////
-// This library is for Singular 1.2 or newer
 
 version="$Id$";
 category="Commutative Algebra";
@@ -225,7 +223,7 @@ EXAMPLE: example primitive_extra;  shows an example
         countx=0;
         countz++;
         if (countz>=grad2)
-	{ ERROR("No primitive element found!! This should NEVER happen!"); }
+        { ERROR("No primitive element found!! This should NEVER happen!"); }
       }
       g = g +x^countx *z^countz;
       mat=coeffs(g,z);
@@ -233,9 +231,9 @@ EXAMPLE: example primitive_extra;  shows an example
       {
         mat=coeffs(mat[countz+1,1],x);
         if (size(mat)>countx)
-	{
+        {
           if (mat[countx+1,1] != 0)
-	  {
+          {
             found=1;         // d.h. hier: neues g gefunden
       }}}
      }

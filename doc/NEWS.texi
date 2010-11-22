@@ -22,6 +22,90 @@
 
 @heading News for version @value{VERSION}
 
+This version starts some reorganization: a section for new libraries:
+(see @nref{Experimental libraries}), preparations for parallel computations
+(see @nref{modstd_lib}, @nref{Ssi links}), some linear algebra (see below),
+many new libaries, 
+many bug fixes etc.
+(especially factorization stuff and memory management).
+
+@heading New @sc{Singular} functions
+@itemize @bullet
+@item
+new command: @code{datetime} (see @nref{datetime})
+@item
+new command: @code{ludecomp} (see @nref{ludecomp})
+@item
+new command: @code{luinverse} (see @nref{luinverse})
+@item
+new command: @code{lusolve} (see @nref{lusolve})
+@item
+new command: @code{primefactors} (see @nref{primefactors})
+@item
+new command: @code{rank} (see @nref{rank})
+@end itemize
+
+@heading New @sc{Singular} link types
+@itemize @bullet
+@item
+@code{ssi}: experimental Singular-Singular interface (see @nref{Ssi links})
+@item
+@code{pipe}: string based interface to any program (see @nref{Pipe links})
+@end itemize
+
+@heading New @sc{Singular} libraries
+@itemize @bullet
+@item
+new library: findiff.lib (see @nref{findiff_lib}:  finite difference schemes for
+linear differential equations)
+@item
+new library: fpadim.lib (see @nref{fpadim_lib}:  Algorithms for quotient algebras in the letterplace case)
+@item
+new library: integralbasis.lib (see @nref{integralbasis_lib}: Integral basis in algebraic function fields)
+@item
+new library: monomialideal.lib (see @nref{monomialideal_lib}: operation for monomial ideals)
+@item
+new library: multigrading.lib (see @nref{multigrading_lib}: multigradings and related computations)
+@item
+new library: ncfactor.lib (see @nref{ncfactor_lib}:Tools for factorization in some noncommutative algebras)
+@item
+new library: paraplanecurves.lib (see @nref{paraplanecurves_lib}: Rational parametrization of rational plane curves)
+@item
+new library: primdecint.lib (see @nref{primdecint_lib}: primary decomposition over the integers)
+@item
+new library: resbin.lib (see @nref{resbin_lib}: resolution of singularities of binomial ideals
+@item
+new library: resjung.lib (see @nref{resjung_lib}: resolution of surface singularities by Jung's Algorithm
+@item
+new library: surfacesignature.lib (see @nref{surfacesignature_lib}: signature of irreducible surface singularities
+@end itemize
+
+@heading Changed @sc{Singular} libraries
+@itemize @bullet
+@item
+changed library: dmodapp.lib (see @nref{dmodapp_lib}: Applications of algebraic D-modules
+@item
+changed library: dmodvar.lib (see @nref{dmodvar_lib}: algebraic D-modules for varieties
+@item
+extended library: modstd.lib (see @nref{modstd_lib}: Groebner basis via modular methods
+@item
+extended library: normal.lib (see @nref{normal_lib}:Normalization of Affine Rings)
+@item
+rewritten library: sagbi.lib (see @nref{sagbi_lib}: subalgebra bases analogous to Groebner bases for ideals)
+@end itemize
+
+@heading Internal Changes
+@itemize @bullet
+@item
+new gcd code
+@item
+new factorization code
+@end itemize
+
+@heading --------------------------------------------------------------------
+@heading Older versions:
+@heading News for version 3-1-1
+
 @itemize @bullet
 @item
 new option @code{qringNF}, see @nref{option}.

@@ -101,6 +101,9 @@ extern "C" int setenv(const char *name, const char *value, int overwrite);
 #include <kernel/ncSAMult.h> // for CMultiplier etc classes
 #include <Singular/ipconv.h>
 #include <kernel/ring.h>
+#ifdef HAVE_RATGRING
+#include <kernel/ratgring.h>
+#endif
 #endif
 
 #ifdef ix86_Win /* only for the DLLTest */
@@ -123,6 +126,7 @@ extern "C" int setenv(const char *name, const char *value, int overwrite);
 #define SI_DONT_HAVE_GLOBAL_VARS
 #include <kernel/clapconv.h>
 #include <kernel/kstdfac.h>
+#include <libfac/factor.h>
 #endif
 #include <kernel/clapsing.h>
 
@@ -160,7 +164,6 @@ extern "C" int setenv(const char *name, const char *value, int overwrite);
 //#include <python_wrapper.h>
 #endif
 
-void piShowProcList();
 #ifndef MAKE_DISTRIBUTION
 static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h);
 #endif
@@ -170,8 +173,6 @@ extern BOOLEAN jjJanetBasis(leftv res, leftv v);
 #ifdef ix86_Win  /* PySingular initialized? */
 static int PyInitialized = 0;
 #endif
-
-int singular_homog_flag=1;
 
 //void emStart();
 /*2
@@ -542,11 +543,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         if ((h!=NULL) &&(h->Typ()==INT_CMD))
         {
           siRandomStart=(int)((long)h->Data());
-  #ifdef buildin_rand
           siSeed=siRandomStart;
-  #else
-          srand((unsigned int)siRandomStart);
-  #endif
   #ifdef HAVE_FACTORY
           factoryseed(siRandomStart);
   #endif
@@ -620,7 +617,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
           mpz_t m; mpz_init(m);
           mpz_inp_str(m, f, 10);
           fclose(f);
-          number n = mpz2number(m);                           
+          number n = mpz2number(m);
           res->rtyp = BIGINT_CMD;
           res->data = (void*)n;
           return FALSE;
@@ -628,7 +625,26 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         else
         {
           Werror( "expected valid file name as a string");
+          return TRUE;
+        }
+      }
+  /*==================== forking experiments ======================*/
+      if(strcmp(sys_cmd, "waitforssilinks")==0)
+      {
+        if ((h != NULL) && (h->Typ() == LIST_CMD) &&
+            (h->next != NULL) && (h->next->Typ() == INT_CMD))
+        {
+          lists L = (lists)h->Data();
+          int timeMillisec = (int)(long)h->next->Data();
+          int n = slStatusSsiL(L, timeMillisec * 1000);
+          res->rtyp = INT_CMD;
+          res->data = (void*)n;
           return FALSE;
+        }
+        else
+        {
+          Werror( "expected list of open ssi links and timeout");
+          return TRUE;
         }
       }
   /*==================== neworder =============================*/
@@ -2009,8 +2025,8 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
 #  include <kernel/ring.h>
 #  include <kernel/shiftgb.h>
 
-  static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
-  {
+static BOOLEAN jjEXTENDED_SYSTEM(leftv res, leftv h)
+{
     if(h->Typ() == STRING_CMD)
     {
       char *sys_cmd=(char *)(h->Data());
@@ -2210,9 +2226,9 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         }
         else
   /*==================== generic debug ==================================*/
-  #ifdef PDEBUG
         if(strcmp(sys_cmd,"DetailedPrint")==0)
         {
+  #ifndef NDEBUG
           if( h == NULL )
           {
             WarnS("DetailedPrint needs arguments...");
@@ -2224,10 +2240,11 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
             const ring r = (const ring)h->Data();
             rWrite(r);
             PrintLn();
-  #ifdef RDEBUG
+#ifdef RDEBUG
             rDebugPrint(r);
-  #endif
+#endif
           }
+#ifdef PDEBUG
           else
           if( h->Typ() == POLY_CMD || h->Typ() == VECTOR_CMD)
           {
@@ -2257,11 +2274,11 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
 
             idShow(id, currRing, currRing, nTerms);
           }
-
+#endif
+#endif
           return FALSE;
         }
         else
-  #endif
   /*==================== mtrack ==================================*/
       if(strcmp(sys_cmd,"mtrack")==0)
       {
@@ -2288,9 +2305,6 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         if (fd != NULL) fclose(fd);
         om_Opts.MarkAsStatic = 0;
         return FALSE;
-  #else
-       WerrorS("mtrack not supported without OM_TRACK");
-       return TRUE;
   #endif
       }
   /*==================== mtrack_all ==================================*/
@@ -2311,9 +2325,6 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         if (fd != NULL) fclose(fd);
         om_Opts.MarkAsStatic = 0;
         return FALSE;
-  #else
-       WerrorS("mtrack not supported without OM_TRACK");
-       return TRUE;
   #endif
       }
       else
@@ -2326,6 +2337,73 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
       }
       else
   #endif
+
+#if !defined(OM_NDEBUG)
+  /*==================== omMemoryTest ==================================*/
+      if (strcmp(sys_cmd,"omMemoryTest")==0)
+      {
+
+#ifdef OM_STATS_H
+        PrintS("\n[om_Info]: \n");
+        omUpdateInfo();
+#define OM_PRINT(name) Print(" %-22s : %10ld \n", #name, om_Info . name)
+        OM_PRINT(MaxBytesSystem);
+        OM_PRINT(CurrentBytesSystem);
+        OM_PRINT(MaxBytesSbrk);
+        OM_PRINT(CurrentBytesSbrk);
+        OM_PRINT(MaxBytesMmap);
+        OM_PRINT(CurrentBytesMmap);
+        OM_PRINT(UsedBytes);
+        OM_PRINT(AvailBytes);
+        OM_PRINT(UsedBytesMalloc);
+        OM_PRINT(AvailBytesMalloc);
+        OM_PRINT(MaxBytesFromMalloc);
+        OM_PRINT(CurrentBytesFromMalloc);
+        OM_PRINT(MaxBytesFromValloc);
+        OM_PRINT(CurrentBytesFromValloc);
+        OM_PRINT(UsedBytesFromValloc);
+        OM_PRINT(AvailBytesFromValloc);
+        OM_PRINT(MaxPages);
+        OM_PRINT(UsedPages);
+        OM_PRINT(AvailPages);
+        OM_PRINT(MaxRegionsAlloc);
+        OM_PRINT(CurrentRegionsAlloc);
+#undef OM_PRINT
+#endif
+
+#ifdef OM_OPTS_H
+        PrintS("\n[om_Opts]: \n");
+#define OM_PRINT(format, name) Print(" %-22s : %10" format"\n", #name, om_Opts . name)
+        OM_PRINT("d", MinTrack);
+        OM_PRINT("d", MinCheck);
+        OM_PRINT("d", MaxTrack);
+        OM_PRINT("d", MaxCheck);
+        OM_PRINT("d", Keep);
+        OM_PRINT("d", HowToReportErrors);
+        OM_PRINT("d", MarkAsStatic);
+        OM_PRINT("u", PagesPerRegion);
+        OM_PRINT("p", OutOfMemoryFunc);
+        OM_PRINT("p", MemoryLowFunc);
+        OM_PRINT("p", ErrorHook);
+#undef OM_PRINT
+#endif
+
+#ifdef OM_ERROR_H
+        Print("\n\n[om_ErrorStatus]        : '%s' (%s)\n",
+                omError2String(om_ErrorStatus),
+                omError2Serror(om_ErrorStatus));
+        Print("[om_InternalErrorStatus]: '%s' (%s)\n",
+                omError2String(om_InternalErrorStatus),
+                omError2Serror(om_InternalErrorStatus));
+
+#endif
+
+//        omTestMemory(1);
+//        omtTestErrors();
+        return FALSE;
+      }
+      else
+#endif
   /*==================== naIdeal ==================================*/
       if(strcmp(sys_cmd,"naIdeal")==0)
       {
@@ -2445,22 +2523,28 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
       }
       else
   #endif
+  #if 0 /* debug only */
   /*==================== listall ===================================*/
       if(strcmp(sys_cmd,"listall")==0)
       {
+        void listall(int showproc);
         int showproc=0;
         if ((h!=NULL) && (h->Typ()==INT_CMD)) showproc=(int)((long)h->Data());
         listall(showproc);
         return FALSE;
       }
       else
+  #endif
+  #if 0 /* debug only */
   /*==================== proclist =================================*/
       if(strcmp(sys_cmd,"proclist")==0)
       {
+        void piShowProcList();
         piShowProcList();
         return FALSE;
       }
       else
+  #endif
   /* ==================== newton ================================*/
   #ifdef HAVE_NEWTON
       if(strcmp(sys_cmd,"newton")==0)
@@ -3366,6 +3450,57 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         else return TRUE;
       }
       else
+  /*================= factoras =========================*/
+      if (strcmp (sys_cmd, "factoras") == 0)
+      {
+        if (h!=NULL && (h->Typ()== POLY_CMD) && (h->next->Typ() == IDEAL_CMD))
+        {
+          CanonicalForm F( convSingTrPFactoryP((poly)(h->Data())));
+          h= h->next;
+          ideal I= ((ideal) h->Data());
+          int i= IDELEMS (I);
+          CFList as;
+          for (int j= 0; j < i; j++)
+            as.append (convSingTrPFactoryP (I->m[j]));
+          int success= 0;
+          CFFList libfacResult= newfactoras (F, as, success);
+          if (success >= 0)
+          {
+            //convert factors
+            ideal factors= idInit(libfacResult.length(),1);
+            CFFListIterator j= libfacResult;
+            i= 0;
+            intvec *mult= new intvec (libfacResult.length());
+            for ( ; j.hasItem(); j++,i++ )
+            {
+              factors->m[i]= convFactoryPSingTrP (j.getItem().factor());
+              (*mult)[i]= j.getItem().exp();
+            }
+            lists l= (lists)omAllocBin( slists_bin);
+            l->Init(2);
+            l->m[0].rtyp= IDEAL_CMD;
+            l->m[0].data= (char *) factors;
+            l->m[1].rtyp= INTVEC_CMD;
+            l->m[1].data= (char *) mult;
+            res->data= l;
+            res->rtyp= LIST_CMD;
+            if (success == 0)
+              WerrorS ("factorization maybe incomplete");
+            return FALSE;
+          }
+          else
+          {
+            WerrorS("problem in libfac");
+            return TRUE;
+          }
+        }
+        else
+        {
+          WerrorS("`system(\"factoras\",<poly>,<ideal>) expected");
+          return TRUE;
+        }
+      }
+      else
   #endif
   #ifdef ix86_Win
   /*==================== Python Singular =================*/
@@ -3434,13 +3569,6 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
     }
     else
   #endif // HAVE_SINGULAR_PLUS_PLUS
-
-      if (strcmp(sys_cmd,"FrankTest")==0)
-    {
-      PrintS("Hell Or Word!");
-      return FALSE;
-    }
-    else
 
 #ifdef HAVE_GFAN
   /*======== GFAN ==============*/

@@ -166,6 +166,7 @@ and @code{LIB} no brackets are allowed.
 * printf::
 * prune::
 * qhweight::
+* qrds::
 * quote::
 * quotient::
 * random::
@@ -206,6 +207,8 @@ and @code{LIB} no brackets are allowed.
 * variables::
 * varstr::
 * vdim::
+* waitall::
+* waitfirst::
 * wedge::
 * weight::
 * weightKB::
@@ -796,7 +799,7 @@ See
 @ref{coeffs}.
 @c ref
 @c ---------------------------------------
-@node coeffs, datetime, coef, Functions
+@node coeffs, contract, coef, Functions
 @subsection coeffs
 @cindex coeffs
 
@@ -1109,20 +1112,7 @@ See
 @node datetime, dbprint, contract, Functions
 @subsection datetime
 @cindex datetime
-
-@table @code
-@item @strong{Syntax:}
-@code{datetime}
-@item @strong{Type:}
-string
-@item @strong{Purpose:}
-return the current local date and time as a string;
-@*This string has the format 'DAY MMM DD HH:MM:SS YYYY\n',
-where DAY is a three character string representing the day
-of the week, MMM a three character string representing the
-month, DD a two digit string representing the day, HH:MM:SS
-the current local time, and YYYY the year.
-@*Note that the returned string ends with a linefeed.
+@c lib standard.lib:datetime lib_fun lib_ex subsection
 
 @c ---------------------------------------
 @node dbprint, defined, datetime, Functions
@@ -1147,7 +1137,7 @@ none
 The print command is applied to the expression
 if @code{printlevel>=voice}.
 @item @strong{Note:}
-@xref{Guidelines for writing a library}, for an example how this is used
+@xref{Libraries}, for an example how this is used
 for displaying comments while procedures are executed.
 @item @strong{Example:}
 @smallexample
@@ -1431,12 +1421,14 @@ The dimension of an ideal I means
 the Krull dimension of the basering modulo I.
 @*The dimension of a
 module is the dimension of its annihilator ideal.
+@*In the case of ideal (1), -1 is returned.
 @item @strong{Example:}
 @smallexample
 @c example
   ring r=32003,(x,y,z),dp;
   ideal I=x2-y,x3;
   dim(std(I));
+  dim(std(ideal(1)));
 @c example
 @end smallexample
 @end table
@@ -2387,7 +2379,7 @@ help standard.lib;  // displays help for library 'standard.lib'
 
 @c ref
 See
-@ref{Format of a library};
+@ref{Libraries};
 @ref{Procedure definition};
 @ref{Command line options};
 @ref{system};
@@ -5387,15 +5379,17 @@ prime factors
 @*When called with int(s)/bigint(s), no ring needs to be active.
 @*When called with numbers these are assumed to be integers in a polynomial
 ring over Q.
-@*The method finds all prime factors of a positive integer n. When a bound b
-is given then it is expected to be at least 2. In this case, the implementation
-finds only all prime factors <= b. Then, there may remain a non-factored
-portion n' of n arising by dividing out all found prime factors.
+@*The method finds all prime factors of an integer n. When some positive bound
+b is given then it is expected to be at least 2. In this case, the
+implementation finds only all prime factors <= b. Then, there may remain a
+non-factored portion n' of n arising by dividing out all found prime factors.
+Moreover, in case n is negative or zero, n' will contain the sign or be zero,
+respectively.
 The returned list contains the following information:
-@*L[1] = n',
-@*L[2][i] = i-th prime factor (in ascending order),
-@*L[3][i] = multiplicity of L[2][i],
-@*L[4] = 1 if probabilistic test says that n' is a prime, 0 otherwise.
+@*L[1][i] = i-th prime factor (in ascending order),
+@*L[2][i] = multiplicity of L[1][i],
+@*L[3] = n',
+@*L[4] = 1 if probabilistic test says that |n'| is a prime, 0 otherwise.
 @item @strong{Example:}
 @smallexample
 @c example
@@ -5547,8 +5541,7 @@ See
 @ref{module}.
 @c ref
 @c ---------------------------------------
-@c @node qhweight, quot, prune, Functions
-@node qhweight, quote, prune, Functions
+@node qhweight, qrds, prune, Functions
 @subsection qhweight
 @cindex qhweight
 @table @code
@@ -5574,16 +5567,56 @@ See
 @ref{intvec};
 @ref{weight}.
 @c ref
+@c ---------------------------------------
+@node qrds, quote, qhweight, Functions
+@subsection qrds
+@cindex qrds
+@table @code
+@item @strong{Syntax:}
+@code{qrds (} matrix_expression@code{,} number_expression@code{,}
+              number_expression@code{,} number_expression@code{)}
+@item @strong{Type:}
+list
+@item @strong{Purpose:}
+computes all eigenvalues with multiplicities of the given matrix
+by performing the numeric QR double shift algorithm involving
+Hessenberg form and householder transformations.@*
+This method expects the ground field to be the complex numbers,
+and all matrix entries to be real numbers, i.e., elements of this
+ground field with the imaginary part equal to zero.@*
+If the algorithm works, then it returns a list with two entries which
+are again lists of the same size:@*
+_[1][i] is the i-th mutually distinct eigenvalue that was found,@*
+_[2][i] is the (int) multiplicity of _[1][i].@*
+If the algorithm does not work (due to an ill-posed matrix), a list with
+the single entry (int)0 is returned.@*
+The first number argument is used for detection of deflation in the
+actual QR double shift algorithm. The second number argument is used
+for ending Heron's iteration whenever square roots are being computed.
+And the third number argument is used to distinguish between distinct
+eigenvalues: When the Euclidean distance between two computed eigenvalues
+is less then this number, then they will be regarded equal, resulting in
+a higher multiplicity of the corresponding eigenvalue. (A good choice
+for all three number arguments is a small value like e.g. 10^(-100).)
+@item @strong{Example:}
+@smallexample
+@c example
+  ring r=(complex,50),(dummy),dp;
+  matrix A[3][3]=-10,37,-5,-14,51,-10,-29,99,-18;
+  bigint b = bigint(10)^100; number t = 1/b;
+  list L=qrds(A,t,t,t); L;
+@c example
+@end smallexample
+@end table
 
 @c ---------------------------------------
-@c @node quot, quote, qhweight, Functions
+@c @node quot, quote, qrds, Functions
 @c @subsection quot
 @c @cindex quot
 @c @c lib standard.lib:quot lib_fun lib_ex subsection
 
 @c ---------------------------------------
-@c @node quote, quotient, quot, Functions
-@node quote, quotient, qhweight, Functions
+@node quote, quotient, qrds, Functions
 @subsection quote
 @cindex quote
 @table @code
@@ -6352,6 +6385,8 @@ See
 @table @code
 @item @strong{Syntax:}
 @code{size (} string_expression @code{)}
+@*@code{size (} bigint_expression @code{)}
+@*@code{size (} number_expression @code{)}
 @*@code{size (} intvec_expression @code{)}
 @*@code{size (} intmat_expression @code{)}
 @*@code{size (} poly_expression @code{)}
@@ -6378,6 +6413,8 @@ returns the number of entries (rows*columns).
 @item ring
 returns the number of elements in the ground field
 (for Z/p and algebraic extensions) or -1
+@item number or bigint
+returns 0 for 0 or the number of words
 @end table
 @item @strong{Example:}
 @smallexample
@@ -7197,7 +7234,7 @@ Makes either use of the multipolynomial resultant of Macaulay (second argument
 = 1), which works only for homogeneous ideals, or uses the sparse resultant
 of Gelfand, Kapranov and Zelevinsky (second argument = 0). @*
 The sparse resultant algorithm uses a mixed polyhedral subdivision of the
-Minkowsky sum of the Newton polytopes in order to construct the sparse
+Minkowski sum of the Newton polytopes in order to construct the sparse
 resultant matrix. Its determinant is a nonzero multiple of the sparse
 resultant. The u-resultant of B.\ L.@: van der Waerden and Laguerre's algorithm
 are used to determine the complex roots. @*
@@ -7393,7 +7430,7 @@ See
 @ref{parstr}.
 @c ref
 @c ---------------------------------------
-@node vdim, wedge, varstr, Functions
+@node vdim, waitall, varstr, Functions
 @subsection vdim
 @cindex vdim
 @table @code
@@ -7431,7 +7468,89 @@ See
 @ref{codim}.
 @c ref
 @c ---------------------------------------
-@node wedge, weight, vdim, Functions
+@node waitall, waitfirst, vdim, Functions
+@subsection waitall
+@cindex waitall
+@table @code
+@item @strong{Syntax:}
+@code{waitall (} list_expression @code{)}
+@code{waitall (} list_expression @code{, } int_expression @code{)}
+@item @strong{Type:}
+none/int
+@item @strong{Purpose:}
+Expects a list of open ssi links of mode fork or tcp and waits until all of
+them are finished, i.e., are ready to be read.
+@*In the first case, the command waits for all links to finish (and may
+therefore run forever), and does not return anything.
+@*In the second case, a timeout in milliseconds can be provided, forcing
+the command to terminate after the specified time (return value = 0), or
+- in case this happens earlier - when all links are finished (return value
+= 1).
+@item @strong{Example:}
+@smallexample
+@c example
+  link l1 = "ssi:fork"; open(l1);
+  link l2 = "ssi:fork"; open(l2);
+  link l3 = "ssi:fork"; open(l3);
+  list l = list(l1,l2,l3);
+  write(l1, quote(system("sh", "sleep 15")));
+  write(l2, quote(system("sh", "sleep 10")));
+  write(l3, quote(system("sh", "sleep 11")));
+  waitall(l, 5000); // terminates after 5sec with result 0
+  waitall(l);       // terminates after 10 more sec
+  close(l1);
+  close(l2);
+  close(l3);
+@c example
+@end smallexample
+@end table
+@c ref
+See
+@ref{waitfirst}.
+@c ref
+@c ---------------------------------------
+@node waitfirst, wedge, waitall, Functions
+@subsection waitfirst
+@cindex waitfirst
+@table @code
+@item @strong{Syntax:}
+@code{waitfirst (} list_expression @code{)}
+@code{waitfirst (} list_expression @code{, } int_expression @code{)}
+@item @strong{Type:}
+int
+@item @strong{Purpose:}
+Expects a list of open ssi links of mode fork or tcp and waits until the
+first of them is finished, i.e., is ready to be read.
+@*In the first case, the command waits for the first link to finish (and may
+therefore run forever), and returns the list index of the terminated link.
+@*In the second case, a timeout in milliseconds can be provided, forcing
+the command to terminate after the specified time (return value = 0), or
+- in case this happens earlier - when the first link is finished (return value
+= list index of terminated link).
+@item @strong{Example:}
+@smallexample
+@c example
+  link l1 = "ssi:fork"; open(l1);
+  link l2 = "ssi:fork"; open(l2);
+  link l3 = "ssi:fork"; open(l3);
+  list l = list(l1,l2,l3);
+  write(l1, quote(system("sh", "sleep 15")));
+  write(l2, quote(system("sh", "sleep 13")));
+  write(l3, quote(system("sh", "sleep 11")));
+  waitfirst(l, 5000); // terminates after 5sec with result 0
+  waitfirst(l);       // terminates after 6 more sec with result 3
+  close(l1);
+  close(l2);
+  close(l3);
+@c example
+@end smallexample
+@end table
+@c ref
+See
+@ref{waitall}.
+@c ref
+@c ---------------------------------------
+@node wedge, weight, waitfirst, Functions
 @subsection wedge
 @cindex wedge
 @table @code
@@ -8595,7 +8714,7 @@ int
 @item @strong{Purpose:}
 shows the nesting level of procedures.
 @item @strong{Note:}
-@xref{Guidelines for writing a library}, for a small example how this is used
+@xref{Libraries}, for a small example how this is used
 for the display of comments while procedures are executed.
 @item @strong{Example:}
 @smallexample

@@ -65,15 +65,14 @@
 #ifdef HAVE_FACTORY
 #  include <kernel/fglm.h>
 #endif /* HAVE_FACTORY */
-#define HAVE_INTERPOLATION
-#ifdef HAVE_INTERPOLATION
-#  include <Singular/interpolation.h>
-#endif
+#include <Singular/interpolation.h>
 
 #include <Singular/ipshell.h>
 #include <kernel/mpr_inout.h>
-#include <Singular/Fan.h>
-#include <Singular/Cone.h>
+
+#ifdef HAVE_FANS
+#include <gfanlib/gfanlib.h>
+#endif
 
 #include <kernel/timer.h>
 
@@ -118,8 +117,6 @@ struct _scmdnames
 typedef struct _scmdnames cmdnames;
 
 
-/* ifdef GENTABLE: definitions are in ipshell.h */
-#ifndef GENTABLE
 typedef char * (*Proc1)(char *);
 struct sValCmd1
 {
@@ -160,17 +157,14 @@ struct sValCmdM
   short number_of_args; /* -1: any, -2: any >0, .. */
   short valid_for;
 };
-#endif /* GENTABLE */
 
 typedef struct
 {
   cmdnames *sCmds;             /**< array of existing commands */
-#ifndef GENTABLE
   struct sValCmd1 *psValCmd1;
   struct sValCmd2 *psValCmd2;
   struct sValCmd3 *psValCmd3;
   struct sValCmdM *psValCmdM;
-#endif /* GENTABLE */
   int nCmdUsed;      /**< number of commands used */
   int nCmdAllocated; /**< number of commands-slots allocated */
   int nLastIdentifier; /**< valid indentifieres are slot 1..nLastIdentifier */
@@ -212,299 +206,10 @@ extern BOOLEAN expected_parms;
 
 int iiOp; /* the current operation*/
 
-#ifdef GENTABLE
-cmdnames cmds[] =
-{  // name-string alias tokval          toktype
-  { "$INVALID$",   0, -1,                 0},
-  #ifdef HAVE_FANS
-  { "addadj",      0, ADDADJ_CMD,         CMD_M},
-  { "addmaxcone",  0, ADDMCONE_CMD,       CMD_2},
-  { "adj",         0, ADJACENCY_CMD,      CMD_13},
-  #endif /* HAVE_FANS */
-  { "alias",       0, ALIAS_CMD ,         PARAMETER},
-  { "and",         0, '&' ,               LOGIC_OP},
-  { "attrib",      0, ATTRIB_CMD ,        CMD_123},
-  { "bareiss",     0, BAREISS_CMD ,       CMD_123},
-  { "betti",       0, BETTI_CMD ,         CMD_12},
-  { "bigint",      0, BIGINT_CMD ,        ROOT_DECL},
-  #ifdef HAVE_PLURAL
-  { "bracket",     0, BRACKET_CMD ,       CMD_2},
-  #endif
-  { "break",       0, BREAK_CMD ,         BREAK_CMD},
-  { "breakpoint",  0, BREAKPOINT_CMD ,    CMD_M},
-  { "char",        0, CHARACTERISTIC_CMD ,CMD_1},
-  { "char_series", 0, CHAR_SERIES_CMD ,   CMD_1},
-  { "charstr",     0, CHARSTR_CMD ,       CMD_1},
-  { "chinrem",     0, CHINREM_CMD ,       CMD_2},
-  { "cleardenom",  0, CONTENT_CMD ,       CMD_1},
-  { "close",       0, CLOSE_CMD ,         CMD_1},
-  { "coef",        0, COEF_CMD ,          CMD_M},
-  { "coeffs",      0, COEFFS_CMD ,        CMD_23},
-  #ifdef HAVE_FANS
-  { "cone",        0, CONE_CMD,           ROOT_DECL},
-  #endif /* HAVE_FANS */
-  { "continue",    0, CONTINUE_CMD ,      CONTINUE_CMD},
-  { "contract",    0, CONTRACT_CMD ,      CMD_2},
-  { "convhull",    0, NEWTONPOLY_CMD,     CMD_1},
-  { "dbprint",     0, DBPRINT_CMD ,       CMD_M},
-  { "def",         0, DEF_CMD ,           ROOT_DECL},
-  { "defined",     0, DEFINED_CMD ,       CMD_1},
-  { "deg",         0, DEG_CMD ,           CMD_12},
-  { "degree",      0, DEGREE_CMD ,        CMD_1},
-  { "delete",      0, DELETE_CMD ,        CMD_2},
-  #ifdef HAVE_FANS
-  { "delmaxcone",  0, DELMCONE_CMD,       CMD_12},
-  #endif /* HAVE_FANS */
-  { "det",         0, DET_CMD ,           CMD_1},
-  { "diff",        0, DIFF_CMD ,          CMD_2},
-  { "dim",         0, DIM_CMD ,           CMD_1},
-  { "div",         0, INTDIV_CMD ,        MULDIV_OP},
-  { "division",    0, DIVISION_CMD ,      CMD_M},
-  { "dump",        0, DUMP_CMD,           CMD_1},
-  { "extgcd",      0, EXTGCD_CMD ,        CMD_2},
-  { "ERROR",       0, ERROR_CMD ,         CMD_1},
-  { "eliminate",   0, ELIMINATION_CMD,    CMD_23},
-  { "else",        0, ELSE_CMD ,          ELSE_CMD},
-  #ifdef HAVE_PLURAL
-  { "envelope",    0, ENVELOPE_CMD ,       CMD_1},
-  #endif
-  { "eval",        0, EVAL ,              EVAL},
-  { "example",     0, EXAMPLE_CMD ,       EXAMPLE_CMD},
-  { "execute",     0, EXECUTE_CMD ,       CMD_1},
-  { "export",      0, EXPORT_CMD ,        EXPORT_CMD},
-  { "exportto",    0, EXPORTTO_CMD ,      CMD_2},
-  #ifdef HAVE_FANS
-  { "facetnormals",0, FACETNS_CMD,        CMD_1},
-  #endif /* HAVE_FANS */
-  { "factorize",   0, FAC_CMD ,           CMD_12},
-  #ifdef HAVE_FANS
-  { "fan",         0, FAN_CMD,            ROOT_DECL},
-  #endif /* HAVE_FANS */
-  { "farey",       0, FAREY_CMD ,         CMD_2},
-  { "fetch",       0, FETCH_CMD ,         CMD_2},
-  { "fglm",        0, FGLM_CMD ,          CMD_2},
-  { "fglmquot",    0, FGLMQUOT_CMD,       CMD_2},
-  { "find",        0, FIND_CMD ,          CMD_23},
-  { "finduni",     0, FINDUNI_CMD,        CMD_1},
-  { "forif",       0, IF_CMD ,            IF_CMD},
-  { "freemodule",  0, FREEMODULE_CMD ,    CMD_1},
-  { "facstd",      0, FACSTD_CMD ,        CMD_12},
-  { "frwalk",      0, FWALK_CMD ,         CMD_23},
-  { "gen",         0, E_CMD ,             CMD_1},
-  { "getdump",     0, GETDUMP_CMD,        CMD_1},
-  #ifdef HAVE_FANS
-  { "getprop",     0, GETPROP_CMD,        CMD_2},
-  #endif /* HAVE_FANS */
-  { "gcd",         0, GCD_CMD ,           CMD_2},
-  { "GCD",         2, GCD_CMD ,           CMD_2},
-  { "hilb",        0, HILBERT_CMD ,       CMD_123},
-  { "highcorner",  0, HIGHCORNER_CMD,     CMD_1},
-  { "homog",       0, HOMOG_CMD ,         CMD_123},
-  { "hres",        0, HRES_CMD ,          CMD_2},
-  { "ideal",       0, IDEAL_CMD ,         IDEAL_CMD},
-  { "if",          0, IF_CMD ,            IF_CMD},
-  { "imap",        0, IMAP_CMD ,          CMD_2},
-  { "impart",      0, IMPART_CMD ,        CMD_1},
-  { "importfrom",  0, IMPORTFROM_CMD ,    CMD_2},
-  { "indepSet",    0, INDEPSET_CMD ,      CMD_12},
-  { "insert",      0, INSERT_CMD ,        CMD_23},
-  { "int",         0, INT_CMD ,           ROOT_DECL},
-#ifdef HAVE_INTERPOLATION
-  { "interpolation",0,INTERPOLATE_CMD ,   CMD_2},
-#endif
-  { "interred",    0, INTERRED_CMD ,      CMD_1},
-  { "intersect",   0, INTERSECT_CMD ,     CMD_M},
-  { "intmat",      0, INTMAT_CMD ,        INTMAT_CMD},
-  { "intvec",      0, INTVEC_CMD ,        ROOT_DECL_LIST},
-  { "jacob",       0, JACOB_CMD ,         CMD_1},
-  { "janet",       0, JANET_CMD ,         CMD_12},
-  { "jet",         0, JET_CMD ,           CMD_M},
-  { "kbase",       0, KBASE_CMD ,         CMD_12},
-  { "keepring",    0, KEEPRING_CMD ,      KEEPRING_CMD},
-  { "kernel",      0, KERNEL_CMD ,        CMD_2},
-  { "kill",        0, KILL_CMD ,          KILL_CMD},
-  { "killattrib",  0, KILLATTR_CMD ,      CMD_12},
-  { "koszul",      0, KOSZUL_CMD ,        CMD_23},
-  { "kres",        0, KRES_CMD ,          CMD_2},
-  { "laguerre",    0, LAGSOLVE_CMD,       CMD_3},
-  { "lead",        0, LEAD_CMD ,          CMD_1},
-  { "leadcoef",    0, LEADCOEF_CMD ,      CMD_1},
-  { "leadexp",     0, LEADEXP_CMD ,       CMD_1},
-  { "leadmonom",   0, LEADMONOM_CMD ,     CMD_1},
-  { "LIB",         0, LIB_CMD ,           SYSVAR},
-  { "lift",        0, LIFT_CMD ,          CMD_23},
-  { "liftstd",     0, LIFTSTD_CMD ,       CMD_23},
-  { "link",        0, LINK_CMD ,          ROOT_DECL},
-  #ifdef HAVE_FANS
-  { "linspace",    0, LINSPACE_CMD,       CMD_1},
-  #endif /* HAVE_FANS */
-  { "listvar",     0, LISTVAR_CMD ,       LISTVAR_CMD},
-  { "list",        0, LIST_CMD ,          ROOT_DECL_LIST},
-  { "load",        0, LOAD_CMD ,          CMD_12},
-  { "lres",        0, LRES_CMD ,          CMD_2},
-  { "ludecomp",    0, LU_CMD ,            CMD_1},
-  { "luinverse",   0, LUI_CMD ,           CMD_M},
-  { "lusolve",     0, LUS_CMD ,           CMD_M},
-  { "map",         0, MAP_CMD ,           RING_DECL},
-  { "matrix",      0, MATRIX_CMD ,        MATRIX_CMD},
-  { "maxideal",    0, MAXID_CMD ,         CMD_1},
-  #ifdef HAVE_FANS
-  { "maxcone",     0, MAXCONE_CMD,        CMD_12},
-  { "maxrays",     0, MAXRAYS_CMD,        CMD_1},
-  #endif /* HAVE_FANS */
-  { "memory",      0, MEMORY_CMD ,        CMD_1},
-  { "minbase",     0, MINBASE_CMD ,       CMD_1},
-  { "minor",       0, MINOR_CMD ,         CMD_M},
-  { "minres",      0, MINRES_CMD ,        CMD_1},
-  { "mod",         0, INTMOD_CMD ,        MULDIV_OP},
-  { "module",      0, MODUL_CMD ,         MODUL_CMD},
-  { "modulo",      0, MODULO_CMD ,        CMD_2},
-  { "monitor",     0, MONITOR_CMD ,       CMD_12},
-  { "monomial",    0, MONOM_CMD ,         CMD_1},
-  { "mpresmat",    0, MPRES_CMD,          CMD_2},
-  { "mult",        0, MULTIPLICITY_CMD ,  CMD_1},
-  #ifdef OLD_RES
-  { "mres",        0, MRES_CMD ,          CMD_23},
-  #else
-  { "mres",        0, MRES_CMD ,          CMD_2},
-  #endif
-  { "mstd",        0, MSTD_CMD ,          CMD_1},
-  { "nameof",      0, NAMEOF_CMD ,        CMD_1},
-  { "names",       0, NAMES_CMD ,         CMD_M},
-  #ifdef HAVE_PLURAL
-  { "ncalgebra",   2, NCALGEBRA_CMD ,     CMD_2},
-  { "nc_algebra",  0, NC_ALGEBRA_CMD ,    CMD_2},
-  #endif
-  { "ncols",       0, COLS_CMD ,          CMD_1},
-  { "not",         0, NOT ,               NOT},
-  { "npars",       0, NPARS_CMD ,         CMD_1},
-  #ifdef OLD_RES
-  { "nres",        0, RES_CMD ,           CMD_23},
-  #else
-  { "nres",        0, RES_CMD ,           CMD_2},
-  #endif
-  { "nrows",       0, ROWS_CMD ,          CMD_1},
-  { "number",      0, NUMBER_CMD ,        RING_DECL},
-  { "nvars",       0, NVARS_CMD ,         CMD_1},
-  { "open",        0, OPEN_CMD ,          CMD_1},
-  #ifdef HAVE_PLURAL
-  { "oppose",      0, OPPOSE_CMD ,        CMD_2},
-  { "opposite",    0, OPPOSITE_CMD ,      CMD_1},
-  #endif
-  { "option",      0, OPTION_CMD ,        CMD_M},
-  { "or",          0, '|' ,               LOGIC_OP},
-  { "ord",         0, ORD_CMD ,           CMD_1},
-  { "ordstr",      0, ORDSTR_CMD ,        CMD_1},
-  { "package",     0, PACKAGE_CMD ,       ROOT_DECL},
-  { "par",         0, PAR_CMD ,           CMD_1},
-  { "parameter",   0, PARAMETER ,         PARAMETER},
-  { "pardeg",      0, PARDEG_CMD ,        CMD_1},
-  { "parstr",      0, PARSTR_CMD ,        CMD_12},
-  { "poly",        0, POLY_CMD ,          RING_DECL},
-  { "preimage",    0, PREIMAGE_CMD ,      CMD_13},
-  { "prime",       0, PRIME_CMD ,         CMD_1},
-  { "primefactors",0, PFAC_CMD ,          CMD_12},
-  { "print",       0, PRINT_CMD ,         CMD_12},
-  { "prune",       0, PRUNE_CMD ,         CMD_1},
-  { "proc",        0, PROC_CMD ,          PROC_CMD},
-  { "qhweight",    0, QHWEIGHT_CMD ,      CMD_1},
-  { "qring",       0, QRING_CMD ,         ROOT_DECL},
-  { "quote",       0, QUOTE ,             QUOTE},
-  { "quotient",    0, QUOTIENT_CMD ,      CMD_2},
-  { "random",      0, RANDOM_CMD ,        CMD_23},
-  { "rank",        0, RANK_CMD ,          CMD_12},
-  { "read",        0, READ_CMD ,          CMD_12},
-  { "reduce",      0, REDUCE_CMD ,        CMD_M},
-  { "regularity",  0, REGULARITY_CMD ,    CMD_1},
-  { "repart",      0, REPART_CMD ,        CMD_1},
-  { "reservedName",0, RESERVEDNAME_CMD ,  CMD_M},
-  { "resolution",  0, RESOLUTION_CMD ,    RING_DECL},
-  { "resultant",   0, RESULTANT_CMD,      CMD_3},
-  { "return",      0, RETURN ,            RETURN},
-  { "RETURN",      0, END_GRAMMAR ,       RETURN},
-  { "ring",        0, RING_CMD ,          RING_CMD},
-  { "ringlist",    0, RINGLIST_CMD ,      CMD_1},
-  { "rvar",        0, IS_RINGVAR ,        CMD_1},
-  #ifdef HAVE_FANS
-  { "setprop",     0, SETPROP_CMD,        CMD_3},
-  #endif /* HAVE_FANS */
-  { "setring",     0, SETRING_CMD ,       SETRING_CMD},
-  { "simplex",     0, SIMPLEX_CMD,        CMD_M},
-  { "simplify",    0, SIMPLIFY_CMD ,      CMD_2},
-  { "size",        0, COUNT_CMD ,         CMD_1},
-  { "slimgb",      0, SLIM_GB_CMD ,       CMD_1},
-  { "sortvec",     0, SORTVEC_CMD ,       CMD_1},
-  { "sqrfree",     0, SQR_FREE_CMD ,      CMD_1},
-#ifdef OLD_RES
-  { "sres",        0, SRES_CMD ,          CMD_23},
-#else /* OLD_RES */
-  { "sres",        0, SRES_CMD ,          CMD_2},
-#endif /* OLD_RES */
-  { "status",      0, STATUS_CMD,         CMD_M},
-  { "std",         0, STD_CMD ,           CMD_M},
-  { "f5e",         0, F5C_CMD ,           CMD_1},
-  { "string",      0, STRING_CMD ,        ROOT_DECL_LIST},
-  { "subst",       0, SUBST_CMD ,         CMD_M},
-  { "system",      0, SYSTEM_CMD,         CMD_M},
-  { "syz",         0, SYZYGY_CMD ,        CMD_1},
-  { "test",        0, TEST_CMD ,          CMD_M},
-  { "trace",       0, TRACE_CMD ,         CMD_1},
-  { "transpose",   0, TRANSPOSE_CMD ,     CMD_1},
-#ifdef HAVE_PLURAL
-  { "twostd",      0, TWOSTD_CMD ,        CMD_1},
-#endif /* HAVE_PLURAL */
-  { "type",        0, TYPE_CMD ,          TYPE_CMD},
-  { "typeof",      0, TYPEOF_CMD ,        CMD_1},
-  { "univariate",  0, UNIVARIATE_CMD,     CMD_1},
-  { "uressolve",   0, URSOLVE_CMD,        CMD_M},
-  { "vandermonde", 0, VANDER_CMD,         CMD_3},
-  { "var",         0, VAR_CMD ,           CMD_1},
-  { "variables",   0, VARIABLES_CMD,      CMD_1},
-  { "varstr",      0, VARSTR_CMD ,        CMD_12},
-  { "vdim",        0, VDIM_CMD ,          CMD_1},
-  { "vector",      0, VECTOR_CMD ,        RING_DECL},
-  { "wedge",       0, WEDGE_CMD ,         CMD_2},
-  { "weight",      0, WEIGHT_CMD ,        CMD_1},
-  { "whileif",     0, IF_CMD ,            IF_CMD},
-  { "write",       0, WRITE_CMD ,         CMD_M},
-/* delete for next version:*/
-  { "IN",          1, LEAD_CMD ,          CMD_1},
-  { "NF",          1, REDUCE_CMD ,        CMD_M},
-  { "multiplicity",1, MULTIPLICITY_CMD ,  CMD_1},
-  { "verbose",     2, OPTION_CMD ,        CMD_M},
-//  { "rank",        1, ROWS_CMD ,          CMD_1},
-//  { "Current",     0, -1 ,                SYSVAR},
-//  { "Top",         0, -1 ,                SYSVAR},
-//  { "Up",          0, -1 ,                SYSVAR},
-
-/* set sys vars*/
-  { "degBound",    0, VMAXDEG ,           SYSVAR},
-  { "echo",        0, VECHO ,             SYSVAR},
-  { "minpoly",     0, VMINPOLY ,          SYSVAR},
-  { "multBound",   0, VMAXMULT ,          SYSVAR},
-  { "noether",     0, VNOETHER ,          SYSVAR},
-  { "pagewidth",   0, VCOLMAX ,           SYSVAR},
-  { "printlevel",  0, VPRINTLEVEL ,       SYSVAR},
-  { "short",       0, VSHORTOUT ,         SYSVAR},
-  { "timer",       0, VTIMER ,            SYSVAR},
-  { "rtimer",      0, VRTIMER,            SYSVAR},
-  { "TRACE",       0, TRACE ,             SYSVAR},
-  { "voice",       0, VOICE ,             SYSVAR},
-
-/* other reserved words:scanner.l */
-  { "pause",       2, -1 ,             0},
-  { "while",       0, -1 ,             0},
-  { "for",         0, -1 ,             0},
-  { "help",        0, -1 ,             0},
-  { "newline",     0, -1 ,             0},
-  { "exit",        0, -1 ,             0},
-  { "quit",        0, -1 ,             0},
-/* end of list marker */
-  { NULL, 0, 0, 0}
-};
-#endif /* GENTABLE */
-
 /*=================== operations with 2 args.: static proc =================*/
+/* must be ordered: first operations for chars (infix ops),
+ * then alphabetically */
+
 static BOOLEAN jjOP_IV_I(leftv res, leftv u, leftv v)
 {
   intvec* aa= (intvec *)u->CopyD(INTVEC_CMD);
@@ -993,14 +698,18 @@ static BOOLEAN jjPLUS_ID(leftv res, leftv u, leftv v)
 }
 static BOOLEAN jjMINUS_I(leftv res, leftv u, leftv v)
 {
-  unsigned int a=(unsigned int)(unsigned long)u->Data();
-  unsigned int b=(unsigned int)(unsigned long)v->Data();
+  void *ap=u->Data(); void *bp=v->Data();
+  int aa=(int)(long)ap;
+  int bb=(int)(long)bp;
+  int cc=aa-bb;
+  unsigned int a=(unsigned int)(unsigned long)ap;
+  unsigned int b=(unsigned int)(unsigned long)bp;
   unsigned int c=a-b;
   if (((Sy_bit(31)&a)!=(Sy_bit(31)&b))&&((Sy_bit(31)&a)!=(Sy_bit(31)&c)))
   {
     WarnS("int overflow(-), result may be wrong");
   }
-  res->data = (char *)((long)c);
+  res->data = (char *)((long)cc);
   return jjPLUSMINUS_Gen(res,u,v);
 }
 static BOOLEAN jjMINUS_BI(leftv res, leftv u, leftv v)
@@ -2604,6 +2313,10 @@ static BOOLEAN jjLIFTSTD(leftv res, leftv u, leftv v)
   setFlag(res,FLAG_STD); v->flag=0;
   return FALSE;
 }
+static BOOLEAN jjLOAD2(leftv res, leftv u,leftv v)
+{
+  return jjLOAD(res, v,TRUE);
+}
 static BOOLEAN jjLOAD_E(leftv res, leftv v, leftv u)
 {
   char * s=(char *)u->Data();
@@ -2702,7 +2415,7 @@ static BOOLEAN jjMONITOR2(leftv res, leftv u,leftv v)
   monitor((char *)(u->Data()),mode);
 #else
   si_link l=(si_link)u->Data();
-  if (slOpen(l,SI_LINK_WRITE)) return TRUE;
+  if (slOpen(l,SI_LINK_WRITE,u)) return TRUE;
   if(strcmp(l->m->type,"ASCII")!=0)
   {
     Werror("ASCII link required, not `%s`",l->m->type);
@@ -2957,11 +2670,7 @@ static BOOLEAN jjRANDOM(leftv res, leftv u, leftv v)
 {
   int i=(int)(long)u->Data();
   int j=(int)(long)v->Data();
-#ifdef buildin_rand
   res->data =(char *)(long)((i > j) ? i : (siRand() % (j-i+1)) + i);
-#else /* buildin_rand */
-  res->data =(char *)(long)((i > j) ? i : (rand() % (j-i+1)) + i);
-#endif /* buildin_rand */
   return FALSE;
 }
 static BOOLEAN jjRANK2(leftv res, leftv u, leftv v)
@@ -3207,7 +2916,10 @@ static BOOLEAN jjRES(leftv res, leftv u, leftv v)
        ("`hres` not implemented for inhomogeneous input or qring");
        return TRUE;
     }
-    r=syHilb(u_id,&dummy);
+    ideal u_id_copy=idCopy(u_id);
+    idSkipZeroes(u_id_copy);
+    r=syHilb(u_id_copy,&dummy);
+    idDelete(&u_id_copy);
   }
   if (r==NULL) return TRUE;
   //res->data=(void *)liMakeResolv(r,l,wmaxl,u->Typ(),weights);
@@ -3462,57 +3174,189 @@ static BOOLEAN jjSTD_1(leftv res, leftv u, leftv v)
   return FALSE;
 }
 #ifdef HAVE_FANS
-static BOOLEAN jjADDMCONE1(leftv res, leftv u, leftv v)
+int integerToInt(gfan::Integer const &V, bool &ok)
 {
-  /* method for adding a maximal cone in the given fan;
-     valid parametrizations: (fan, cone),
+  mpz_t v;
+  mpz_init(v);
+  V.setGmp(v);
+  int ret=0;
+  if(mpz_fits_sint_p(v))
+    ret=mpz_get_si(v);
+  else
+    ok=false;
+  mpz_clear(v);
+  return ret;
+}
+intvec* zVector2Intvec(const gfan::ZVector zv)
+{
+  int d=zv.size();
+  intvec* iv = new intvec(1, d, 0);
+  bool ok = true;
+  for(int i=1;i<=d;i++)
+    IMATELEM(*iv, 1, i) = integerToInt(zv[i-1], ok);
+  if (!ok) WerrorS("overflow while converting a gfan::ZVector to an intvec");
+  return iv;
+}
+intvec* zMatrix2Intvec(const gfan::ZMatrix zm)
+{
+  int d=zm.getHeight();
+  int n=zm.getWidth();
+  intvec* iv = new intvec(d, n, 0);
+  bool ok = true;
+  for(int i=1;i<=d;i++)
+    for(int j=1;j<=n;j++)
+      IMATELEM(*iv, i, j) = integerToInt(zm[i-1][j-1], ok);
+  if (!ok) WerrorS("overflow while converting a gfan::ZMatrix to an intmat");
+  return iv;
+}
+gfan::ZMatrix intmat2ZMatrix(const intvec* iMat)
+{
+  int d=iMat->rows();
+  int n=iMat->cols();
+  gfan::ZMatrix ret(d,n);
+  for(int i=0;i<d;i++)
+    for(int j=0;j<n;j++)
+      ret[i][j]=IMATELEM(*iMat, i+1, j+1);
+  return ret;
+}
+/* expects iMat to have just one row */
+gfan::ZVector intvec2ZVector(const intvec* iVec)
+{
+  int n =iVec->rows();
+  gfan::ZVector ret(n);
+  for(int j=0;j<n;j++)
+    ret[j]=IMATELEM(*iVec, j+1, 1);
+  return ret;
+}
+static BOOLEAN jjCONERAYS2(leftv res, leftv u, leftv v)
+{
+  /* method for generating a cone object from half-lines,
+     and lines (any point in the cone being the sum of a point
+     in the convex hull of the half-lines and a point in the span
+     of the lines; the second argument may contain or entirely consist
+     of zero rows);
+     valid parametrizations: (intmat, intmat)
      Errors will be invoked in the following cases:
-     - the cone has been generated in the context of a
-       fan which is different from the given one */
-  Fan* f = (Fan*)u->Data();
-  Cone* c = (Cone*)v->Data();
-  if (! f->addMaxCone(c))
+     - u and v have different numbers of columns */
+  intvec* rays = (intvec *)u->CopyD(INTVEC_CMD);
+  intvec* linSpace = (intvec *)v->CopyD(INTVEC_CMD);
+  if (rays->cols() != linSpace->cols())
   {
-    WerrorS("cone references a fan which is different from the 1st argument");
+    Werror("expected same number of columns but got %d vs. %d",
+           rays->cols(), linSpace->cols());
     return TRUE;
   }
-  else return FALSE;
+  gfan::ZMatrix zm1 = intmat2ZMatrix(rays);
+  gfan::ZMatrix zm2 = intmat2ZMatrix(linSpace);
+  gfan::ZCone* zc = new gfan::ZCone();
+  *zc = gfan::ZCone::givenByRays(zm1, zm2);
+  res->data = (char *)zc;
+  return FALSE;
 }
-static BOOLEAN jjADDMCONE2(leftv res, leftv u, leftv v)
+static BOOLEAN jjFACECONT(leftv res, leftv u, leftv v)
 {
-  /* method for adding numerous maximal cones in the given fan;
-     valid parametrizations: (fan, list),
-     where the list entries are expected to be cones;
-     Errors will be invoked in the following cases:
-     - one of the cones has been generated in the context
-       of a fan which is different from the given one */
-  Fan* f = (Fan*)u->Data();
-  lists L = (lists)v->Data();
-  int index = f->addMaxCones(L);
-  if (index != 0)
+  gfan::ZCone* zc = (gfan::ZCone*)u->Data();
+  intvec* iv = (intvec*)v->Data();
+  gfan::ZVector zv = intvec2ZVector(iv);
+  int d1 = zc->ambientDimension();
+  int d2 = zv.size();
+  if (d1 != d2)
+    Werror("expected ambient dim of cone and size of vector\n"
+           "to be equal but got %d and %d", d1, d2);
+  if(!zc->contains(zv))
   {
-    Werror("cone at position %d references a fan which %s",
-           index, "is different from the 1st argument");
+    WerrorS("provided intvec does not lie in the cone");
+  }
+  res->data = (void *)new gfan::ZCone(zc->faceContaining(zv));
+  return FALSE;
+}
+static BOOLEAN jjINTERSC(leftv res, leftv u, leftv v)
+{ 
+  gfan::ZCone* zc1 = (gfan::ZCone*)u->Data();
+  gfan::ZCone* zc2 = (gfan::ZCone*)v->Data();
+  int d1 = zc1->ambientDimension();
+  int d2 = zc2->ambientDimension();
+  if (d1 != d2)
+    Werror("expected ambient dims of both cones to coincide\n"
+           "but got %d and %d", d1, d2);
+  gfan::ZCone zc3 = gfan::intersection(*zc1, *zc2);
+  res->data = (void *)new gfan::ZCone(zc3);
+  return FALSE;
+}
+static BOOLEAN jjCONELINK(leftv res, leftv u, leftv v)
+{
+  gfan::ZCone* zc = (gfan::ZCone*)u->Data();
+  intvec* iv = (intvec*)v->Data();
+  gfan::ZVector zv= intvec2ZVector(iv);
+  int d1 = zc->ambientDimension();
+  int d2 = zv.size();
+  if (d1 != d2)
+    Werror("expected ambient dim of cone and size of vector\n"
+           "to be equal but got %d and %d", d1, d2);
+  if(!zc->contains(zv))
+  {
+    WerrorS("the provided intvec does not lie in the cone");
+  }
+  res->data = (void *)new gfan::ZCone(zc->link(zv));
+  return FALSE;
+}
+static BOOLEAN jjCONTAINS2(leftv res, leftv u, leftv v)
+{
+  gfan::ZCone* zc1 = (gfan::ZCone*)u->Data();
+  gfan::ZCone* zc2 = (gfan::ZCone*)v->Data();
+  int d1 = zc1->ambientDimension();
+  int d2 = zc2->ambientDimension();
+  if (d1 != d2)
+    Werror("expected cones with same ambient dimensions\n but got"
+           " dimensions %d and %d", d1, d2);
+  res->data = (void *)(zc1->contains(*zc2) ? 1 : 0);
+  return FALSE;
+}
+static BOOLEAN jjCONENORMALS2(leftv res, leftv u, leftv v)
+{
+  /* method for generating a cone object from iequalities,
+     and equations (...)
+     valid parametrizations: (intmat, intmat)
+     Errors will be invoked in the following cases:
+     - u and v have different numbers of columns */
+  intvec* inequs = (intvec *)u->CopyD(INTVEC_CMD);
+  intvec* equs = (intvec *)v->CopyD(INTVEC_CMD);
+  if (inequs->cols() != equs->cols())
+  {
+    Werror("expected same number of columns but got %d vs. %d",
+           inequs->cols(), equs->cols());
     return TRUE;
   }
-  else return FALSE;
+  gfan::ZMatrix zm1 = intmat2ZMatrix(inequs);
+  gfan::ZMatrix zm2 = intmat2ZMatrix(equs);
+  gfan::ZCone* zc = new gfan::ZCone(zm1, zm2);
+  res->data = (char *)zc;
+  return FALSE;
 }
+/*
 static BOOLEAN jjDELMCONE2(leftv res, leftv u, leftv v)
 {
   /* method for deleting a maximal cone from the given fan;
      valid parametrizations: (fan, int),
      Errors will be invoked in the following cases:
-     - the given index is out of range [1..m], where m is
+     - the given index is out of range [0..m-1], where m is
        the number of maximal cones in the given fan */
-  Fan* f = (Fan*)u->Data();
+/*  Fan* f = (Fan*)u->Data();
   int index = (int)(long)v->Data();
-  if (! f->deleteMaxCone(index))
+  int n = f->getNumberOfMaxCones();
+  if (n == 0)
   {
-    Werror("cone index %d out of range [1..%d]; no cone deleted",
-           index, f->getMaxCones()->nr + 1);
+    WerrorS("no maximal cones defined in the given fan");
     return TRUE;
   }
-  else return FALSE;
+  if ((index < 0) || (n <= index))
+  {
+    Werror("cone index %d out of range [0..%d]; no cone deleted",
+           index, f->getNumberOfMaxCones() - 1);
+    return TRUE;
+  }
+  f->deleteMaxCone(index);
+  return FALSE;
 }
 static BOOLEAN jjDELMCONE3(leftv res, leftv u, leftv v)
 {
@@ -3520,45 +3364,78 @@ static BOOLEAN jjDELMCONE3(leftv res, leftv u, leftv v)
      given fan;
      valid parametrizations: (fan, intvec),
      Errors will be invoked in the following cases:
-     - one of the given indices is out of range [1..m],
+     - one of the given indices is out of range [0..m-1],
        where m is the number of maximal cones in the given
        fan;
-     The method does not check that the given indices are
-     mutually distinct. */
-  Fan* f = (Fan*)u->Data();
-  intvec* indices = (intvec*)v->Data();
-  int result = f->deleteMaxCones(indices);
-  if (result != 0)
+     The method does not check whether the given indices are
+     mutually distinct. This is however assumed by this method. */
+/*  Fan* f = (Fan*)u->Data();
+  intvec* iv = (intvec*)v->Data();
+  int n = f->getNumberOfMaxCones();
+  if (n == 0)
   {
-    Werror("cone index %d at position %d out of range [1..%d]; %s",
-           (*indices)[result - 1], result, f->getMaxCones()->nr + 1,
-           "no cone deleted");
+    WerrorS("no maximal cones defined in the given fan");
     return TRUE;
   }
-  else return FALSE;
+  for (int i = 0; i < iv->length(); i++)
+    if (((*iv)[i] < 0) || (n <= (*iv)[i]))
+    {
+      Werror("cone index %d out of range [0..%d]", (*iv)[i], n - 1);
+      return TRUE;
+    }
+  f->deleteMaxCones(iv);
+  return FALSE;
 }
-static BOOLEAN jjMAXCONE2(leftv res, leftv u, leftv v)
+static BOOLEAN jjMAXCONE1(leftv res, leftv u, leftv v)
 {
-  /* method for retrieving a maximal cone of the given fan;
+  /* method for retrieving a maximal cone from the given fan;
      valid parametrizations: (fan, int),
      Errors will be invoked in the following cases:
      - maximal cones not yet set in the fan,
-     - maximal cone index invalid;
+     - maximal cone index out of range;
      The method returns an object of type cone. */
-  Fan* f = (Fan*)u->Data();
+/*  Fan* f = (Fan*)u->Data();
   int index = (int)(long)v->Data();
-  lists maxCones = f->getMaxCones();
-  if (maxCones == NULL)
+  int n = f->getNumberOfMaxCones();
+  if (n == 0)
   {
-    WerrorS("no maximal cones set in the given fan");
+    WerrorS("no maximal cones defined in the given fan");
     return TRUE;
   }
-  else if ((index < 1) || (maxCones->nr + 1 < index))
+  if ((index < 0) || (n <= index))
   {
-    Werror("invalid cone index %d", index);
+    Werror("cone index %d out of range [0..%d]", index, n - 1);
     return TRUE;
   }
-  res->data = (char*)new Cone(*(Cone*)(maxCones->m[index - 1].data));
+  Cone* c = f->getMaxCone(index);
+  res->data = (char*)c;
+  return FALSE;
+}
+static BOOLEAN jjMAXCONE2(leftv res, leftv u, leftv v)
+{
+  /* method for retrieving numerous maximal cones of the given fan
+     in a list;
+     valid parametrizations: (fan, intvec),
+     Errors will be invoked in the following cases:
+     - maximal cones not yet set in the fan,
+     - cone index out of range;
+     The method returns a list of cone objects. */
+/*  Fan* f = (Fan*)u->Data();
+  intvec* iv = (intvec*)v->Data();
+  int n = f->getNumberOfMaxCones();
+  if (n == 0)
+  {
+    WerrorS("no maximal cones defined in the given fan");
+    return TRUE;
+  }
+  for (int i = 0; i < iv->length(); i++)
+    if (((*iv)[i] < 0) || (n <= (*iv)[i]))
+    {
+      Werror("cone index %d out of range [0..%d]", (*iv)[i], n - 1);
+      return TRUE;
+    }
+  lists maxCones = f->getMaxCones(iv);
+  res->data = (char*)maxCones;
   return FALSE;
 }
 static BOOLEAN jjGETPROP1(leftv res, leftv u, leftv v)
@@ -3569,7 +3446,7 @@ static BOOLEAN jjGETPROP1(leftv res, leftv u, leftv v)
      - fan has so far only been instantiated by "fan f;",
      - string is neither of 'ambientdim', 'dim', 'complete',
        'simplicial', 'pure' */
-  Fan* f = (Fan*)u->Data();
+/*  Fan* f = (Fan*)u->Data();
   char* prop = (char*)v->Data();
   int result;
 
@@ -3597,35 +3474,202 @@ static BOOLEAN jjGETPROP1(leftv res, leftv u, leftv v)
 
   res->data = (void*)result;
   return FALSE;
-}
-static BOOLEAN jjGETPROP2(leftv res, leftv u, leftv v)
+}*/
+static BOOLEAN jjGETPROPC(leftv res, leftv u, leftv v)
 {
   /* method for retrieving cone properties;
      valid parametrizations: (cone, string),
      Errors will be invoked in the following cases:
-     - cone has so far only been instantiated by "cone c;",
-     - string is not 'dim' */
-  Cone* c = (Cone*)u->Data();
+     - invalid property string (see below for valid ones) */
+  gfan::ZCone* zc = (gfan::ZCone*)u->Data();
   char* prop = (char*)v->Data();
-  int result;
+  gfan::ZMatrix retMat;
+  gfan::ZCone retCone;
+  int retInt;
+  gfan::ZVector retVec;
+  int typeInfo;
 
-  if (c->getFan() == NULL)
+  /* ################ properties with return type intmat: ################## */
+  if      (strcmp(prop, "INEQUALITIES") == 0)
   {
-    WerrorS("the given cone has no properties yet (freshly instantiated)");
-    return TRUE;
+    retMat = zc->getInequalities();
+    typeInfo = INTMAT_CMD;
   }
-
-  if (strcmp(prop, "dim") == 0)
-    result = c->getDim();
+  else if (strcmp(prop, "EQUATIONS") == 0)
+  {
+    retMat = zc->getEquations();
+    typeInfo = INTMAT_CMD;
+  }
+  else if (strcmp(prop, "FACETS") == 0)
+  {
+    retMat = zc->getFacets();
+    typeInfo = INTMAT_CMD;
+  }
+  else if (strcmp(prop, "IMPLIED_EQUATIONS") == 0)
+  {
+    retMat = zc->getImpliedEquations();
+    typeInfo = INTMAT_CMD;
+  }
+  else if (strcmp(prop, "GENERATORS_OF_SPAN") == 0)
+  {
+    retMat = zc->generatorsOfSpan();
+    typeInfo = INTMAT_CMD;
+  }
+  else if (strcmp(prop, "GENERATORS_OF_LINEALITY_SPACE") == 0)
+  {
+    retMat = zc->generatorsOfLinealitySpace();
+    typeInfo = INTMAT_CMD;
+  }
+  else if (strcmp(prop, "RAYS") == 0)
+  {
+    retMat = zc->extremeRays();
+    typeInfo = INTMAT_CMD;
+  }
+  else if (strcmp(prop, "QUOTIENT_LATTICE_BASIS") == 0)
+  {
+    retMat = zc->quotientLatticeBasis();
+    typeInfo = INTMAT_CMD;
+  }
+  else if (strcmp(prop, "LINEAR_FORMS") == 0)
+  {
+    retMat = zc->getLinearForms();
+    typeInfo = INTMAT_CMD;
+  }
+  /* ################ properties with return type int: ################## */
+  else if (strcmp(prop, "AMBIENT_DIM") == 0)
+  {
+    retInt = zc->ambientDimension();
+    typeInfo = INT_CMD;
+  }
+  else if (strcmp(prop, "DIM") == 0)
+  {
+    retInt = zc->dimension();
+    typeInfo = INT_CMD;
+  }
+  else if (strcmp(prop, "LINEALITY_DIM") == 0)
+  {
+    retInt = zc->dimensionOfLinealitySpace();
+    typeInfo = INT_CMD;
+  }
+  else if (strcmp(prop, "MULTIPLICITY") == 0)
+  {
+    bool ok = true;
+    retInt = integerToInt(zc->getMultiplicity(), ok);
+    if (!ok)
+      WerrorS("overflow while converting a gfan::Integer to an int");
+    typeInfo = INT_CMD;
+  }
+  else if (strcmp(prop, "IS_ORIGIN") == 0)
+  {
+    retInt = zc->isOrigin() ? 1 : 0;
+    typeInfo = INT_CMD;
+  }
+  else if (strcmp(prop, "IS_FULL_SPACE") == 0)
+  {
+    retInt = zc->isFullSpace() ? 1 : 0;
+    typeInfo = INT_CMD;
+  }
+  else if (strcmp(prop, "SIMPLICIAL") == 0)
+  {
+    retInt = zc->isSimplicial() ? 1 : 0;
+    typeInfo = INT_CMD;
+  }
+  else if (strcmp(prop, "CONTAINS_POSITIVE_VECTOR") == 0)
+  {
+    retInt = zc->containsPositiveVector() ? 1 : 0;
+    typeInfo = INT_CMD;
+  }
+  /* ################ properties with return type ZCone: ################## */
+  else if (strcmp(prop, "LINEALITY_SPACE") == 0)
+  {
+    retCone = zc->linealitySpace();
+    typeInfo = CONE_CMD;
+  }
+  else if (strcmp(prop, "DUAL_CONE") == 0)
+  {
+    retCone = zc->dualCone();
+    typeInfo = CONE_CMD;
+  }
+  else if (strcmp(prop, "NEGATED") == 0)
+  {
+    retCone = zc->negated();
+    typeInfo = CONE_CMD;
+  }
+  /* ################ properties with return type intvec: ################## */
+  else if (strcmp(prop, "SEMI_GROUP_GENERATOR") == 0)
+  {
+    /* test whether the cone's dim = dim of lin space + 1: */
+    int d = zc->dimension();
+    int dLS = zc->dimensionOfLinealitySpace();
+    if (d == dLS + 1)
+      retVec = zc->semiGroupGeneratorOfRay();
+    else
+    {
+      Werror("expected dim of cone one larger than dim of lin space\n"
+             "but got dimensions %d and %d", d, dLS);
+    }
+    typeInfo = INTVEC_CMD;
+  }
+  else if (strcmp(prop, "RELATIVE_INTERIOR_POINT") == 0)
+  {
+    retVec = zc->getRelativeInteriorPoint();
+    typeInfo = INTVEC_CMD;
+  }
+  else if (strcmp(prop, "UNIQUE_POINT") == 0)
+  {
+    retVec = zc->getUniquePoint();
+    typeInfo = INTVEC_CMD;
+  }
   else
   {
     Werror("unexpected cone property '%s'", prop);
     return TRUE;
   }
 
-  res->data = (void*)result;
+  res->rtyp = typeInfo;
+  switch(typeInfo)
+  {
+    case INTMAT_CMD:
+      res->data = (void*)zMatrix2Intvec(retMat);
+      break;
+    case INT_CMD:
+      res->data = (void*)retInt;
+      break;
+    case CONE_CMD:
+      res->data = (void*)new gfan::ZCone(retCone);
+      break;
+    case INTVEC_CMD:
+      res->data = (void*)zVector2Intvec(retVec);
+      break;
+    default: ; /* should never be reached */
+  }
   return FALSE;
 }
+/*
+static BOOLEAN jjADJACENCY2(leftv res, leftv u, leftv v)
+{
+  /* method for retrieving all maximal cones in the given fan that
+     are adjacent to a given maximal cone;
+     valid parametrizations: (fan, int),
+     Errors will be invoked in the following cases:
+     - the maximal cone index is out of range [0..m-1],
+       where m is the number of maximal cones in the given fan;
+     In case there are no neighbours (yet) of the specified maximal
+     cone, the method returns an intvec of length one with entry zero. */
+/*  Fan* f = (Fan*)u->Data();
+  int maxCone = (int)(long)v->Data();
+  int nMaxCones = f->getNumberOfMaxCones();
+  if ((maxCone < 0) || (nMaxCones <= maxCone))
+  {
+    Werror("index %d out of range [0..%d]",
+           maxCone, nMaxCones - 1);
+    return TRUE;
+  }
+  intvec* result = f->getAdjacency(maxCone);
+  result = ivCopy(result);
+  res->data = (char*)result;
+  return FALSE;
+}*/
 #endif /* HAVE_FANS */
 static BOOLEAN jjVARSTR2(leftv res, leftv u, leftv v)
 {
@@ -3640,6 +3684,40 @@ static BOOLEAN jjVARSTR2(leftv res, leftv u, leftv v)
   }
   return FALSE;
 }
+static BOOLEAN jjWAIT1ST2(leftv res, leftv u, leftv v)
+{
+  lists Lforks = (lists)u->Data();
+  int t = (int)(long)v->Data();
+  int i = slStatusSsiL(Lforks, t*1000);
+  if ( i < 0 ) i = 0;
+  res->data = (void*)(long)i;
+  return FALSE;
+}
+static BOOLEAN jjWAITALL2(leftv res, leftv u, leftv v)
+{
+/* returns 1 iff all forks are finished; 0 otherwise */
+  lists Lforks = (lists)u->Data();
+  int timeout = 1000*(int)(long)v->Data();
+  lists oneFork=(lists)omAllocBin(slists_bin);
+  oneFork->Init(1);
+  int i;
+  int t = getTimer();
+  int ret = 1;
+  for (int j = 0; j <= Lforks->nr; j++)
+  {
+    oneFork->m[0].Copy(&Lforks->m[j]);
+    i = slStatusSsiL(oneFork, timeout);
+    if (i == 1)
+    {
+      timeout = timeout - getTimer() + t;
+    }
+    else { ret = 0; j = Lforks->nr+1; /* terminate the for loop */ }
+    omFreeSize((ADDRESS)oneFork->m,sizeof(sleftv));
+  }
+  omFreeBin((ADDRESS)oneFork, slists_bin);
+  res->data = (void*)(long)ret;
+  return FALSE;
+}
 static BOOLEAN jjWEDGE(leftv res, leftv u, leftv v)
 {
   res->data = (char *)mpWedge((matrix)u->Data(),(int)(long)v->Data());
@@ -3652,386 +3730,10 @@ static BOOLEAN jjWRONG(leftv res, leftv u)
   return TRUE;
 }
 
-/*=================== operations with 2 args.: table =================*/
-
-struct sValCmd2 dArith2[]=
-{
-// operations:
-// proc        cmd              res             arg1        arg2   plural
- {jjCOLCOL,    COLONCOLON,     ANY_TYPE,       DEF_CMD,    DEF_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_I,    '+',            INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_BI,   '+',            BIGINT_CMD,     BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_N,    '+',            NUMBER_CMD,     NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_P,    '+',            POLY_CMD,       POLY_CMD,   POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_P,    '+',            VECTOR_CMD,     VECTOR_CMD, VECTOR_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_ID,   '+',            IDEAL_CMD,      IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_ID,   '+',            MODUL_CMD,      MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_P_MA, '+',            MATRIX_CMD,     POLY_CMD,   MATRIX_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_MA_P, '+',            MATRIX_CMD,     MATRIX_CMD, POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_MA,   '+',            MATRIX_CMD,     MATRIX_CMD, MATRIX_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_S,    '+',            STRING_CMD,     STRING_CMD, STRING_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IV_I,   '+',            INTVEC_CMD,     INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_I_IV,   '+',            INTVEC_CMD,     INT_CMD,    INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IM_I,   '+',            INTMAT_CMD,     INTMAT_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_I_IM,   '+',            INTMAT_CMD,     INT_CMD,    INTMAT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_IV,   '+',            INTVEC_CMD,     INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_IV,   '+',            INTMAT_CMD,     INTMAT_CMD, INTMAT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{lAdd,        '+',            LIST_CMD,       LIST_CMD,   LIST_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjRSUM,      '+',            RING_CMD,       RING_CMD,   RING_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjRSUM,      '+',            QRING_CMD,      QRING_CMD,  RING_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjRSUM,      '+',            QRING_CMD,      RING_CMD,   QRING_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjRSUM,      '+',            QRING_CMD,      QRING_CMD,  QRING_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMINUS_I,   '-',            INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMINUS_BI,  '-',            BIGINT_CMD,     BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMINUS_N,   '-',            NUMBER_CMD,     NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMINUS_P,   '-',            POLY_CMD,       POLY_CMD,   POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMINUS_P,   '-',            VECTOR_CMD,     VECTOR_CMD, VECTOR_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPLUS_MA_P, '-',            MATRIX_CMD,     MATRIX_CMD, POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMINUS_MA,  '-',            MATRIX_CMD,     MATRIX_CMD, MATRIX_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IV_I,   '-',            INTVEC_CMD,     INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IM_I,   '-',            INTMAT_CMD,     INTMAT_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMINUS_IV,  '-',            INTVEC_CMD,     INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMINUS_IV,  '-',            INTMAT_CMD,     INTMAT_CMD, INTMAT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjWRONG2,    '-',            NONE,           IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjWRONG2,    '-',            NONE,           MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_I,   '*',            INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_BI,  '*',            BIGINT_CMD,     BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_N,   '*',            NUMBER_CMD,     NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_P,   '*',            POLY_CMD,       POLY_CMD,   POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_P,   '*',            VECTOR_CMD,     POLY_CMD,   VECTOR_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_P,   '*',            VECTOR_CMD,     VECTOR_CMD, POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_P1,'*',           IDEAL_CMD,      IDEAL_CMD,  POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_P2,'*',           IDEAL_CMD,      POLY_CMD,   IDEAL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_P1,'*',           MODUL_CMD,      MODUL_CMD,  POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_P2,'*',           MODUL_CMD,      POLY_CMD,   MODUL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_ID,  '*',            IDEAL_CMD,      IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_P1,'*',           MODUL_CMD,      IDEAL_CMD,  VECTOR_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_P2,'*',           MODUL_CMD,      VECTOR_CMD, IDEAL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_ID,  '*',            MODUL_CMD,      IDEAL_CMD,  MODUL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_ID,  '*',            MODUL_CMD,      MODUL_CMD,  IDEAL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_P1,'*',           MATRIX_CMD,     MATRIX_CMD, POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_P2,'*',           MATRIX_CMD,     POLY_CMD,   MATRIX_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_N1,'*',           MATRIX_CMD,     MATRIX_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_N2,'*',           MATRIX_CMD,     NUMBER_CMD, MATRIX_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_I1,'*',           MATRIX_CMD,     MATRIX_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_I2,'*',           MATRIX_CMD,     INT_CMD,    MATRIX_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA,  '*',            MATRIX_CMD,     MATRIX_CMD, MATRIX_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_BI1,'*',          MATRIX_CMD,     MATRIX_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_MA_BI2,'*',          MATRIX_CMD,     BIGINT_CMD, MATRIX_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IV_I,   '*',            INTVEC_CMD,     INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_I_IV,   '*',            INTVEC_CMD,     INT_CMD,    INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IV_I,   '*',            INTMAT_CMD,     INTMAT_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_I_IV,   '*',            INTMAT_CMD,     INT_CMD,    INTMAT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_IV,  '*',            INTVEC_CMD,     INTMAT_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_IV,  '*',            INTMAT_CMD,     INTMAT_CMD, INTMAT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjTIMES_IV,  '*',            INTMAT_CMD,     INTVEC_CMD, INTMAT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjDIV_N,     '/',            NUMBER_CMD,     NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjDIV_P,     '/',            POLY_CMD,       POLY_CMD,   POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjDIV_P,     '/',            VECTOR_CMD,     VECTOR_CMD, POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjDIV_Ma,    '/',            MATRIX_CMD,     MATRIX_CMD, POLY_CMD, ALLOW_PLURAL | NO_RING}
-,{jjDIVMOD_I,  '/',            INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjDIV_BI,    '/',            BIGINT_CMD,     BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IV_I,   '/',            INTVEC_CMD,     INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IV_I,   '/',            INTMAT_CMD,     INTMAT_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjDIVMOD_I,  INTDIV_CMD,     INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjDIV_BI,    INTDIV_CMD,     BIGINT_CMD,     BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IV_I,   INTDIV_CMD,     INTVEC_CMD,     INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IV_I,   INTDIV_CMD,     INTMAT_CMD,     INTMAT_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjDIVMOD_I,  '%',            INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMOD_BI,    '%',            BIGINT_CMD,     BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IV_I,   '%',            INTVEC_CMD,     INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IV_I,   '%',            INTMAT_CMD,     INTMAT_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMOD_N,     '%',            NUMBER_CMD,     NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjDIVMOD_I,  INTMOD_CMD,     INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMOD_BI,    INTMOD_CMD,     BIGINT_CMD,     BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IV_I,   INTMOD_CMD,     INTVEC_CMD,     INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOP_IV_I,   INTMOD_CMD,     INTMAT_CMD,     INTMAT_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMOD_N,     INTMOD_CMD,     NUMBER_CMD,     NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPOWER_I,   '^',            INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPOWER_BI,   '^',           BIGINT_CMD,     BIGINT_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPOWER_N,   '^',            NUMBER_CMD,     NUMBER_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPOWER_P,   '^',            POLY_CMD,       POLY_CMD,   INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPOWER_ID,  '^',            IDEAL_CMD,      IDEAL_CMD,  INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjLE_I,      LE,             INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjLE_BI,     LE,             INT_CMD,        BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjLE_N,      LE,             INT_CMD,        NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_S, LE,             INT_CMD,        STRING_CMD, STRING_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV_I,LE,           INT_CMD,        INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV,LE,             INT_CMD,        INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_P, LE,             INT_CMD,        POLY_CMD,   POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_P, LE,             INT_CMD,        VECTOR_CMD, VECTOR_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjLT_I,      '<',            INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjLT_BI,     '<',            INT_CMD,        BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjLT_N,      '<',            INT_CMD,        NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV_I,'<',           INT_CMD,        INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV,'<',            INT_CMD,        INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_S, '<',            INT_CMD,        STRING_CMD, STRING_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_P, '<',            INT_CMD,        POLY_CMD,   POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_P, '<',            INT_CMD,        VECTOR_CMD, VECTOR_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjGE_I,      GE,             INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjGE_BI,     GE,             INT_CMD,        BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjGE_N,      GE,             INT_CMD,        NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_S, GE,             INT_CMD,        STRING_CMD, STRING_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV_I,GE,           INT_CMD,        INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV,GE,             INT_CMD,        INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_P, GE,             INT_CMD,        POLY_CMD,   POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_P, GE,             INT_CMD,        VECTOR_CMD, VECTOR_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjGT_I,      '>',            INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjGT_BI,     '>',            INT_CMD,        BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjGT_N,      '>',            INT_CMD,        NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_S, '>',            INT_CMD,        STRING_CMD, STRING_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV_I,'>',          INT_CMD,        INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV,'>',            INT_CMD,        INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_P, '>',            INT_CMD,        POLY_CMD,   POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_P, '>',            INT_CMD,        VECTOR_CMD, VECTOR_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjAND_I,     '&',            INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjOR_I,      '|',            INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjEQUAL_I,   EQUAL_EQUAL,    INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjEQUAL_BI,  EQUAL_EQUAL,    INT_CMD,        BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjEQUAL_N,   EQUAL_EQUAL,    INT_CMD,        NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_S, EQUAL_EQUAL,    INT_CMD,        STRING_CMD, STRING_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjEQUAL_P,   EQUAL_EQUAL,    INT_CMD,        POLY_CMD,   POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjEQUAL_P,   EQUAL_EQUAL,    INT_CMD,        VECTOR_CMD, VECTOR_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV_I,EQUAL_EQUAL,  INT_CMD,        INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV,EQUAL_EQUAL,    INT_CMD,        INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV,EQUAL_EQUAL,    INT_CMD,        INTMAT_CMD, INTMAT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjEQUAL_Ma,  EQUAL_EQUAL,    INT_CMD,        MATRIX_CMD, MATRIX_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjWRONG2,    EQUAL_EQUAL,    0,              IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjWRONG2,    EQUAL_EQUAL,    0,              MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjWRONG2,    EQUAL_EQUAL,    0,              IDEAL_CMD,  MODUL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjWRONG2,    EQUAL_EQUAL,    0,              MODUL_CMD,  IDEAL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjEQUAL_I,   NOTEQUAL,       INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjEQUAL_BI,  NOTEQUAL,       INT_CMD,        BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjEQUAL_N,   NOTEQUAL,       INT_CMD,        NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_S, NOTEQUAL,       INT_CMD,        STRING_CMD, STRING_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjEQUAL_P,   NOTEQUAL,       INT_CMD,        POLY_CMD,   POLY_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjEQUAL_P,   NOTEQUAL,       INT_CMD,        VECTOR_CMD, VECTOR_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV,NOTEQUAL,       INT_CMD,        INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOMPARE_IV,NOTEQUAL,       INT_CMD,        INTMAT_CMD, INTMAT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjEQUAL_Ma,  NOTEQUAL,       INT_CMD,        MATRIX_CMD, MATRIX_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjWRONG2,    NOTEQUAL,       0,              IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjWRONG2,    NOTEQUAL,       0,              MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjWRONG2,    NOTEQUAL,       0,              IDEAL_CMD,  MODUL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjWRONG2,    NOTEQUAL,       0,              MODUL_CMD,  IDEAL_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjDOTDOT,    DOTDOT,         INTVEC_CMD,     INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_I,   '[',            INT_CMD,        INTVEC_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_IV,  '[',            INT_CMD,        INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_I,   '[',            POLY_CMD,       IDEAL_CMD,  INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_I,   '[',            POLY_CMD,       MAP_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_IV,  '[',            POLY_CMD,       IDEAL_CMD,  INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_I,   '[',            VECTOR_CMD,     MODUL_CMD,  INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_IV,  '[',            VECTOR_CMD,     MODUL_CMD,  INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_I,   '[',            STRING_CMD,     STRING_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_IV,  '[',            STRING_CMD,     STRING_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_I,   '[',            ANY_TYPE/*set by p*/,LIST_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_IV,  '[',            ANY_TYPE/*set by p*/,LIST_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_P,   '[',            POLY_CMD,       POLY_CMD,   INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_P_IV,'[',            POLY_CMD,       POLY_CMD,   INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_V,   '[',            POLY_CMD,       VECTOR_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjINDEX_V_IV,'[',            VECTOR_CMD,     VECTOR_CMD, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjPROC,      '(',            ANY_TYPE/*set by p*/,PROC_CMD, DEF_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMAP,       '(',            ANY_TYPE/*set by p*/,MAP_CMD, DEF_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjKLAMMER,   '(',            ANY_TYPE/*set by p*/,ANY_TYPE, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjKLAMMER_IV,'(',            ANY_TYPE/*set by p*/,ANY_TYPE, INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjCOLON,     ':',            INTVEC_CMD,     INT_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-// and the procedures with 2 arguments:
-,{atATTRIB2,   ATTRIB_CMD,     NONE/*set by p*/,DEF_CMD,   STRING_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjWRONG2,    BAREISS_CMD,    0,              DEF_CMD,    DEF_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjBETTI2,    BETTI_CMD,      INTMAT_CMD,     LIST_CMD,   INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{syBetti2,    BETTI_CMD,      INTMAT_CMD,     RESOLUTION_CMD, INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjBETTI2_ID, BETTI_CMD,      INTMAT_CMD,     IDEAL_CMD,  INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjBETTI2_ID, BETTI_CMD,      INTMAT_CMD,     MODUL_CMD,  INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-#ifdef HAVE_PLURAL
-,{jjBRACKET,   BRACKET_CMD,    POLY_CMD,       POLY_CMD,   POLY_CMD, ALLOW_PLURAL | NO_RING}
-#endif
-#ifdef HAVE_FACTORY
-,{jjCHINREM_BI,CHINREM_CMD,    BIGINT_CMD,     INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-//,{jjCHINREM_P, CHINREM_CMD,    POLY_CMD,       LIST_CMD,   INTVEC_CMD, ALLOW_PLURAL}
-,{jjCHINREM_ID,CHINREM_CMD,    ANY_TYPE/*set by p*/,LIST_CMD,INTVEC_CMD, ALLOW_PLURAL |NO_RING}
-,{jjCHINREM_ID,CHINREM_CMD,    ANY_TYPE/*set by p*/,LIST_CMD,LIST_CMD, ALLOW_PLURAL |NO_RING}
-#else
-,{jjWRONG2,    CHINREM_CMD,    BIGINT_CMD,     INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-#endif
-,{jjCOEF,      COEF_CMD,       MATRIX_CMD,     POLY_CMD,   POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCOEFFS_Id, COEFFS_CMD,     MATRIX_CMD,     IDEAL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCOEFFS_Id, COEFFS_CMD,     MATRIX_CMD,     MODUL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCOEFFS2_KB,COEFFS_CMD,     MATRIX_CMD,     IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCOEFFS2_KB,COEFFS_CMD,     MATRIX_CMD,     MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCONTRACT,  CONTRACT_CMD,   MATRIX_CMD,     IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDEG_IV,    DEG_CMD,        INT_CMD,        POLY_CMD,   INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDEG_IV,    DEG_CMD,        INT_CMD,        VECTOR_CMD, INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDEG_M_IV,  DEG_CMD,        INT_CMD,        MATRIX_CMD, INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{lDelete,     DELETE_CMD,     LIST_CMD,       LIST_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDIFF_P,    DIFF_CMD,       POLY_CMD,       POLY_CMD,   POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDIFF_P,    DIFF_CMD,       VECTOR_CMD,     VECTOR_CMD, POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDIFF_ID,   DIFF_CMD,       IDEAL_CMD,      IDEAL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDIFF_ID_ID,DIFF_CMD,       MATRIX_CMD,     IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDIFF_ID,   DIFF_CMD,       MODUL_CMD,      MODUL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDIFF_ID,   DIFF_CMD,       MATRIX_CMD,     MATRIX_CMD, POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDIM2,      DIM_CMD,        INT_CMD,        IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL |NO_RING}
-,{jjDIM2,      DIM_CMD,        INT_CMD,        MODUL_CMD,  IDEAL_CMD, ALLOW_PLURAL |NO_RING}
-,{jjDIVISION,  DIVISION_CMD,   LIST_CMD,       IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDIVISION,  DIVISION_CMD,   LIST_CMD,       MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjELIMIN,    ELIMINATION_CMD,IDEAL_CMD,      IDEAL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjELIMIN,    ELIMINATION_CMD,MODUL_CMD,      MODUL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjELIMIN_IV, ELIMINATION_CMD,IDEAL_CMD,      IDEAL_CMD,  INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjELIMIN_IV, ELIMINATION_CMD,MODUL_CMD,      MODUL_CMD,  INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjEXPORTTO,  EXPORTTO_CMD,   NONE,           PACKAGE_CMD, IDHDL, ALLOW_PLURAL |ALLOW_RING}
-,{jjEXTGCD_I,  EXTGCD_CMD,     LIST_CMD,       INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
-,{jjEXTGCD_P,  EXTGCD_CMD,     LIST_CMD,       POLY_CMD,   POLY_CMD, NO_PLURAL |NO_RING}
-,{jjFAC_P2,     FAC_CMD,        IDEAL_CMD,      POLY_CMD,   INT_CMD, NO_PLURAL |NO_RING}
-,{jjFACSTD2,   FACSTD_CMD,     LIST_CMD,       IDEAL_CMD,  IDEAL_CMD, NO_PLURAL |NO_RING}
-#else
-,{jjWRONG2,    EXTGCD_CMD,     LIST_CMD,       POLY_CMD,   POLY_CMD, NO_PLURAL |NO_RING}
-,{jjWRONG2,    FAC_CMD,        IDEAL_CMD,      POLY_CMD,   INT_CMD, NO_PLURAL |NO_RING}
-,{jjWRONG2,    FACSTD_CMD,     LIST_CMD,       IDEAL_CMD,  IDEAL_CMD, NO_PLURAL |NO_RING}
-#endif
-,{jjFAREY_BI,  FAREY_CMD,      NUMBER_CMD,     BIGINT_CMD,  BIGINT_CMD, ALLOW_PLURAL |NO_RING}
-,{jjFAREY_ID,   FAREY_CMD,     ANY_TYPE/*set by p*/,IDEAL_CMD,BIGINT_CMD, ALLOW_PLURAL |NO_RING}
-,{jjFAREY_ID,   FAREY_CMD,     ANY_TYPE/*set by p*/,MODUL_CMD,BIGINT_CMD, ALLOW_PLURAL |NO_RING}
-,{jjFAREY_ID,   FAREY_CMD,     ANY_TYPE/*set by p*/,MATRIX_CMD,BIGINT_CMD, ALLOW_PLURAL |NO_RING}
-,{jjFETCH,     FETCH_CMD,      ANY_TYPE/*set by p*/,RING_CMD,  ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-,{jjFETCH,     FETCH_CMD,      ANY_TYPE/*set by p*/,QRING_CMD, ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
-,{fglmProc,    FGLM_CMD,       IDEAL_CMD,      RING_CMD,   DEF_CMD, NO_PLURAL |NO_RING}
-,{fglmProc,    FGLM_CMD,       IDEAL_CMD,      QRING_CMD,  DEF_CMD, NO_PLURAL |NO_RING}
-,{fglmQuotProc,FGLMQUOT_CMD,   IDEAL_CMD,      IDEAL_CMD,  POLY_CMD, NO_PLURAL |NO_RING}
-#else
-,{jjWRONG2,    FGLM_CMD,       IDEAL_CMD,      RING_CMD,   DEF_CMD, NO_PLURAL |NO_RING}
-,{jjWRONG2,    FGLM_CMD,       IDEAL_CMD,      QRING_CMD,  DEF_CMD, NO_PLURAL |NO_RING}
-,{jjWRONG2,    FGLMQUOT_CMD,   IDEAL_CMD,      POLY_CMD,   IDEAL_CMD, NO_PLURAL |NO_RING}
-#endif
-,{jjFIND2,     FIND_CMD,       INT_CMD,        STRING_CMD, STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjFWALK,     FWALK_CMD,      IDEAL_CMD,      RING_CMD,   DEF_CMD, NO_PLURAL |NO_RING}
-,{jjGCD_I,     GCD_CMD,        INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjGCD_N,     GCD_CMD,        NUMBER_CMD,     NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjGCD_BI,    GCD_CMD,        BIGINT_CMD,     BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL |ALLOW_RING}
-#if defined(HAVE_FACTORY)
-,{jjGCD_P,     GCD_CMD,        POLY_CMD,       POLY_CMD,   POLY_CMD, NO_PLURAL |NO_RING}
-#else
-,{jjWRONG2,    GCD_CMD,        POLY_CMD,       POLY_CMD,   POLY_CMD, NO_PLURAL |NO_RING}
-#endif
-,{jjHILBERT2,  HILBERT_CMD,    INTVEC_CMD,     IDEAL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
-,{jjHILBERT2,  HILBERT_CMD,    INTVEC_CMD,     MODUL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
-,{jjHOMOG1_W,  HOMOG_CMD,      INT_CMD,        IDEAL_CMD,  INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjHOMOG1_W,  HOMOG_CMD,      INT_CMD,        MODUL_CMD,   INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjHOMOG_P,   HOMOG_CMD,      POLY_CMD,       POLY_CMD,   POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjHOMOG_P,   HOMOG_CMD,      VECTOR_CMD,     VECTOR_CMD, POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjHOMOG_ID,  HOMOG_CMD,      IDEAL_CMD,      IDEAL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjHOMOG_ID,  HOMOG_CMD,      MODUL_CMD,      MODUL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjRES,       HRES_CMD,       RESOLUTION_CMD, IDEAL_CMD,  INT_CMD, NO_PLURAL |NO_RING}
-,{jjCALL2MANY, IDEAL_CMD,      IDEAL_CMD,      DEF_CMD,    DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjFETCH,     IMAP_CMD,       ANY_TYPE/*set by p*/,RING_CMD,  ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-,{jjFETCH,     IMAP_CMD,       ANY_TYPE/*set by p*/,QRING_CMD, ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-,{jjIMPORTFROM,IMPORTFROM_CMD, NONE,           PACKAGE_CMD, ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-,{jjINDEPSET2, INDEPSET_CMD,   LIST_CMD,       IDEAL_CMD,  INT_CMD, NO_PLURAL |NO_RING}
-,{lInsert,     INSERT_CMD,     LIST_CMD,       LIST_CMD,   DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_INTERPOLATION
-,{jjINTERPOLATION,INTERPOLATE_CMD,IDEAL_CMD,   LIST_CMD,   INTVEC_CMD, NO_PLURAL |NO_RING}
-#endif
-,{jjINTERSECT, INTERSECT_CMD,  IDEAL_CMD,      IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjINTERSECT, INTERSECT_CMD,  MODUL_CMD,      MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJanetBasis2, JANET_CMD,    IDEAL_CMD,      IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |NO_RING}
-,{jjJET_P,     JET_CMD,        POLY_CMD,       POLY_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJET_ID,    JET_CMD,        IDEAL_CMD,      IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJET_P,     JET_CMD,        VECTOR_CMD,     VECTOR_CMD, INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJET_ID,    JET_CMD,        MODUL_CMD,      MODUL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJET_ID,    JET_CMD,        MATRIX_CMD,     MATRIX_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjKBASE2,    KBASE_CMD,      IDEAL_CMD,      IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjKBASE2,    KBASE_CMD,      MODUL_CMD,      MODUL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjKERNEL,    KERNEL_CMD,     IDEAL_CMD, RING_CMD,        ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-,{jjKERNEL,    KERNEL_CMD,     IDEAL_CMD, QRING_CMD,       ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-,{atKILLATTR2, KILLATTR_CMD,   NONE,           IDHDL,      STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjKoszul,    KOSZUL_CMD,     MATRIX_CMD,     INT_CMD,    INT_CMD, NO_PLURAL |ALLOW_RING}
-,{jjKoszul_Id, KOSZUL_CMD,     MATRIX_CMD,     INT_CMD,    IDEAL_CMD, NO_PLURAL |ALLOW_RING}
-,{jjRES,       KRES_CMD,       RESOLUTION_CMD, IDEAL_CMD,  INT_CMD, NO_PLURAL |NO_RING}
-,{jjLIFT,      LIFT_CMD,       MATRIX_CMD,     IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjLIFT,      LIFT_CMD,       MATRIX_CMD,     MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjLIFTSTD,   LIFTSTD_CMD,    IDEAL_CMD,      IDEAL_CMD,  MATRIX_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjLIFTSTD,   LIFTSTD_CMD,    MODUL_CMD,      MODUL_CMD,  MATRIX_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL2MANY, LIST_CMD,       LIST_CMD,       DEF_CMD,    DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjLOAD_E,    LOAD_CMD,       NONE,           STRING_CMD, STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjRES,       LRES_CMD,       RESOLUTION_CMD, IDEAL_CMD,  INT_CMD, NO_PLURAL |NO_RING}
-,{jjCALL2MANY, MODUL_CMD,      MODUL_CMD,      DEF_CMD,    DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjMODULO,    MODULO_CMD,     MODUL_CMD,      IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjMODULO,    MODULO_CMD,     MODUL_CMD,      MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjMONITOR2,  MONITOR_CMD,    NONE,           LINK_CMD, STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
-//,{jjRES,       MRES_CMD,       LIST_CMD,       IDEAL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
-//,{jjRES,       MRES_CMD,       LIST_CMD,       MODUL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
-,{nuMPResMat,  MPRES_CMD,      MODUL_CMD,      IDEAL_CMD,  INT_CMD, NO_PLURAL |NO_RING}
-,{jjRES,       MRES_CMD,       RESOLUTION_CMD, IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjRES,       MRES_CMD,       RESOLUTION_CMD, MODUL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-//,{nuMPResMat,  MPRES_CMD,      MODUL_CMD,      IDEAL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
-,{jjPFAC2,     PFAC_CMD,       LIST_CMD,       BIGINT_CMD, BIGINT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjPFAC2,     PFAC_CMD,       LIST_CMD,       NUMBER_CMD, BIGINT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjPFAC2,     PFAC_CMD,       LIST_CMD,       BIGINT_CMD, NUMBER_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjPFAC2,     PFAC_CMD,       LIST_CMD,       NUMBER_CMD, NUMBER_CMD, ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_PLURAL
-,{jjPlural_num_poly, NCALGEBRA_CMD,NONE,       POLY_CMD,   POLY_CMD  , NO_PLURAL |NO_RING}
-,{jjPlural_num_mat,  NCALGEBRA_CMD,NONE,       POLY_CMD,   MATRIX_CMD, NO_PLURAL |NO_RING}
-,{jjPlural_mat_poly, NCALGEBRA_CMD,NONE,       MATRIX_CMD, POLY_CMD  , NO_PLURAL |NO_RING}
-,{jjPlural_mat_mat,  NCALGEBRA_CMD,NONE,       MATRIX_CMD, MATRIX_CMD, NO_PLURAL |NO_RING}
-,{jjPlural_num_poly, NC_ALGEBRA_CMD,RING_CMD,  POLY_CMD,   POLY_CMD  , NO_PLURAL |NO_RING}
-,{jjPlural_num_mat,  NC_ALGEBRA_CMD,RING_CMD,  POLY_CMD,   MATRIX_CMD, NO_PLURAL |NO_RING}
-,{jjPlural_mat_poly, NC_ALGEBRA_CMD,RING_CMD,  MATRIX_CMD, POLY_CMD  , NO_PLURAL |NO_RING}
-,{jjPlural_mat_mat,  NC_ALGEBRA_CMD,RING_CMD,  MATRIX_CMD, MATRIX_CMD, NO_PLURAL |NO_RING}
-#endif
-#ifdef HAVE_PLURAL
-,{jjOPPOSE,    OPPOSE_CMD,     ANY_TYPE/*set by p*/, RING_CMD,   DEF_CMD, ALLOW_PLURAL |NO_RING}
-,{jjOPPOSE,    OPPOSE_CMD,     ANY_TYPE/*set by p*/, QRING_CMD,   DEF_CMD, ALLOW_PLURAL |NO_RING}
-#endif
-,{jjPARSTR2,   PARSTR_CMD,     STRING_CMD,     RING_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjPARSTR2,   PARSTR_CMD,     STRING_CMD,     QRING_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjPRINT_FORMAT, PRINT_CMD,   ANY_TYPE,       DEF_CMD,    STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjQUOT,      QUOTIENT_CMD,   IDEAL_CMD,      IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjQUOT,      QUOTIENT_CMD,   MODUL_CMD,      MODUL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjQUOT,      QUOTIENT_CMD,   IDEAL_CMD,      MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjRANDOM,    RANDOM_CMD,     INT_CMD,        INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjRANK2,     RANK_CMD,       INT_CMD,        MATRIX_CMD, INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREAD2,     READ_CMD,       STRING_CMD,     LINK_CMD,   STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE_P,  REDUCE_CMD,     POLY_CMD,       POLY_CMD,   IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE_P,  REDUCE_CMD,     VECTOR_CMD,     VECTOR_CMD, IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE_P,  REDUCE_CMD,     VECTOR_CMD,     VECTOR_CMD, MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE_ID, REDUCE_CMD,     IDEAL_CMD,      IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE_ID, REDUCE_CMD,     MODUL_CMD,      MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE_ID, REDUCE_CMD,     MODUL_CMD,      MODUL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-//,{jjRES,       RES_CMD,        LIST_CMD,       IDEAL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
-//,{jjRES,       RES_CMD,        LIST_CMD,       MODUL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
-,{jjRES,       RES_CMD,        RESOLUTION_CMD, IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjRES,       RES_CMD,        RESOLUTION_CMD, MODUL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjSTATUS2,   STATUS_CMD,     STRING_CMD,     LINK_CMD,   STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjSTATUS2L,  STATUS_CMD,     INT_CMD,        LIST_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjSIMPL_P,   SIMPLIFY_CMD,   POLY_CMD,       POLY_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjSIMPL_P,   SIMPLIFY_CMD,   VECTOR_CMD,     VECTOR_CMD, INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjSIMPL_ID,  SIMPLIFY_CMD,   IDEAL_CMD,      IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjSIMPL_ID,  SIMPLIFY_CMD,   MODUL_CMD,      MODUL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-//,{jjRES,       SRES_CMD,       LIST_CMD,       IDEAL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
-//,{jjRES,       SRES_CMD,       LIST_CMD,       MODUL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
-,{jjRES,       SRES_CMD,       RESOLUTION_CMD, IDEAL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
-,{jjRES,       SRES_CMD,       RESOLUTION_CMD, MODUL_CMD,  INT_CMD, NO_PLURAL |ALLOW_RING}
-,{jjCALL2MANY, SYSTEM_CMD,     ANY_TYPE/*set by p*/,STRING_CMD, DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjSTD_1,     STD_CMD,        IDEAL_CMD,      IDEAL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjSTD_1,     STD_CMD,        MODUL_CMD,      MODUL_CMD,  VECTOR_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjSTD_1,     STD_CMD,        IDEAL_CMD,      IDEAL_CMD,  IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjSTD_1,     STD_CMD,        MODUL_CMD,      MODUL_CMD,  MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjSTD_HILB,  STD_CMD,        IDEAL_CMD,      IDEAL_CMD,  INTVEC_CMD, NO_PLURAL |ALLOW_RING}
-,{jjSTD_HILB,  STD_CMD,        MODUL_CMD,      MODUL_CMD,  INTVEC_CMD, NO_PLURAL |ALLOW_RING}
-,{jjVARSTR2,   VARSTR_CMD,     STRING_CMD,     RING_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjVARSTR2,   VARSTR_CMD,     STRING_CMD,     QRING_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjWEDGE,     WEDGE_CMD,      MATRIX_CMD,     MATRIX_CMD, INT_CMD, NO_PLURAL |ALLOW_RING}
-#ifdef HAVE_FANS
-,{jjADDMCONE1, ADDMCONE_CMD,   NONE,           FAN_CMD,    CONE_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjADDMCONE2, ADDMCONE_CMD,   NONE,           FAN_CMD,    LIST_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjDELMCONE2, DELMCONE_CMD,   NONE,           FAN_CMD,    INT_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjDELMCONE3, DELMCONE_CMD,   NONE,           FAN_CMD,    INTVEC_CMD, ALLOW_PLURAL | ALLOW_RING}
-,{jjMAXCONE2,  MAXCONE_CMD,    CONE_CMD,       FAN_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjGETPROP1,  GETPROP_CMD,    INT_CMD,        FAN_CMD,    STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjGETPROP2,  GETPROP_CMD,    INT_CMD,        CONE_CMD,   STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
-#endif /* HAVE_FANS */
-,{NULL,        0,              0,              0,          0, NO_PLURAL |NO_RING}
-};
 /*=================== operations with 1 arg.: static proc =================*/
+/* must be ordered: first operations for chars (infix ops),
+ * then alphabetically */
+
 static BOOLEAN jjDUMMY(leftv res, leftv u)
 {
   res->data = (char *)u->CopyD();
@@ -4110,7 +3812,7 @@ static BOOLEAN jjBAREISS(leftv res, leftv v)
   //lists l=mpBareiss(m,FALSE);
   intvec *iv;
   ideal m;
-  smCallNewBareiss((ideal)v->Data(),0,0,m,&iv);
+  smCallBareiss((ideal)v->Data(),0,0,m,&iv);
   lists l=(lists)omAllocBin(slists_bin);
   l->Init(2);
   l->m[0].rtyp=MODUL_CMD;
@@ -4217,6 +3919,11 @@ static BOOLEAN jjCONTENT(leftv res, leftv v)
   poly p=(poly)v->CopyD(POLY_CMD);
   if (p!=NULL) p_Cleardenom(p, currRing);
   res->data = (char *)p;
+  return FALSE;
+}
+static BOOLEAN jjCOUNT_BI(leftv res, leftv v)
+{
+  res->data = (char *)(long)nlSize((number)v->Data());
   return FALSE;
 }
 static BOOLEAN jjCOUNT_N(leftv res, leftv v)
@@ -4738,6 +4445,10 @@ static BOOLEAN jjLEADMONOM(leftv res, leftv v)
   }
   return FALSE;
 }
+static BOOLEAN jjLOAD1(leftv res, leftv v)
+{
+  return jjLOAD(res, v,FALSE);
+}
 static BOOLEAN jjLISTRING(leftv res, leftv v)
 {
   ring r=rCompose((lists)v->Data());
@@ -4756,10 +4467,14 @@ static number jjLONG2N(long d)
   }
   else
   {
+#if !defined(OM_NDEBUG) && !defined(NDEBUG)
+    omCheckBin(rnumber_bin);
+#endif
     number z=(number)omAllocBin(rnumber_bin);
     #if defined(LDEBUG)
     z->debug=123456;
     #endif
+    z->s=3;
     mpz_init_set_si(z->z,d);
     return z;
   }
@@ -4900,7 +4615,7 @@ static BOOLEAN jjNVARS(leftv res, leftv v)
 static BOOLEAN jjOpenClose(leftv res, leftv v)
 {
   si_link l=(si_link)v->Data();
-  if (iiOp==OPEN_CMD) return slOpen(l, SI_LINK_OPEN);
+  if (iiOp==OPEN_CMD) return slOpen(l, SI_LINK_OPEN,v);
   else                return slClose(l);
 }
 static BOOLEAN jjORD(leftv res, leftv v)
@@ -5145,32 +4860,6 @@ static BOOLEAN jjSLIM_GB(leftv res, leftv u)
   if (w!=NULL) atSet(res,omStrDup("isHomog"),w,INTVEC_CMD);
   return FALSE;
 }
-static BOOLEAN jjF5C(leftv res, leftv v)
-{
-  ideal result;
-  ideal v_id=(ideal)v->Data();
-  intvec *w=(intvec *)atGet(v,"isHomog",INTVEC_CMD);
-  tHomog hom=testHomog;
-  if (w!=NULL)
-  {
-    if (!idTestHomModule(v_id,currQuotient,w))
-    {
-      WarnS("wrong weights");
-      w=NULL;
-    }
-    else
-    {
-      hom=isHomog;
-      w=ivCopy(w);
-    }
-  }
-  result=f5cMain(v_id,currQuotient);
-  idSkipZeroes(result);
-  res->data = (char *)result;
-  if(!TEST_OPT_DEGBOUND) setFlag(res,FLAG_STD);
-  if (w!=NULL) atSet(res,omStrDup("isHomog"),w,INTVEC_CMD);
-  return FALSE;
-}
 static BOOLEAN jjSTD(leftv res, leftv v)
 {
   ideal result;
@@ -5336,7 +5025,7 @@ static BOOLEAN jjTYPEOF(leftv res, leftv v)
     case LINK_CMD:       res->data=omStrDup("link"); break;
     case RESOLUTION_CMD: res->data=omStrDup("resolution");break;
 #ifdef HAVE_FANS
-    case FAN_CMD:        res->data=omStrDup("fan");break;
+//    case FAN_CMD:        res->data=omStrDup("fan");break;
     case CONE_CMD:       res->data=omStrDup("cone");break;
 #endif /* HAVE_FANS */
     case DEF_CMD:
@@ -5390,13 +5079,68 @@ static BOOLEAN jjVDIM(leftv res, leftv v)
   res->data = (char *)(long)scMult0Int((ideal)v->Data(),currQuotient);
   return FALSE;
 }
+BOOLEAN jjWAIT1ST1(leftv res, leftv a)
+{
+  lists Lforks = (lists)a->Data();
+  int i = slStatusSsiL(Lforks, -1);
+  while (i <= 0) i = slStatusSsiL(Lforks, 10000000); /* redo this all 10 seconds */
+  res->data = (void*)(long)i;
+  return FALSE;
+}
+
+BOOLEAN jjWAITALL1(leftv res, leftv a)
+{
+  lists Lforks = (lists)a->Data();
+  lists oneFork=(lists)omAllocBin(slists_bin);
+  oneFork->Init(1);
+  int i;
+  for (int j = 0; j <= Lforks->nr; j++)
+  {
+    oneFork->m[0].Copy(&Lforks->m[j]);
+    i = slStatusSsiL(oneFork, -1);
+    while (i != 1) i = slStatusSsiL(oneFork, 10000000); /* redo this all 10 seconds */
+    omFreeSize((ADDRESS)oneFork->m,sizeof(sleftv));
+  }
+  omFreeBin((ADDRESS)oneFork, slists_bin);
+  return FALSE;
+}
+
 #ifdef HAVE_FANS
+static BOOLEAN jjCONERAYS1(leftv res, leftv v)
+{
+  /* method for generating a cone object from half-lines
+     (cone = convex hull of the half-lines; note: there may be
+     entire lines in the cone);
+     valid parametrizations: (intmat) */
+  intvec* rays = (intvec *)v->CopyD(INTVEC_CMD);
+  gfan::ZMatrix zm = intmat2ZMatrix(rays);
+  gfan::ZCone* zc = new gfan::ZCone();
+  *zc = gfan::ZCone::givenByRays(zm, gfan::ZMatrix(0, zm.getWidth()));
+  res->data = (char *)zc;
+  return FALSE;
+}
+static BOOLEAN jjCONENORMALS1(leftv res, leftv v)
+{
+  /* method for generating a cone object from inequalities;
+     valid parametrizations: (intmat) */
+  intvec* inequs = (intvec *)v->CopyD(INTVEC_CMD);
+  gfan::ZMatrix zm = intmat2ZMatrix(inequs);
+  gfan::ZCone* zc = new gfan::ZCone(zm, gfan::ZMatrix(0, zm.getWidth()));
+  res->data = (char *)zc;
+  return FALSE;
+}
+/*
 static BOOLEAN jjDELMCONE1(leftv res, leftv v)
 {
-  /* method for deleting all maximal cones of the given fan;
+  /* method for deleting all maximal cones from a given fan;
      valid parametrizations: (fan) */
-  Fan* f = (Fan*)v->Data();
-  f->deleteMaxCones(NULL);
+/*  Fan* f = (Fan*)v->Data();
+  int n = f->getNumberOfMaxCones();
+  intvec* iv = new intvec(1, n, 0);
+  for (int i = 1; i <= n; i++)
+    IMATELEM(*iv, 1, i) = i - 1;
+  f->deleteMaxCones(iv);
+  delete iv;
   return FALSE;
 }
 static BOOLEAN jjMAXRAYS1(leftv res, leftv v)
@@ -5405,12 +5149,12 @@ static BOOLEAN jjMAXRAYS1(leftv res, leftv v)
      valid parametrizations: (fan),
      If there are no maximal rays, the method returns a 1x1
      matrix with entry 0. Otherwise the returned matrix contains
-     the maximal rays as column vectors. */
-  Fan* f = (Fan*)v->Data();
+     the maximal rays as row vectors. */
+/*  Fan* f = (Fan*)v->Data();
   intvec* result = NULL;
   if (f->getMaxRays() == NULL)
     /* return a 1x1 matrix with sole entry zero */
-    result = new intvec(1, 1, 0);
+/*    result = new intvec(1, 1, 0);
   else
     result = ivCopy(f->getMaxRays());
   res->data = (char*)result;
@@ -5422,23 +5166,14 @@ static BOOLEAN jjMAXRAYS2(leftv res, leftv v)
      valid parametrizations: (cone),
      If there are no maximal rays, the method returns a 1x1
      matrix with entry 0. Otherwise the returned matrix contains
-     the maximal rays as column vectors. */
-  Cone* c = (Cone*)v->Data();
+     the maximal rays as row vectors. */
+/*  Cone* c = (Cone*)v->Data();
   intvec* result = NULL;
-  if (c->getRays() == NULL)
+  if (c->getMaxRays() == NULL)
     /* return a 1x1 matrix with sole entry zero */
-    result = new intvec(1, 1, 0);
+/*    result = new intvec(1, 1, 0);
   else
-  {
-    intvec* indices = c->getRays();
-    intvec* maxRays = c->getFan()->getMaxRays();
-    result = new intvec(maxRays->rows(), indices->length(), 0);
-    for (int c = 1; c <= indices->length(); c++)
-      for (int r = 1; r <= maxRays->rows(); r++)
-      {
-        IMATELEM(*result, r, c) = IMATELEM(*maxRays, r, (*indices)[c - 1]);
-      }
-  }
+    result = ivCopy(c->getMaxRays());
   res->data = (char*)result;
   return FALSE;
 }
@@ -5447,13 +5182,13 @@ static BOOLEAN jjFACETNS1(leftv res, leftv v)
   /* method for retrieving the facet normals of the given fan;
      valid parametrizations: (fan),
      If there are no facet normals, a 1x1 matrix with entry 0
-     is returned; otherwise a matrix the columns of which are
+     is returned; otherwise a matrix the rows of which are
      the facet normals of the given fan. */
-  Fan* f = (Fan*)v->Data();
+/*  Fan* f = (Fan*)v->Data();
   intvec* result = NULL;
   if (f->getFacetNs() == NULL)
     /* return a 1x1 matrix with sole entry zero */
-    result = new intvec(1, 1, 0);
+/*    result = new intvec(1, 1, 0);
   else
     result = ivCopy(f->getFacetNs());
   res->data = (char*)result;
@@ -5462,83 +5197,59 @@ static BOOLEAN jjFACETNS1(leftv res, leftv v)
 static BOOLEAN jjFACETNS2(leftv res, leftv v)
 {
   /* method for retrieving the facet normals of the given cone;
-     valid parametrizations: (fan),
+     valid parametrizations: (cone),
      If there are no facet normals, a 1x1 matrix with entry 0
-     is returned; otherwise a matrix the columns of which are
+     is returned; otherwise a matrix the rows of which are
      the facet normals of the given cone. */
-  Cone* c = (Cone*)v->Data();
+/*  Cone* c = (Cone*)v->Data();
   intvec* result = NULL;
   if (c->getFacetNs() == NULL)
     /* return a 1x1 matrix with sole entry zero */
-    result = new intvec(1, 1, 0);
+/*    result = new intvec(1, 1, 0);
   else
-  {
-    intvec* indices = c->getFacetNs();
-    intvec* facetNs = c->getFan()->getFacetNs();
-    result = new intvec(facetNs->rows(), indices->length(), 0);
-    for (int c = 1; c <= indices->length(); c++)
-      for (int r = 1; r <= facetNs->rows(); r++)
-      {
-        IMATELEM(*result, r, c) = IMATELEM(*facetNs, r, (*indices)[c - 1]);
-      }
-  }
+    result = ivCopy(c->getFacetNs());
   res->data = (char*)result;
   return FALSE;
 }
-static BOOLEAN jjLINSPACE(leftv res, leftv v)
+static BOOLEAN jjLINSPACE1(leftv res, leftv v)
 {
   /* method for retrieving the lineality space of the given fan;
      valid parametrizations: (fan) */
-  Fan* f = (Fan*)v->Data();
+/*  Fan* f = (Fan*)v->Data();
   intvec* result = ivCopy(f->getLinSpace());
   res->data = (char*)result;
   return FALSE;
 }
-static BOOLEAN jjMAXCONE1(leftv res, leftv v)
+static BOOLEAN jjLINSPACE2(leftv res, leftv v)
 {
-  /* method for retrieving all maximal cones of the given fan;
-     valid parametrizations: (fan),
-     Errors will be invoked in the following cases:
-     - maximal cones not yet set in the fan;
-     The method returns a list of cone objects. */
-  Fan* f = (Fan*)v->Data();
-  lists maxCones = lCopy(f->getMaxCones());
-  if (maxCones == NULL)
-  {
-    WerrorS("no maximal cones set in the given fan");
-    return TRUE;
-  }
-  res->data = (char*)maxCones;
+  /* method for retrieving the lineality space of the given cone;
+     valid parametrizations: (cone) */
+/*  Cone* c = (Cone*)v->Data();
+  intvec* result = ivCopy(c->getLinSpace());
+  res->data = (char*)result;
   return FALSE;
 }
 static BOOLEAN jjADJACENCY1(leftv res, leftv v)
 {
-  /* method for retrieving the adjacency matrix of the given fan;
+  /* method for retrieving adjacency information for the given fan;
      valid parametrizations: (fan),
      Errors will be invoked in the following cases:
      - no maximal cone has been defined yet in the given fan;
-     The matrix entries have the following meaning:
-     _[i, j] =  0: the maximal cones with indices i and j are
-                   not adjacent,
-             =  1: they are adjacent, and the intersection facet
-                   has been stored in the given fan,
-             = -1: they are adjacent but there is no intersection
-                   facet available */
-  Fan* f = (Fan*)v->Data();
-  if (f->getMaxCones()->nr + 1 < 1)
+     The method returns a list with an entry for each maximal cone
+     in the given fan. Each such entry is an intvec with the indices
+     of all neighbouring maximal cones. */
+/*  Fan* f = (Fan*)v->Data();
+  if (f->getNumberOfMaxCones() == 0)
   {
     WerrorS("no maximal cones defined yet");
     return TRUE;
   }
-  intvec* adjacencyMatrix = f->getAdjacency();
-  res->data = (char*)adjacencyMatrix;
+  lists adjacencyList = f->getAdjacencyList();
+  adjacencyList = lCopy(adjacencyList);
+  res->data = (char*)adjacencyList;
   return FALSE;
-}
+}*/
 #endif /* HAVE_FANS */
-static BOOLEAN jjLOAD1(leftv res, leftv v)
-{
-  return jjLOAD(res, v,iiOp==LIB_CMD);
-}
 static BOOLEAN jjLOAD(leftv res, leftv v, BOOLEAN autoexport)
 {
   char * s=(char *)v->CopyD();
@@ -5595,8 +5306,6 @@ static BOOLEAN jjLOAD(leftv res, leftv v, BOOLEAN autoexport)
   }
   return TRUE;
 }
-
-/*=================== operations with 1 arg.: table =================*/
 
 #ifdef INIT_BUG
 #define XS(A) -((short)A)
@@ -5815,284 +5524,9 @@ static BOOLEAN jjnlInt(leftv res, leftv u)
   res->data=(char *)(long)nlInt(n,NULL /*dummy for nlInt*/);
   return FALSE;
 }
-struct sValCmd1 dArith1[]=
-{
-// operations:
-// proc         cmd               res             arg           plural
- {jjPLUSPLUS,   PLUSPLUS,        NONE,           IDHDL         , ALLOW_PLURAL |ALLOW_RING}
-,{jjPLUSPLUS,   MINUSMINUS,      NONE,           IDHDL         , ALLOW_PLURAL |ALLOW_RING}
-,{jjUMINUS_I,   '-',             INT_CMD,        INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjUMINUS_BI,   '-',            BIGINT_CMD,     BIGINT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjUMINUS_N,   '-',             NUMBER_CMD,     NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjUMINUS_P,   '-',             POLY_CMD,       POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjUMINUS_P,   '-',             VECTOR_CMD,     VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjUMINUS_MA,  '-',             MATRIX_CMD,     MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjUMINUS_IV,  '-',             INTVEC_CMD,     INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjUMINUS_IV,  '-',             INTMAT_CMD,     INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjPROC1,      '(',             ANY_TYPE/*set by p*/,PROC_CMD , ALLOW_PLURAL |ALLOW_RING}
-,{jjLOAD1,      '(',             NONE,           STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
-// and the procedures with 1 argument:
-,{atATTRIB1,    ATTRIB_CMD,      NONE,           DEF_CMD       , ALLOW_PLURAL |ALLOW_RING}
-//,{jjBAREISS_IM, BAREISS_CMD,     INTMAT_CMD,     INTMAT_CMD  , NO_PLURAL |ALLOW_RING}
-,{jjBAREISS,    BAREISS_CMD,     LIST_CMD,       MODUL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjBETTI,      BETTI_CMD,       INTMAT_CMD,     LIST_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{syBetti1,     BETTI_CMD,       INTMAT_CMD,     RESOLUTION_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjBETTI,      BETTI_CMD,       INTMAT_CMD,     IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjBETTI,      BETTI_CMD,       INTMAT_CMD,     MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      BIGINT_CMD,      BIGINT_CMD,     BIGINT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjN2BI,       BIGINT_CMD,      BIGINT_CMD,     NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjP2BI,       BIGINT_CMD,      BIGINT_CMD,     POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCHAR,       CHARACTERISTIC_CMD, INT_CMD,     RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCHAR,       CHARACTERISTIC_CMD, INT_CMD,     QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
-,{jjCHARSERIES, CHAR_SERIES_CMD, MATRIX_CMD,     IDEAL_CMD     , NO_PLURAL |NO_RING}
-#else
-,{jjWRONG,      CHAR_SERIES_CMD, MATRIX_CMD,     IDEAL_CMD     , NO_PLURAL |NO_RING}
-#endif
-,{jjrCharStr,   CHARSTR_CMD,     XS(STRING_CMD), RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjrCharStr,   CHARSTR_CMD,     XS(STRING_CMD), QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjOpenClose,  CLOSE_CMD,       NONE,           LINK_CMD      , ALLOW_PLURAL |ALLOW_RING}
-//,{jjWRONG,      COLS_CMD,        0,              VECTOR_CMD  , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOLS,       COLS_CMD,        INT_CMD,        MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOLS,       COLS_CMD,        INT_CMD,        IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOLS,       COLS_CMD,        INT_CMD,        MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOLS_IV,    COLS_CMD,        INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjWRONG,      COLS_CMD,        0,              INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjCONTENT,    CONTENT_CMD,     POLY_CMD,       POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCONTENT,    CONTENT_CMD,     VECTOR_CMD,     VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOUNT_N,    COUNT_CMD,       INT_CMD,        NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOUNT_RES,  COUNT_CMD,       XS(INT_CMD),    RESOLUTION_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjstrlen,     COUNT_CMD,       XS(INT_CMD),    STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjpLength,    COUNT_CMD,       XS(INT_CMD),    POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjpLength,    COUNT_CMD,       XS(INT_CMD),    VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjidElem,     COUNT_CMD,       XS(INT_CMD),    IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjidElem,     COUNT_CMD,       XS(INT_CMD),    MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOUNT_M,    COUNT_CMD,       INT_CMD,        MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOUNT_IV,   COUNT_CMD,       INT_CMD,        INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOUNT_IV,   COUNT_CMD,       INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOUNT_L,    COUNT_CMD,       INT_CMD,        LIST_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOUNT_RG,   COUNT_CMD,       INT_CMD,        RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjNULL,       DEF_CMD,         DEF_CMD,        INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjWRONG,      DEF_CMD,         0,              ANY_TYPE      , ALLOW_PLURAL |ALLOW_RING}
-,{jjDEG,        DEG_CMD,         INT_CMD,        POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjDEG,        DEG_CMD,         INT_CMD,        VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjDEG_M,      DEG_CMD,         INT_CMD,        MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjDEGREE,     DEGREE_CMD,      NONE,           IDEAL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjDEGREE,     DEGREE_CMD,      NONE,           MODUL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjDEFINED,    DEFINED_CMD,     INT_CMD,        DEF_CMD       , ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
-,{jjDET_I,      DET_CMD,         INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjDET,        DET_CMD,         POLY_CMD,       MATRIX_CMD    , NO_PLURAL |NO_RING}
-,{jjDET_S,      DET_CMD,         POLY_CMD,       MODUL_CMD     , NO_PLURAL |NO_RING}
-#else
-,{jjWRONG,      DET_CMD,         INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |NO_RING}
-,{jjmpDetBareiss,DET_CMD,        XS(POLY_CMD),   MATRIX_CMD    , NO_PLURAL |ALLOW_RING}
-#endif
-,{jjDIM,        DIM_CMD,         INT_CMD,        IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjDIM,        DIM_CMD,         INT_CMD,        MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjDIM_R,      DIM_CMD,         XS(INT_CMD),    RESOLUTION_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMP,       DUMP_CMD,        NONE,           LINK_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjE,          E_CMD,           VECTOR_CMD,     INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjEXECUTE,    EXECUTE_CMD,     NONE,           STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjERROR,      ERROR_CMD,       NONE,           STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
-,{jjFAC_P,      FAC_CMD,         LIST_CMD,       POLY_CMD      , NO_PLURAL |NO_RING}
-#else
-,{jjWRONG,      FAC_CMD,         LIST_CMD,       POLY_CMD      , NO_PLURAL |NO_RING}
-#endif
-#ifdef HAVE_FACTORY
-,{findUniProc,  FINDUNI_CMD,     IDEAL_CMD,      IDEAL_CMD     , NO_PLURAL |NO_RING}
-#else
-,{jjWRONG,      FINDUNI_CMD,     IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-#endif
-,{jjidFreeModule,FREEMODULE_CMD, XS(MODUL_CMD),  INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
-,{jjFACSTD,     FACSTD_CMD,      LIST_CMD,       IDEAL_CMD     , NO_PLURAL |NO_RING}
-#else
-,{jjWRONG,      FACSTD_CMD,      LIST_CMD,       IDEAL_CMD     , NO_PLURAL |NO_RING}
-#endif
-,{jjGETDUMP,    GETDUMP_CMD,     NONE,           LINK_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjHIGHCORNER, HIGHCORNER_CMD,  POLY_CMD,       IDEAL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjHIGHCORNER_M, HIGHCORNER_CMD,VECTOR_CMD,     MODUL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjHILBERT,    HILBERT_CMD,     NONE,           IDEAL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjHILBERT,    HILBERT_CMD,     NONE,           MODUL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjHILBERT_IV, HILBERT_CMD,     INTVEC_CMD,     INTVEC_CMD    , NO_PLURAL |ALLOW_RING}
-,{jjHOMOG1,     HOMOG_CMD,       INT_CMD,        IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjHOMOG1,     HOMOG_CMD,       INT_CMD,        MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      IDEAL_CMD,       IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjidVec2Ideal,IDEAL_CMD,       XS(IDEAL_CMD),  VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjIDEAL_Ma,   IDEAL_CMD,       IDEAL_CMD,      MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjIDEAL_R,    IDEAL_CMD,       IDEAL_CMD,      QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjIDEAL_R,    IDEAL_CMD,       IDEAL_CMD,      RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjIDEAL_Map,  IDEAL_CMD,       IDEAL_CMD,      MAP_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjIMPART,     IMPART_CMD,      NUMBER_CMD,     NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjINDEPSET,   INDEPSET_CMD,    INTVEC_CMD,     IDEAL_CMD     , NO_PLURAL |NO_RING}
-,{jjDUMMY,      INT_CMD,         INT_CMD,        INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjnlInt,      INT_CMD,         INT_CMD,        BIGINT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjnInt,       INT_CMD,         INT_CMD,        NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjP2I,        INT_CMD,         INT_CMD,        POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjINTERRED,   INTERRED_CMD,    IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjINTERRED,   INTERRED_CMD,    MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      INTMAT_CMD,      INTMAT_CMD,     INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjIm2Iv,      INTVEC_CMD,      INTVEC_CMD,     INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      INTVEC_CMD,      INTVEC_CMD,     INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjIS_RINGVAR_P, IS_RINGVAR,    INT_CMD,        POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjIS_RINGVAR_S, IS_RINGVAR,    INT_CMD,        STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjIS_RINGVAR0,IS_RINGVAR,      INT_CMD,        ANY_TYPE      , ALLOW_PLURAL |ALLOW_RING}
-,{jjJACOB_P,    JACOB_CMD,       IDEAL_CMD,      POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{mpJacobi,     JACOB_CMD,       MATRIX_CMD,     IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjJACOB_M,    JACOB_CMD,       MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjJanetBasis, JANET_CMD,       IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |NO_RING}
-,{jjKBASE,      KBASE_CMD,       IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjKBASE,      KBASE_CMD,       MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjLU_DECOMP,  LU_CMD,          LIST_CMD,       MATRIX_CMD    , NO_PLURAL |NO_RING}
-,{jjPFAC1,      PFAC_CMD,        LIST_CMD,       BIGINT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjPFAC1,      PFAC_CMD,        LIST_CMD,       NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{atKILLATTR1,  KILLATTR_CMD,    NONE,           IDHDL         , ALLOW_PLURAL |ALLOW_RING}
-#ifdef MDEBUG
-,{jjpHead,      LEAD_CMD,        POLY_CMD,       POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-#else
-,{jjpHead,      LEAD_CMD,        XS(POLY_CMD),   POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-#endif
-,{jjidHead,     LEAD_CMD,        XS(IDEAL_CMD),  IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-#ifdef MDEBUG
-,{jjpHead,      LEAD_CMD,        VECTOR_CMD,     VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-#else
-,{jjpHead,      LEAD_CMD,        XS(VECTOR_CMD), VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-#endif
-,{jjidHead,     LEAD_CMD,        XS(MODUL_CMD),  MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjLEADCOEF,   LEADCOEF_CMD,    NUMBER_CMD,     POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjLEADCOEF,   LEADCOEF_CMD,    NUMBER_CMD,     VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjLEADEXP,    LEADEXP_CMD,     INTVEC_CMD,     POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjLEADEXP,    LEADEXP_CMD,     INTVEC_CMD,     VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjLEADMONOM,  LEADMONOM_CMD,   POLY_CMD,       POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjLEADMONOM,  LEADMONOM_CMD,   VECTOR_CMD,     VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjLOAD1,      LIB_CMD,         NONE,           STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      LINK_CMD,        LINK_CMD,       LINK_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL1MANY,  LIST_CMD,        LIST_CMD,       DEF_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjWRONG,      MAP_CMD,         0,              ANY_TYPE      , ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      MATRIX_CMD,      MATRIX_CMD,     MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjidMaxIdeal, MAXID_CMD,       XS(IDEAL_CMD),  INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjMEMORY,     MEMORY_CMD,      BIGINT_CMD,     INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjidMinBase,  MINBASE_CMD,     XS(IDEAL_CMD),  IDEAL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjidMinBase,  MINBASE_CMD,     XS(MODUL_CMD),  MODUL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjMINRES,     MINRES_CMD,      LIST_CMD,       LIST_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjMINRES_R,   MINRES_CMD,      RESOLUTION_CMD, RESOLUTION_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      MODUL_CMD,       MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjMONITOR1,   MONITOR_CMD,     NONE,           LINK_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjMONOM,      MONOM_CMD,       POLY_CMD,       INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjMULT,       MULTIPLICITY_CMD,  INT_CMD,      IDEAL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjMULT,       MULTIPLICITY_CMD,  INT_CMD,      MODUL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjMSTD,       MSTD_CMD,        LIST_CMD,       IDEAL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjMSTD,       MSTD_CMD,        LIST_CMD,       MODUL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjNAMEOF,     NAMEOF_CMD,      STRING_CMD,     ANY_TYPE      , ALLOW_PLURAL |ALLOW_RING}
-,{jjNAMES,      NAMES_CMD,       LIST_CMD,       PACKAGE_CMD   , ALLOW_PLURAL |ALLOW_RING}
-,{jjNAMES,      NAMES_CMD,       LIST_CMD,       RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjNAMES,      NAMES_CMD,       LIST_CMD,       QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      NUMBER_CMD,      NUMBER_CMD,     NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjP2N,        NUMBER_CMD,      NUMBER_CMD,     POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjBI2N,       NUMBER_CMD,      NUMBER_CMD,     BIGINT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjRPAR,       NPARS_CMD,       INT_CMD,        RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjRPAR,       NPARS_CMD,       INT_CMD,        QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjNVARS,      NVARS_CMD,       INT_CMD,        RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjNVARS,      NVARS_CMD,       INT_CMD,        QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjOpenClose,  OPEN_CMD,        NONE,           LINK_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjORD,        ORD_CMD,         INT_CMD,        POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjORD,        ORD_CMD,         INT_CMD,        VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjrOrdStr,    ORDSTR_CMD,      XS(STRING_CMD), RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjrOrdStr,    ORDSTR_CMD,      XS(STRING_CMD), QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjPAR1,       PAR_CMD,         NUMBER_CMD,     INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjPARDEG,     PARDEG_CMD,      INT_CMD,        NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjPARSTR1,    PARSTR_CMD,      STRING_CMD,     INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjrParStr,    PARSTR_CMD,      XS(STRING_CMD), RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjrParStr,    PARSTR_CMD,      XS(STRING_CMD), QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      POLY_CMD,        POLY_CMD,       POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjBI2P,       POLY_CMD,        POLY_CMD,       BIGINT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjPREIMAGE_R, PREIMAGE_CMD,    RING_CMD,       MAP_CMD       , NO_PLURAL |ALLOW_RING}
-,{jjPRIME,      PRIME_CMD,       INT_CMD,        INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjPRINT,      PRINT_CMD,       NONE,           LIST_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjPRINT,      PRINT_CMD,       NONE,           DEF_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjPRUNE,      PRUNE_CMD,       MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{kQHWeight,    QHWEIGHT_CMD,    INTVEC_CMD,     IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{kQHWeight,    QHWEIGHT_CMD,    INTVEC_CMD,     MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjWRONG,      QRING_CMD,       0,              ANY_TYPE      , ALLOW_PLURAL |ALLOW_RING}
-,{jjRANK1,      RANK_CMD,        INT_CMD,        MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjREAD,       READ_CMD,        STRING_CMD,     LINK_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjREGULARITY, REGULARITY_CMD,  INT_CMD,        LIST_CMD      , NO_PLURAL |ALLOW_RING}
-,{jjREPART,     REPART_CMD,      NUMBER_CMD,     NUMBER_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjRESERVEDNAME,RESERVEDNAME_CMD, INT_CMD,      STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjL2R,        RESOLUTION_CMD,  RESOLUTION_CMD, LIST_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      RESOLUTION_CMD,  RESOLUTION_CMD, RESOLUTION_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjRINGLIST,   RINGLIST_CMD,    LIST_CMD,       RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjRINGLIST,   RINGLIST_CMD,    LIST_CMD,       QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      RING_CMD,        RING_CMD,       RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjLISTRING,   RING_CMD,        RING_CMD,       LIST_CMD      , ALLOW_PLURAL |ALLOW_RING}
-//,{jjWRONG,      ROWS_CMD,        0,              POLY_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjpMaxComp,   ROWS_CMD,        XS(INT_CMD),    VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjROWS,       ROWS_CMD,        INT_CMD,        MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjROWS,       ROWS_CMD,        INT_CMD,        MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjROWS_IV,    ROWS_CMD,        INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOUNT_IV,   ROWS_CMD,        INT_CMD,        INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjF5C,        F5C_CMD,         IDEAL_CMD,      IDEAL_CMD     , NO_PLURAL |ALLOW_RING}
-,{jjSLIM_GB,    SLIM_GB_CMD,     IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL }
-,{jjSLIM_GB,    SLIM_GB_CMD,     MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL }
-,{jjSort_Id,    SORTVEC_CMD,     INTVEC_CMD,     IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjSort_Id,    SORTVEC_CMD,     INTVEC_CMD,     MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FACTORY
-,{jjSQR_FREE,   SQR_FREE_CMD,    IDEAL_CMD,      POLY_CMD      , NO_PLURAL |ALLOW_RING}
-#else
-,{jjWRONG,      SQR_FREE_CMD,    IDEAL_CMD,      POLY_CMD      , NO_PLURAL |ALLOW_RING}
-#endif
-,{jjSTD,        STD_CMD,         IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjSTD,        STD_CMD,         MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      STRING_CMD,      STRING_CMD,     STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjSYSTEM,     SYSTEM_CMD,      NONE,           STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjSYZYGY,     SYZYGY_CMD,      MODUL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjSYZYGY,     SYZYGY_CMD,      MODUL_CMD,      MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_PLURAL
-,{jjENVELOPE,   ENVELOPE_CMD,    RING_CMD,       RING_CMD      , ALLOW_PLURAL |NO_RING}
-,{jjENVELOPE,   ENVELOPE_CMD,    QRING_CMD,      QRING_CMD     , ALLOW_PLURAL |NO_RING}
-,{jjOPPOSITE,   OPPOSITE_CMD,    RING_CMD,       RING_CMD      , ALLOW_PLURAL |NO_RING}
-,{jjOPPOSITE,   OPPOSITE_CMD,    QRING_CMD,      QRING_CMD     , ALLOW_PLURAL |NO_RING}
-,{jjTWOSTD,     TWOSTD_CMD,      IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |NO_RING}
-#endif
-,{jjWRONG,      TRACE_CMD,       0,              INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjWRONG,      TRACE_CMD,       0,              IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjTRACE_IV,   TRACE_CMD,       INT_CMD,        INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjmpTrace,    TRACE_CMD,       XS(POLY_CMD),   MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjTRANSP_IV,  TRANSPOSE_CMD,   INTMAT_CMD,     INTVEC_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjTRANSP_IV,  TRANSPOSE_CMD,   INTMAT_CMD,     INTMAT_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjmpTransp,   TRANSPOSE_CMD,   XS(MATRIX_CMD), MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjidTransp,   TRANSPOSE_CMD,   XS(MODUL_CMD),  MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjTYPEOF,     TYPEOF_CMD,      STRING_CMD,     ANY_TYPE      , ALLOW_PLURAL |ALLOW_RING}
-,{jjUNIVARIATE, UNIVARIATE_CMD,  INT_CMD,        POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjVARIABLES_P,VARIABLES_CMD,   IDEAL_CMD,      POLY_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjVARIABLES_ID,VARIABLES_CMD,  IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjVARIABLES_ID,VARIABLES_CMD,  IDEAL_CMD,      MATRIX_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjDUMMY,      VECTOR_CMD,      VECTOR_CMD,     VECTOR_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{jjVDIM,       VDIM_CMD,        INT_CMD,        IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjVDIM,       VDIM_CMD,        INT_CMD,        MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjVAR1,       VAR_CMD,         POLY_CMD,       INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjVARSTR1,    VARSTR_CMD,      STRING_CMD,     INT_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjrVarStr,    VARSTR_CMD,      XS(STRING_CMD), RING_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjrVarStr,    VARSTR_CMD,      XS(STRING_CMD), QRING_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{kWeight,      WEIGHT_CMD,      INTVEC_CMD,     IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{kWeight,      WEIGHT_CMD,      INTVEC_CMD,     MODUL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-,{jjLOAD1,      LOAD_CMD,        NONE,           STRING_CMD    , ALLOW_PLURAL |ALLOW_RING}
-,{loNewtonP,    NEWTONPOLY_CMD,  IDEAL_CMD,      IDEAL_CMD     , ALLOW_PLURAL |ALLOW_RING}
-#ifdef HAVE_FANS
-,{jjDELMCONE1,  DELMCONE_CMD,    NONE,           FAN_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjMAXRAYS1,   MAXRAYS_CMD,     INTMAT_CMD,     FAN_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjMAXRAYS2,   MAXRAYS_CMD,     INTMAT_CMD,     CONE_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjFACETNS1,   FACETNS_CMD,     INTMAT_CMD,     FAN_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjFACETNS2,   FACETNS_CMD,     INTMAT_CMD,     CONE_CMD      , ALLOW_PLURAL |ALLOW_RING}
-,{jjLINSPACE,   LINSPACE_CMD,    INTMAT_CMD,     FAN_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjMAXCONE1,   MAXCONE_CMD,     LIST_CMD,       FAN_CMD       , ALLOW_PLURAL |ALLOW_RING}
-,{jjADJACENCY1, ADJACENCY_CMD,   INTMAT_CMD,     FAN_CMD       , ALLOW_PLURAL |ALLOW_RING}
-#endif /* HAVE_FANS */
-,{NULL,         0,               0,              0             , NO_PLURAL |NO_RING}
-};
 /*=================== operations with 3 args.: static proc =================*/
+/* must be ordered: first operations for chars (infix ops),
+ * then alphabetically */
 static BOOLEAN jjBRACK_S(leftv res, leftv u, leftv v,leftv w)
 {
   char *s= (char *)u->Data();
@@ -6340,7 +5774,7 @@ static BOOLEAN jjBAREISS3(leftv res, leftv u, leftv v, leftv w)
   int k=(int)(long)w->Data();
   if (k>=0)
   {
-    smCallNewBareiss((ideal)u->Data(),(int)(long)v->Data(),(int)(long)w->Data(),m,&iv);
+    smCallBareiss((ideal)u->Data(),(int)(long)v->Data(),(int)(long)w->Data(),m,&iv);
     l->Init(2);
     l->m[0].rtyp=MODUL_CMD;
     l->m[1].rtyp=INTVEC_CMD;
@@ -6839,11 +6273,7 @@ static BOOLEAN jjRANDOM_Im(leftv res, leftv u, leftv v, leftv w)
     di = 2 * i + 1;
     for (k=0; k<iv->length(); k++)
     {
-#ifdef buildin_rand
       (*iv)[k] = ((siRand() % di) - i);
-#else
-      (*iv)[k] = ((rand() % di) - i);
-#endif
     }
   }
   res->data = (char *)iv;
@@ -7103,107 +6533,200 @@ static BOOLEAN jjSTATUS3(leftv res, leftv u, leftv v, leftv w)
   return FALSE;
 }
 #ifdef HAVE_FANS
-static BOOLEAN jjSETPROP1(leftv res, leftv u, leftv v, leftv w)
+static BOOLEAN jjSETPROPC1(leftv res, leftv u, leftv v, leftv w)
 {
-  /* method for setting fan properties;
-     valid parametrizations: (fan, string, int),
-     Errors will be invoked in the following cases:
-     - string is neither of 'dim', 'complete', 'simplicial',
-       and 'pure';
-     A value 0 means that the property is not fulfilled.
-     1 means it is. -1 means that the answer is unknown.
-     Any value other than 0 and 1 will be converted to -1;
-     except for dim: Here, only negative values will be converted
-     to -1. */
-  Fan* f = (Fan*)u->Data();
+  gfan::ZCone* zc = (gfan::ZCone*)u->Data();
   char* prop = (char*)v->Data();
-  int value = (int)(long)w->Data();
+  int val = (int)(long)w->Data();
 
-  if      (strcmp(prop, "ambientdim") == 0)
+  if (strcmp(prop, "MULTIPLICITY") == 0)
   {
-    Werror("ambient dimension of a fan cannot be set (implicitely given)");
-    return TRUE;
+    zc->setMultiplicity(gfan::Integer(val));
   }
-  else if (strcmp(prop, "dim")        == 0)
-    f->setDim(value);
-  else if (strcmp(prop, "complete")   == 0)
-    f->setComplete(value);
-  else if (strcmp(prop, "simplicial") == 0)
-    f->setSimplicial(value);
-  else if (strcmp(prop, "pure")       == 0)
-    f->setPure(value);
-  else
-  {
-    Werror("unexpected fan property '%s'", prop);
-    return TRUE;
-  }
-
-  return FALSE;
-}
-static BOOLEAN jjSETPROP2(leftv res, leftv u, leftv v, leftv w)
-{
-  /* method for setting cone properties;
-     valid parametrizations: (fan, string, int),
-     Errors will be invoked in the following cases:
-     - string is not 'dim';
-     Any negative value will be converted to -1 signaling
-     that the dim is unknown. */
-  Cone* c = (Cone*)u->Data();
-  char* prop = (char*)v->Data();
-  int value = (int)(long)w->Data();
-
-  if (strcmp(prop, "dim") == 0)
-    c->setDim(value);
   else
   {
     Werror("unexpected cone property '%s'", prop);
     return TRUE;
   }
-
   return FALSE;
 }
-static BOOLEAN jjADJACENCY2(leftv res, leftv u, leftv v, leftv w)
+static BOOLEAN jjSETPROPC2(leftv res, leftv u, leftv v, leftv w)
 {
-  /* method for retrieving the adjacency information concerning
-     two maximal cones of the given fan;
+  gfan::ZCone* zc = (gfan::ZCone*)u->Data();
+  char* prop = (char*)v->Data();
+  intvec* mat = (intvec*)w->Data();
+  gfan::ZMatrix zm = intmat2ZMatrix(mat);
+  int val = (int)(long)w->Data();
+
+  if (strcmp(prop, "LINEAR_FORMS") == 0)
+  {
+    zc->setLinearForms(zm);
+  }
+  else
+  {
+    Werror("unexpected cone property '%s'", prop);
+    return TRUE;
+  }
+  return FALSE;
+}
+static BOOLEAN jjCONTAINS3(leftv res, leftv u, leftv v, leftv w)
+{
+  gfan::ZCone* zc = (gfan::ZCone*)u->Data();
+  intvec* vec = (intvec*)v->Data();
+  int flag = (int)(long)w->Data();
+  gfan::ZVector zv = intvec2ZVector(vec);
+  int d1 = zc->ambientDimension();
+  int d2 = zv.size();
+  if (d1 != d2)
+    Werror("expected ambient dim of cone and size of vector\n"
+           "to be equal but got %d and %d", d1, d2);
+  if (flag)
+    res->data = (void *)(zc->containsRelatively(zv) ? 1 : 0);
+  else
+    res->data = (void *)(zc->contains(zv) ? 1 : 0);;
+  return FALSE;
+}
+static BOOLEAN jjCONERAYS3(leftv res, leftv u, leftv v, leftv w)
+{
+  /* method for generating a cone object from half-lines,
+     and lines (any point in the cone being the sum of a point
+     in the convex hull of the half-lines and a point in the span
+     of the lines), and an integer k;
+     valid parametrizations: (intmat, intmat, int);
+     Errors will be invoked in the following cases:
+     - u and v have different numbers of columns,
+     - k not in [0..3];
+     if the 2^0-bit of k is set, then the lineality space is known
+     to be the span of the provided lines;
+     if the 2^1-bit of k is set, then the extreme rays are known:
+     each half-line spans a (different) extreme ray */
+  intvec* rays = (intvec *)u->CopyD(INTVEC_CMD);
+  intvec* linSpace = (intvec *)v->CopyD(INTVEC_CMD);
+  if (rays->cols() != linSpace->cols())
+  {
+    Werror("expected same number of columns but got %d vs. %d",
+           rays->cols(), linSpace->cols());
+    return TRUE;
+  }
+  int k = (int)(long)w->Data();
+  if ((k < 0) || (k > 3))
+  {
+    WerrorS("expected int argument in [0..3]");
+    return TRUE;
+  }
+  gfan::ZMatrix zm1 = intmat2ZMatrix(rays);
+  gfan::ZMatrix zm2 = intmat2ZMatrix(linSpace);
+  gfan::ZCone* zc = new gfan::ZCone();
+  *zc = gfan::ZCone::givenByRays(zm1, zm2);
+  //k should be passed on to zc; not available yet
+  res->data = (char *)zc;
+  return FALSE;
+}
+static BOOLEAN jjCONENORMALS3(leftv res, leftv u, leftv v, leftv w)
+{
+  /* method for generating a cone object from inequalities, equations,
+     and an integer k;
+     valid parametrizations: (intmat, intmat, int);
+     Errors will be invoked in the following cases:
+     - u and v have different numbers of columns,
+     - k not in [0..3];
+     if the 2^0-bit of k is set, then ... */
+  intvec* inequs = (intvec *)u->CopyD(INTVEC_CMD);
+  intvec* equs = (intvec *)v->CopyD(INTVEC_CMD);
+  if (inequs->cols() != equs->cols())
+  {
+    Werror("expected same number of columns but got %d vs. %d",
+           inequs->cols(), equs->cols());
+    return TRUE;
+  }
+  int k = (int)(long)w->Data();
+  if ((k < 0) || (k > 3))
+  {
+    WerrorS("expected int argument in [0..3]");
+    return TRUE;
+  }
+  gfan::ZMatrix zm1 = intmat2ZMatrix(inequs);
+  gfan::ZMatrix zm2 = intmat2ZMatrix(equs);
+  gfan::ZCone* zc = new gfan::ZCone(zm1, zm2, k);
+  res->data = (char *)zc;
+  return FALSE;
+}
+/*
+static BOOLEAN jjADDADJ1(leftv res, leftv u, leftv v, leftv w)
+{
+  /* method for feeding adjacency information into the given fan;
      valid parametrizations: (fan, int, int),
      Errors will be invoked in the following cases:
-     - a maximal cone index is out of range [1..m],
-       where m is the number of maximal cones in the given fan,
-     - the two specified maximal cones are not adjacent,
-     - the two specified maximal cones are adjacent but the
-       intersection facet has not been stored in the fan */
-  Fan* f = (Fan*)u->Data();
-  int maxCone1 = (int)(long)v->Data();
-  int maxCone2 = (int)(long)w->Data();
-  int nMaxCones = f->getMaxCones()->nr + 1;
-  if ((maxCone1 < 1) || (nMaxCones < maxCone1))
+     - a maximal cone index is out of range [0..m-1],
+       where m is the number of maximal cones in the given fan;
+     - the two indices coincide */
+/*  Fan* f = (Fan*)u->Data();
+  int i = (int)(long)v->Data();
+  int j = (int)(long)w->Data();
+  int n = f->getNumberOfMaxCones();
+  if (n == 0)
   {
-    Werror("1st index %d out of range [1..%d]",
-           maxCone1, nMaxCones);
+    WerrorS("no maximal cones defined in the given fan");
     return TRUE;
   }
-  if ((maxCone2 < 1) || (nMaxCones < maxCone2))
+  if ((i < 0) || (n <= i))
   {
-    Werror("2nd index %d out of range [1..%d]",
-           maxCone2, nMaxCones);
+    Werror("1st cone index %d out of range [0..%d]", i, n - 1);
     return TRUE;
   }
-  Cone* result = (Cone*)f->getAdjacencyFacet(maxCone1, maxCone2);
-  if (result->isNoAdj())
+  if ((j < 0) || (n <= j))
   {
-    WerrorS("specified cones are not adjacent");
+    Werror("2nd cone index %d out of range [0..%d]", j, n - 1);
     return TRUE;
   }
-  if (result->isNoFacet())
+  if (i == j)
   {
-    Werror("specified cones are adjacent, %s",
-           "but there is no facet information available");
+    WerrorS("expected two distinct maximal cone indices");
     return TRUE;
   }
-  res->data = (char*)result;
+  f->addAdjacency(i, j);
   return FALSE;
 }
+static BOOLEAN jjADDADJ2(leftv res, leftv u, leftv v, leftv w)
+{
+  /* method for feeding adjacency information into the given fan;
+     valid parametrizations: (fan, int, intvec);
+     This method sets all adjacencies regarding the maximal cone
+     with index = second argument simultaneously.
+     Errors will be invoked in the following cases:
+     - a maximal cone index is out of range [0..m-1],
+       where m is the number of maximal cones in the given fan;
+     - the index (1st argument) appears in the intvec (2nd arg.) */
+/*  Fan* f = (Fan*)u->Data();
+  int i = (int)(long)v->Data();
+  intvec* jj = (intvec*)w->Data();
+  int n = f->getNumberOfMaxCones();
+  if (n == 0)
+  {
+    WerrorS("no maximal cones defined in the given fan");
+    return TRUE;
+  }
+  if ((i < 0) || (n <= i))
+  {
+    Werror("1st cone index %d out of range [0..%d]", i, n - 1);
+    return TRUE;
+  }
+  for (int j = 0; j < jj->length(); j++)
+  {
+    if (((*jj)[j] < 0) || (n <= (*jj)[j]))
+    {
+      Werror("cone index %d out of range [0..%d]", (*jj)[j], n - 1);
+      return TRUE;
+    }
+    if ((*jj)[j] == i)
+    {
+      Werror("unexpectedly found int argument %d in intvec argument", i);
+      return TRUE;
+    }
+  }
+  f->addAdjacencies(i, jj);
+  return FALSE;
+}*/
 #endif /* HAVE_FANS */
 static BOOLEAN jjSTD_HILB_W(leftv res, leftv u, leftv v, leftv w)
 {
@@ -7244,116 +6767,9 @@ static BOOLEAN jjSTD_HILB_W(leftv res, leftv u, leftv v, leftv w)
   return FALSE;
 }
 
-/*=================== operations with 3 args.: table =================*/
-struct sValCmd3 dArith3[]=
-{
-// operations:
-// proc             cmd          res         arg1        arg2        arg3   plural
- {jjBRACK_S,        '[',        STRING_CMD, STRING_CMD, INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjBRACK_Im,       '[',        INT_CMD,    INTMAT_CMD, INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjBRACK_Ma_I_IV,  '[',        INT_CMD,    INTMAT_CMD, INT_CMD,    INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjBRACK_Ma_IV_I,  '[',        INT_CMD,    INTMAT_CMD, INTVEC_CMD, INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjBRACK_Ma_IV_IV, '[',        INT_CMD,    INTMAT_CMD, INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjBRACK_Ma,       '[',        POLY_CMD,   MATRIX_CMD, INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjBRACK_Ma_I_IV,  '[',        POLY_CMD,   MATRIX_CMD, INT_CMD,    INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjBRACK_Ma_IV_I,  '[',        POLY_CMD,   MATRIX_CMD, INTVEC_CMD, INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjBRACK_Ma_IV_IV, '[',        POLY_CMD,   MATRIX_CMD, INTVEC_CMD, INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjPROC3,          '(',        ANY_TYPE,   PROC_CMD,   DEF_CMD,    DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{atATTRIB3,        ATTRIB_CMD, NONE,       IDHDL,      STRING_CMD, DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjBAREISS3,       BAREISS_CMD,LIST_CMD,   MODUL_CMD,  INT_CMD,    INT_CMD, NO_PLURAL |ALLOW_RING}
-,{jjCOEFFS3_P,      COEFFS_CMD, MATRIX_CMD, POLY_CMD,   POLY_CMD,   MATRIX_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCOEFFS3_P,      COEFFS_CMD, MATRIX_CMD, VECTOR_CMD, POLY_CMD,   MATRIX_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCOEFFS3_Id,     COEFFS_CMD, MATRIX_CMD, IDEAL_CMD,  POLY_CMD,   MATRIX_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCOEFFS3_Id,     COEFFS_CMD, MATRIX_CMD, MODUL_CMD,  POLY_CMD,   MATRIX_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCOEFFS3_KB,     COEFFS_CMD, MATRIX_CMD, IDEAL_CMD,  IDEAL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCOEFFS3_KB,     COEFFS_CMD, MATRIX_CMD, MODUL_CMD,  MODUL_CMD,  POLY_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjELIMIN_HILB,    ELIMINATION_CMD,IDEAL_CMD, IDEAL_CMD, POLY_CMD, INTVEC_CMD, NO_PLURAL |ALLOW_RING}
-,{jjELIMIN_HILB,    ELIMINATION_CMD,MODUL_CMD, MODUL_CMD, POLY_CMD, INTVEC_CMD, NO_PLURAL |ALLOW_RING}
-,{jjFIND3,          FIND_CMD,   INT_CMD,    STRING_CMD, STRING_CMD, INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjFWALK3,         FWALK_CMD,  IDEAL_CMD,  RING_CMD,   DEF_CMD,    INT_CMD, NO_PLURAL |ALLOW_RING}
-,{jjHILBERT3,       HILBERT_CMD,INTVEC_CMD, IDEAL_CMD,  INT_CMD,    INTVEC_CMD, NO_PLURAL |ALLOW_RING}
-,{jjHILBERT3,       HILBERT_CMD,INTVEC_CMD, MODUL_CMD,  INT_CMD,    INTVEC_CMD, NO_PLURAL |ALLOW_RING}
-,{jjHOMOG_P_W,      HOMOG_CMD,  POLY_CMD,   POLY_CMD,   POLY_CMD,   INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjHOMOG_P_W,      HOMOG_CMD,  VECTOR_CMD, VECTOR_CMD, POLY_CMD,   INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjHOMOG_ID_W,     HOMOG_CMD,  IDEAL_CMD,  IDEAL_CMD,  POLY_CMD,   INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjHOMOG_ID_W,     HOMOG_CMD,  MODUL_CMD,  MODUL_CMD,  POLY_CMD,   INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL3MANY,      IDEAL_CMD,  IDEAL_CMD,  DEF_CMD,    DEF_CMD,    DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{lInsert3,         INSERT_CMD, LIST_CMD,   LIST_CMD,   DEF_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-//,{jjCALL3MANY,      INTERSECT_CMD,  NONE,   DEF_CMD,    DEF_CMD,    DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjINTMAT3,        INTMAT_CMD, INTMAT_CMD, INTMAT_CMD, INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL3MANY,      INTVEC_CMD, INTVEC_CMD, DEF_CMD,    DEF_CMD,    DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJET_P_IV,       JET_CMD,    POLY_CMD,   POLY_CMD,   INT_CMD,    INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJET_ID_IV,      JET_CMD,    IDEAL_CMD,  IDEAL_CMD,  INT_CMD,    INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJET_P_IV,       JET_CMD,    VECTOR_CMD, VECTOR_CMD, INT_CMD,    INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJET_ID_IV,      JET_CMD,    MODUL_CMD,  MODUL_CMD,  INT_CMD,    INTVEC_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJET_P_P,        JET_CMD,    POLY_CMD,   POLY_CMD,   POLY_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJET_P_P,        JET_CMD,    VECTOR_CMD, VECTOR_CMD, POLY_CMD,   INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJET_ID_M,       JET_CMD,    IDEAL_CMD,  IDEAL_CMD,  MATRIX_CMD, INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjJET_ID_M,       JET_CMD,    MODUL_CMD,  MODUL_CMD,  MATRIX_CMD, INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjWRONG3,         JET_CMD,    POLY_CMD,   POLY_CMD,   INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{mpKoszul,         KOSZUL_CMD, MATRIX_CMD, INT_CMD,    INT_CMD,    IDEAL_CMD, NO_PLURAL |NO_RING}
-,{jjLIFTSTD3,       LIFTSTD_CMD,IDEAL_CMD,  IDEAL_CMD,  MATRIX_CMD, MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjLIFTSTD3,       LIFTSTD_CMD,MODUL_CMD,  MODUL_CMD,  MATRIX_CMD, MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL3MANY,      LIST_CMD,   LIST_CMD,   DEF_CMD,    DEF_CMD,    DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjMATRIX_Id,      MATRIX_CMD, MATRIX_CMD, IDEAL_CMD,  INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjMATRIX_Mo,      MATRIX_CMD, MATRIX_CMD, MODUL_CMD,  INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjMATRIX_Ma,      MATRIX_CMD, MATRIX_CMD, MATRIX_CMD, INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL3MANY,      MODUL_CMD,  MODUL_CMD,  DEF_CMD,    DEF_CMD,    DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-#ifdef OLD_RES
-,{jjRES3,           MRES_CMD,   NONE,       IDEAL_CMD,  INT_CMD,    ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-,{jjRES3,           MRES_CMD,   NONE,       MODUL_CMD,  INT_CMD,    ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-#endif
-,{jjLIFT3,          LIFT_CMD,   MATRIX_CMD, IDEAL_CMD,  IDEAL_CMD,  MATRIX_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjLIFT3,          LIFT_CMD,   MATRIX_CMD, MODUL_CMD,  MODUL_CMD,  MATRIX_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjPREIMAGE,       PREIMAGE_CMD, IDEAL_CMD, RING_CMD,  ANY_TYPE,   ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-,{jjPREIMAGE,       PREIMAGE_CMD, IDEAL_CMD, QRING_CMD, ANY_TYPE,   ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-,{jjRANDOM_Im,      RANDOM_CMD, INTMAT_CMD, INT_CMD,    INT_CMD,    INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE3_P,      REDUCE_CMD, POLY_CMD,   POLY_CMD,   IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE3_P,      REDUCE_CMD, VECTOR_CMD, VECTOR_CMD, IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE3_P,      REDUCE_CMD, VECTOR_CMD, VECTOR_CMD, MODUL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE3_ID,     REDUCE_CMD, IDEAL_CMD,  IDEAL_CMD,  IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE3_ID,     REDUCE_CMD, MODUL_CMD,  MODUL_CMD,  MODUL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE3_ID,     REDUCE_CMD, MODUL_CMD,  MODUL_CMD,  IDEAL_CMD,  INT_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE3_CP,     REDUCE_CMD, POLY_CMD,   POLY_CMD,   POLY_CMD,   IDEAL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE3_CP,     REDUCE_CMD, VECTOR_CMD, VECTOR_CMD, POLY_CMD,   MODUL_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE3_CID,    REDUCE_CMD, IDEAL_CMD,  IDEAL_CMD,  IDEAL_CMD,  MATRIX_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE3_CID,    REDUCE_CMD, MODUL_CMD,  MODUL_CMD,  MODUL_CMD,  MATRIX_CMD, ALLOW_PLURAL |ALLOW_RING}
-#ifdef OLD_RES
-,{jjRES3,           RES_CMD,    NONE,       IDEAL_CMD,  INT_CMD,    ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-,{jjRES3,           RES_CMD,    NONE,       MODUL_CMD,  INT_CMD,    ANY_TYPE, ALLOW_PLURAL |ALLOW_RING}
-#endif
-#ifdef HAVE_FACTORY
-,{jjRESULTANT,      RESULTANT_CMD, POLY_CMD,POLY_CMD,   POLY_CMD,   POLY_CMD, NO_PLURAL |ALLOW_RING}
-#else
-,{jjWRONG3,         RESULTANT_CMD, POLY_CMD,POLY_CMD,   POLY_CMD,   POLY_CMD, NO_PLURAL |ALLOW_RING}
-#endif
-,{jjRING3,          RING_CMD,   RING_CMD,   DEF_CMD,    DEF_CMD,    DEF_CMD, ALLOW_PLURAL |ALLOW_RING}
-#ifdef OLD_RES
-,{jjRES3,           SRES_CMD,   NONE,       IDEAL_CMD,  INT_CMD,    ANY_TYPE, NO_PLURAL |ALLOW_RING}
-,{jjRES3,           SRES_CMD,   NONE,       MODUL_CMD,  INT_CMD,    ANY_TYPE, NO_PLURAL |ALLOW_RING}
-#endif
-,{jjSTATUS3,        STATUS_CMD, INT_CMD,    LINK_CMD,   STRING_CMD, STRING_CMD, ALLOW_PLURAL |ALLOW_RING}
-,{jjSTD_HILB_W,     STD_CMD,    IDEAL_CMD,  IDEAL_CMD,  INTVEC_CMD, INTVEC_CMD, NO_PLURAL |ALLOW_RING}
-,{jjSTD_HILB_W,     STD_CMD,    MODUL_CMD,  MODUL_CMD,  INTVEC_CMD, INTVEC_CMD, NO_PLURAL |ALLOW_RING}
-,{jjSUBST_P,        SUBST_CMD,  POLY_CMD,   POLY_CMD,   POLY_CMD,   POLY_CMD , ALLOW_PLURAL |ALLOW_RING}
-,{jjSUBST_P,        SUBST_CMD,  POLY_CMD,   POLY_CMD,   POLY_CMD,   POLY_CMD , ALLOW_PLURAL |ALLOW_RING}
-,{jjSUBST_P,        SUBST_CMD,  VECTOR_CMD, VECTOR_CMD, POLY_CMD,   POLY_CMD , ALLOW_PLURAL |ALLOW_RING}
-,{jjSUBST_Id,       SUBST_CMD,  IDEAL_CMD,  IDEAL_CMD,  POLY_CMD,   POLY_CMD , ALLOW_PLURAL |ALLOW_RING}
-,{jjSUBST_Id,       SUBST_CMD,  MODUL_CMD,  MODUL_CMD,  POLY_CMD,   POLY_CMD , ALLOW_PLURAL |ALLOW_RING}
-,{jjSUBST_Id,       SUBST_CMD,  MATRIX_CMD, MATRIX_CMD, POLY_CMD,   POLY_CMD , ALLOW_PLURAL |ALLOW_RING}
-,{jjSUBST_Id_I,     SUBST_CMD,  MATRIX_CMD, MATRIX_CMD, POLY_CMD,   INT_CMD  , ALLOW_PLURAL |ALLOW_RING}
-,{jjSUBST_Id_N,     SUBST_CMD,  MATRIX_CMD, MATRIX_CMD, POLY_CMD,   NUMBER_CMD , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL3MANY,      SYSTEM_CMD, NONE,       STRING_CMD, DEF_CMD,    DEF_CMD  , ALLOW_PLURAL |ALLOW_RING}
-,{nuLagSolve,       LAGSOLVE_CMD,LIST_CMD,  POLY_CMD,   INT_CMD,    INT_CMD  , NO_PLURAL |NO_RING}
-,{nuVanderSys,      VANDER_CMD, POLY_CMD,   IDEAL_CMD,  IDEAL_CMD,  INT_CMD  , NO_PLURAL |NO_RING}
-#ifdef HAVE_FANS
-,{jjSETPROP1,       SETPROP_CMD,NONE,       FAN_CMD,    STRING_CMD, INT_CMD  , NO_PLURAL |NO_RING}
-,{jjSETPROP2,       SETPROP_CMD,NONE,       CONE_CMD,   STRING_CMD, INT_CMD  , NO_PLURAL |NO_RING}
-,{jjADJACENCY2,     ADJACENCY_CMD,CONE_CMD, FAN_CMD,    INT_CMD,    INT_CMD  , NO_PLURAL |NO_RING}
-#endif /* HAVE_FANS */
-,{NULL,             0,          0,          0,          0,          0        , NO_PLURAL |NO_RING}
-};
 /*=================== operations with many arg.: static proc =================*/
+/* must be ordered: first operations for chars (infix ops),
+ * then alphabetically */
 static BOOLEAN jjBREAK0(leftv res, leftv v)
 {
 #ifdef HAVE_SDB
@@ -7390,6 +6806,189 @@ static BOOLEAN jjCALL2ARG(leftv res, leftv u)
   u->next=v;
   return b;
 }
+#ifdef HAVE_FANS
+/*
+static BOOLEAN jjSETPROP1(leftv res, leftv INPUT)
+{
+  /* method for setting fan properties;
+     valid parametrizations: (fan, string, int),
+     Errors will be invoked in the following cases:
+     - types are not correct,
+     - string is neither of 'dim', 'complete', 'simplicial',
+       and 'pure';
+     A value 0 means that the property is not fulfilled.
+     1 means it is. -1 means that the answer is unknown.
+     Any value other than 0 and 1 will be converted to -1;
+     except for dim: Here, only negative values will be converted
+     to -1. */
+/*  leftv u = INPUT;
+  leftv v = u->next;
+  leftv w = v->next;
+  if (u->Typ() != FAN_CMD)
+  {
+    Werror("expected a fan as 1st argument");
+    return TRUE;
+  }
+  if (v->Typ() != STRING_CMD)
+  {
+    Werror("expected a string as 2nd argument");
+    return TRUE;
+  }
+  if (w->Typ() != INT_CMD)
+  {
+    Werror("expected an int as 3rd argument");
+    return TRUE;
+  }
+
+  Fan* f = (Fan*)u->Data();
+  char* prop = (char*)v->Data();
+  int value = (int)(long)w->Data();
+
+  if      (strcmp(prop, "ambientdim") == 0)
+  {
+    Werror("ambient dimension of a fan cannot be set (implicitely given)");
+    return TRUE;
+  }
+  else if (strcmp(prop, "dim")        == 0)
+    f->setDim(value);
+  else if (strcmp(prop, "complete")   == 0)
+    f->setComplete(value);
+  else if (strcmp(prop, "simplicial") == 0)
+    f->setSimplicial(value);
+  else if (strcmp(prop, "pure")       == 0)
+    f->setPure(value);
+  else
+  {
+    Werror("unexpected fan property '%s'", prop);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+static BOOLEAN jjSETPROP2(leftv res, leftv INPUT)
+{
+  /* method for setting cone properties;
+     valid parametrizations: (fan, int, string, int),
+     Errors will be invoked in the following cases:
+     - types are not correct,
+     - string is neither of 'dim', 'multiplicity', and 'weight',
+     - no maximal cones defined in the given fan,
+     - maximal cone index is out of range;
+     Any negative value will be converted to -1. */
+//  leftv u = INPUT;    /* a fan */
+//  leftv v = u->next;  /* a maximal cone index */
+//  leftv w = v->next;  /* a string */
+//  leftv x = w->next;  /* an int value */
+/*  if (u->Typ() != FAN_CMD)
+  {
+    Werror("expected a fan as 1st argument");
+    return TRUE;
+  }
+  if (v->Typ() != INT_CMD)
+  {
+    Werror("expected an int as 2nd argument");
+    return TRUE;
+  }
+  if (w->Typ() != STRING_CMD)
+  {
+    Werror("expected a string as 3rd argument");
+    return TRUE;
+  }
+  if (x->Typ() != INT_CMD)
+  {
+    Werror("expected an int as 4th argument");
+    return TRUE;
+  }
+
+  Fan* f = (Fan*)u->Data();
+  int index = (int)(long)v->Data();
+  char* prop = (char*)w->Data();
+  int value = (int)(long)x->Data();
+
+  int n = f->getNumberOfMaxCones();
+  if (n == 0)
+  {
+    WerrorS("no maximal cones defined in the given fan");
+    return TRUE;
+  }
+  if ((index < 0) || (n <= index))
+  {
+    Werror("cone index %d out of range [0..%d]", index, n - 1);
+    return TRUE;
+  }
+
+  if      (strcmp(prop, "dim")        == 0)
+    f->setConeDim(index, value);
+  else if (strcmp(prop, "multiplicity")   == 0)
+    f->setConeMultiplicity(index, value);
+  else if (strcmp(prop, "weight") == 0)
+    f->setConeWeight(index, value);
+  else
+  {
+    Werror("unexpected cone property '%s'", prop);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+static BOOLEAN jjADDMCONE(leftv res, leftv INPUT)
+{
+  /* method for adding a maximal cones to the given fan;
+     valid parametrizations: (fan, intvec/0, intvec/0),
+     where not both intvec arguments may be the int zero.
+     Errors will be invoked in the following cases:
+     - 2nd and 3rd argument are int's,
+     - an index in one of the intvec's is out of range;
+     In case of an error addition of the cone fails. */
+/*  leftv u = INPUT;
+  leftv v = u->next;
+  leftv w = v->next;
+  Fan* f;
+  intvec* ii = NULL;
+  intvec* jj = NULL;
+  int n;
+  if (u->Typ() != FAN_CMD)
+  {
+    Werror("expected a fan as 1st argument");
+    return TRUE;
+  }
+  else { f = (Fan*)u->Data(); }
+  if (v->Typ() == INTVEC_CMD)
+  {
+    ii = (intvec*)v->Data();
+    n = f->getNumberOfMaxRays();
+    for (int i = 0; i < ii->length(); i++)
+    if (((*ii)[i] < 1) || (n < (*ii)[i]))
+    {
+      Werror("max. ray index %d out of range [1..%d]", (*ii)[i], n);
+      return TRUE;
+    }
+  }
+  else if ((v->Typ() != INT_CMD) || ((int)(long)v->Data() != 0))
+  {
+    Werror("expected an intvec or the int 0 as 2nd argument");
+    return TRUE;
+  }
+  if (w->Typ() == INTVEC_CMD)
+  {
+    jj = (intvec*)w->Data();
+    n = f->getNumberOfFacetNormals();
+    for (int j = 0; j < jj->length(); j++)
+    if (((*jj)[j] < 1) || (n < (*jj)[j]))
+    {
+      Werror("facet normal index %d out of range [1..%d]", (*jj)[j], n);
+      return TRUE;
+    }
+  }
+  else if ((w->Typ() != INT_CMD) || ((int)(long)w->Data() != 0))
+  {
+    Werror("expected an intvec or the int 0 as 3rd argument");
+    return TRUE;
+  }
+  f->addMaxCone(ii, jj);
+  return FALSE;
+}*/
+#endif /* HAVE_FANS */
 static BOOLEAN jjCALL3ARG(leftv res, leftv u)
 {
   leftv v = u->next;
@@ -7834,128 +7433,6 @@ static BOOLEAN jjLU_SOLVE(leftv res, leftv v)
   res->data=(char*)ll;
   return FALSE;
 }
-#ifdef HAVE_FANS
-static BOOLEAN jjADDADJ(leftv res, leftv v)
-{
-  /* method for adding one or more adjacencies between pairs of
-     maximal cones of the given fan;
-     valid parametrizations: (fan, int, int, cone),
-                             (fan, int, int, 0), or
-                             (fan, intvec, intvec, list),
-     where in the latter case, the list entries must either be
-     of type Cone* or the integer zero;
-     Errors will be invoked in the following cases:
-     - we have none of the above parametrizations,
-     - intvecs and list have different lengths,
-     - int's resp. intvec entries are out of range [1..m], where
-       m is the number of maximal cones in the given fan,
-     - int's are equal resp. intvec entries at same positions
-       are equal */
-  if ((v == NULL) || (v->next == NULL) ||
-      (v->next->next == NULL) || (v->next->next->next == NULL) ||
-      (v->next->next->next->next != NULL))
-  {
-    WerrorS("expected exactly four arguments as input");
-    return TRUE;
-  }
-  Fan* f = NULL;
-  int i; intvec* iv;
-  int j; intvec* jv;
-  Cone* c = NULL; lists L;
-  leftv x = v; bool listCase = false;
-  if (x->Typ() == FAN_CMD)
-    f = (Fan*)x->Data();
-  else
-  {
-    WerrorS("expected fan as 1st argument");
-    return TRUE;
-  }
-  x = x->next;
-  if      (x->Typ() == INT_CMD)
-    i = (int)(long)x->Data();
-  else if (x->Typ() == INTVEC_CMD)
-  {
-    iv = (intvec*)x->Data(); listCase = true;
-  }
-  else
-  {
-    WerrorS("expected int or intvec as 2nd argument");
-    return TRUE;
-  }
-  x = x->next;
-  if (listCase)
-  {
-    if ((x->Typ() != INTVEC_CMD) || ((x->next->Typ() != LIST_CMD)))
-    {
-      Werror("expected (fan, int, int, cone/0) %s",
-             "or (fan, intvec, intvec, list)");
-      return TRUE;
-    }
-    else jv = (intvec*)x->Data();
-    x = x->next;
-    L = (lists)x->Data();
-  }
-  else
-  {
-    if ((x->Typ() != INT_CMD) ||
-        ((x->next->Typ() != CONE_CMD) && (x->next->Typ() != INT_CMD)))
-    {
-      Werror("expected (fan, int, int, cone/0) %s",
-             "or (fan, intvec, intvec, list)");
-      return TRUE;
-    }
-    else j = (int)(long)x->Data();
-    x = x->next;
-    if ((x->Typ() == INT_CMD) && ((int)(long)x->Data() != 0))
-    {
-      WerrorS("expected (fan, int, int, cone/0)");
-      return TRUE;
-    }
-    if (x->Typ() != INT_CMD) c = (Cone*)x->Data();
-  }
-  int n = f->getMaxCones()->nr + 1;
-  if (!listCase)
-  {
-    if ((i < 1) || (n < i))
-    { Werror("2nd argument %d out of range [1..%d]", i, n); }
-    if ((j < 1) || (n < j))
-    { Werror("3rd argument %d out of range [1..%d]", j, n); }
-    if (i == j)
-    { WerrorS("2nd and 3rd argument are equal"); }
-    f->addAdjacency(i, j, c);
-  }
-  else
-  {
-    if (iv->length() != jv->length())
-      WerrorS("2nd and 3rd argument have different lengths");
-    if (iv->length() != L->nr + 1)
-      WerrorS("2nd and 4th argument have different lengths");
-    for (i = 0; i < iv->length(); i++)
-    {
-      if (((*iv)[i] < 1) || (n < (*iv)[i]))
-        Werror("index %d at position %d in 2nd argument out of range [1..%d]",
-               (*iv)[i], i + 1, n);
-    }
-    for (j = 0; j < jv->length(); j++)
-    {
-      if (((*jv)[j] < 1) || (n < (*jv)[j]))
-        Werror("index %d at position %d in 3rd argument out of range [1..%d]",
-               (*jv)[j], j + 1, n);
-      if ((*iv)[j] == (*jv)[j])
-        Werror("indices in 2nd and 3rd argument at position %d equal", j + 1);
-    }
-    for (i = 0; i < L->nr + 1; i++)
-    {
-      if ((L->m[i].Typ() != CONE_CMD) &&
-          ((L->m[i].Typ() != INT_CMD) || ((int)(long)L->m[i].Data() != 0)))
-        Werror("entry at position %d in 4th argument neither cone nor int 0",
-               i + 1);
-    }
-    f->addAdjacencies(iv, jv, L);
-  }
-  return FALSE;
-}
-#endif /* HAVE_FANS */
 static BOOLEAN jjINTVEC_PL(leftv res, leftv v)
 {
   int i=0;
@@ -8341,6 +7818,23 @@ static BOOLEAN jjSUBST_M(leftv res, leftv u)
   // rest was w->next, but is already cleaned
   return b;
 }
+static BOOLEAN jjQRDS(leftv res, leftv INPUT)
+{
+  if ((INPUT->Typ() != MATRIX_CMD) ||
+      (INPUT->next->Typ() != NUMBER_CMD) ||
+      (INPUT->next->next->Typ() != NUMBER_CMD) ||
+      (INPUT->next->next->next->Typ() != NUMBER_CMD))
+  {
+    WerrorS("expected (matrix, number, number, number) as arguments");
+    return TRUE;
+  }
+  leftv u = INPUT; leftv v = u->next; leftv w = v->next; leftv x = w->next;
+  res->data = (char *)qrDoubleShift((matrix)(u->Data()),
+                                    (number)(v->Data()),
+                                    (number)(w->Data()),
+                                    (number)(x->Data()));
+  return FALSE;
+}
 static BOOLEAN jjSTD_HILB_WP(leftv res, leftv INPUT)
 { ideal result;
   leftv u = INPUT;    /* an ideal, weighted homogeneous and standard */
@@ -8350,6 +7844,13 @@ static BOOLEAN jjSTD_HILB_WP(leftv res, leftv INPUT)
   assumeStdFlag(u);
   ideal i1=(ideal)(u->Data());
   ideal i0;
+  if (((u->Typ()!=IDEAL_CMD)&&(u->Typ()!=MODUL_CMD))
+  || (h->Typ()!=INTVEC_CMD)
+  || (w->Typ()!=INTVEC_CMD))
+  {
+    WerrorS("expected `std(`ideal/module`,`poly/vector`,`intvec`,`intvec`)");
+    return TRUE;
+  }
   intvec *vw=(intvec *)w->Data(); // weights of vars
   /* merging std_hilb_w and std_1 */
   if (vw->length()!=currRing->N)
@@ -8363,11 +7864,16 @@ static BOOLEAN jjSTD_HILB_WP(leftv res, leftv INPUT)
   {
     i0=idInit(1,i1->rank);
     i0->m[0]=(poly)v->Data();
-    BOOLEAN cleanup_i0=TRUE;;
+    BOOLEAN cleanup_i0=TRUE;
   }
-  else /* IDEAL */
+  else if (r==IDEAL_CMD)/* IDEAL */
   {
     i0=(ideal)v->Data();
+  }
+  else
+  {
+    WerrorS("expected `std(`ideal/module`,`poly/vector`,`intvec`,`intvec`)");
+    return TRUE;
   }
   int ii0=idElem(i0);
   i1 = idSimpleAdd(i1,i0);
@@ -8412,67 +7918,6 @@ static BOOLEAN jjSTD_HILB_WP(leftv res, leftv INPUT)
 }
 
 
-/*=================== operations with many arg.: table =================*/
-/* number_of_args:  -1: any, -2: any >0, .. */
-struct sValCmdM dArithM[]=
-{
-// operations:
-// proc         cmd               res            number_of_args plural
- {jjKLAMMER_PL,  '(',           ANY_TYPE,           -2      , ALLOW_PLURAL |ALLOW_RING}
-,{jjBREAK0,    BREAKPOINT_CMD,  NONE,               0       , ALLOW_PLURAL |ALLOW_RING}
-,{jjBREAK1,    BREAKPOINT_CMD,  NONE,               -2      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL2ARG,  COEF_CMD,        MATRIX_CMD,         2       , ALLOW_PLURAL |ALLOW_RING}
-,{jjCOEF_M,    COEF_CMD,        NONE,               4       , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL2ARG,  DIVISION_CMD,    ANY_TYPE/*or set by p*/,2   , ALLOW_PLURAL |ALLOW_RING}
-,{jjDIVISION4, DIVISION_CMD,    ANY_TYPE/*or set by p*/,3   , NO_PLURAL |NO_RING}
-,{jjDIVISION4, DIVISION_CMD,    ANY_TYPE/*or set by p*/,4   , NO_PLURAL |NO_RING}
-,{jjDBPRINT,   DBPRINT_CMD,     NONE,               -2      , ALLOW_PLURAL |ALLOW_RING}
-//,{jjEXPORTTO_M,  EXPORTTO_CMD,    NONE,             -2      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL1ARG,  IDEAL_CMD,       IDEAL_CMD,          1       , ALLOW_PLURAL |ALLOW_RING}
-,{jjIDEAL_PL,  IDEAL_CMD,       IDEAL_CMD,          -1      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL2ARG,  INTERSECT_CMD,   IDEAL_CMD,          2       , ALLOW_PLURAL |ALLOW_RING}
-,{jjINTERSECT_PL,INTERSECT_CMD, IDEAL_CMD,          -2      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL1ARG,  INTVEC_CMD,      INTVEC_CMD,         1       , ALLOW_PLURAL |ALLOW_RING}
-,{jjINTVEC_PL, INTVEC_CMD,      INTVEC_CMD,         -2      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL2ARG,  JET_CMD,         POLY_CMD,/*or set by p*/ 2  , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL3ARG,  JET_CMD,         POLY_CMD,/*or set by p*/ 3  , ALLOW_PLURAL |ALLOW_RING}
-,{jjJET4,      JET_CMD,         POLY_CMD,/*or set by p*/ 4  , ALLOW_PLURAL |ALLOW_RING}
-,{jjLIST_PL,   LIST_CMD,        LIST_CMD,           -1      , ALLOW_PLURAL |ALLOW_RING}
-,{jjLU_INVERSE,LUI_CMD,         LIST_CMD,           -2      , NO_PLURAL |NO_RING}
-,{jjLU_SOLVE,  LUS_CMD,         LIST_CMD,           -2      , NO_PLURAL |NO_RING}
-,{jjWRONG,     MINOR_CMD,       NONE,               1       , ALLOW_PLURAL |ALLOW_RING}
-,{jjMINOR_M,   MINOR_CMD,       IDEAL_CMD,          -2      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL1ARG,  MODUL_CMD,       MODUL_CMD,          1       , ALLOW_PLURAL |ALLOW_RING}
-,{jjIDEAL_PL,  MODUL_CMD,       MODUL_CMD,          -1      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL1ARG,  NAMES_CMD,       LIST_CMD,            1      , ALLOW_PLURAL |ALLOW_RING}
-,{jjNAMES0,    NAMES_CMD,       LIST_CMD,            0      , ALLOW_PLURAL |ALLOW_RING}
-,{jjOPTION_PL, OPTION_CMD,      STRING_CMD/*or set by p*/,-1, ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL2ARG,  REDUCE_CMD,      IDEAL_CMD/*or set by p*/,  2, ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL3ARG,  REDUCE_CMD,      IDEAL_CMD/*or set by p*/,  3, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE4,   REDUCE_CMD,      IDEAL_CMD/*or set by p*/,  4, ALLOW_PLURAL |ALLOW_RING}
-,{jjREDUCE5,   REDUCE_CMD,      IDEAL_CMD/*or set by p*/,  5, ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL1ARG,  RESERVEDNAME_CMD, INT_CMD,            1      , ALLOW_PLURAL |ALLOW_RING}
-,{jjRESERVED0, RESERVEDNAME_CMD, NONE,               0      , ALLOW_PLURAL |ALLOW_RING}
-,{jjSTRING_PL, STRING_CMD,      STRING_CMD,         -1      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL3ARG,  SUBST_CMD,       NONE/*set by p*/,   3       , ALLOW_PLURAL |ALLOW_RING}
-,{jjSUBST_M,   SUBST_CMD,       NONE/*set by p*/,   -2      , ALLOW_PLURAL |ALLOW_RING}
-,{jjSYSTEM,    SYSTEM_CMD,      NONE/*or set by p*/,-2      , ALLOW_PLURAL |ALLOW_RING}
-,{jjTEST,      TEST_CMD,        NONE,               -2      , ALLOW_PLURAL |ALLOW_RING}
-,{iiWRITE,     WRITE_CMD,       NONE,               -2      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL2ARG,  STATUS_CMD,      STRING_CMD,          2      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL3ARG,  STATUS_CMD,      INT_CMD,             3      , ALLOW_PLURAL |ALLOW_RING}
-,{jjSTATUS_M,  STATUS_CMD,      INT_CMD,             4      , ALLOW_PLURAL |ALLOW_RING}
-,{loSimplex,   SIMPLEX_CMD,     LIST_CMD,            6      , NO_PLURAL |NO_RING}
-,{nuUResSolve, URSOLVE_CMD,     LIST_CMD,            4      , NO_PLURAL |NO_RING}
-,{jjCALL1ARG,  STD_CMD,         IDEAL_CMD,           1      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL2ARG,  STD_CMD,         IDEAL_CMD,           2      , ALLOW_PLURAL |ALLOW_RING}
-,{jjCALL3ARG,  STD_CMD,         IDEAL_CMD,           3      , NO_PLURAL |ALLOW_RING}
-,{jjSTD_HILB_WP, STD_CMD,       IDEAL_CMD,           4      , NO_PLURAL |ALLOW_RING}
-#ifdef HAVE_FANS
-,{jjADDADJ,    ADDADJ_CMD,      NONE,               -2      , NO_PLURAL |NO_RING}
-#endif /* HAVE_FANS */
-,{NULL,        0,               0,                   0      , NO_PLURAL |NO_RING}
-};
 #ifdef MDEBUG
 static Subexpr jjDBMakeSub(leftv e,const char *f,const int l)
 #else
@@ -8484,615 +7929,18 @@ static Subexpr jjMakeSub(leftv e)
   r->start =(int)(long)e->Data();
   return r;
 }
+#define D(A) (A)
+#define IPARITH
+#include "table.h"
 
-/*================ generating tables ============================*/
-#ifdef GENTABLE
-extern struct sValAssign dAssign[];
-struct sValCmdTab dArithTab1[]={ {0,0}};
-#define JJTAB1LEN 0
-struct sValCmdTab dArithTab2[]={ {0,0}};
-#define JJTAB2LEN 0
-
-char *iparith_inc;
-void ttGen1()
-{
-  iparith_inc=omStrDup("iparith.xxxxxx");
-  int pid=getpid();
-  iparith_inc[8]=(pid %10)+'0'; pid/=10;
-  iparith_inc[9]=(pid %10)+'0'; pid/=10;
-  iparith_inc[10]=(pid %10)+'0'; pid/=10;
-  iparith_inc[11]=(pid %10)+'0'; pid/=10;
-  iparith_inc[12]=(pid %10)+'0'; pid/=10;
-  iparith_inc[13]=(pid %10)+'0';
-  FILE *outfile = myfopen(iparith_inc,"w");
-  int i,j,l1=0,l2=0;
-  currRing=(ring)omAllocBin(sip_sring_bin);
-  fprintf(outfile,
-  "/****************************************\n"
-  "*  Computer Algebra System SINGULAR     *\n"
-  "****************************************/\n\n");
-/*-------------------------------------------------------------------*/
-  fprintf(outfile,"// syntax table for Singular\n//\n");
-  fprintf(outfile,"// - search for an exact match of the argument types\n");
-  fprintf(outfile,"// - otherwise search for the first possibility\n");
-  fprintf(outfile,"//   with converted types of the arguments\n");
-  fprintf(outfile,"// - otherwise report an error\n//\n");
-
-  int op;
-  i=0;
-  while ((op=dArith1[i].cmd)!=0)
-  {
-    if (dArith1[i].p==jjWRONG)
-      fprintf(outfile,"// DUMMY ");
-    const char *s = iiTwoOps(op);
-    fprintf(outfile,"// operation: %s (%s)  ->  %s\n",
-          s,
-          Tok2Cmdname(dArith1[i].arg),
-          Tok2Cmdname(ABS(dArith1[i].res)));
-    i++;
-  }
-  fprintf(outfile,"/*---------------------------------------------*/\n");
-  i=0;
-  while ((op=dArith2[i].cmd)!=0)
-  {
-    if (dArith2[i].p==jjWRONG2)
-      fprintf(outfile,"// DUMMY ");
-    const char *s = iiTwoOps(op);
-    fprintf(outfile,"// operation: %s (%s, %s)  ->  %s\n",
-          s,
-          Tok2Cmdname(dArith2[i].arg1),
-          Tok2Cmdname(dArith2[i].arg2),
-          Tok2Cmdname(dArith2[i].res));
-    i++;
-  }
-  fprintf(outfile,"/*---------------------------------------------*/\n");
-  i=0;
-  while ((op=dArith3[i].cmd)!=0)
-  {
-    const char *s = iiTwoOps(op);
-    if (dArith3[i].p==jjWRONG3)
-      fprintf(outfile,"// DUMMY ");
-    fprintf(outfile,"// operation: %s (%s, %s, %s)  ->  %s\n",
-          s,
-          Tok2Cmdname(dArith3[i].arg1),
-          Tok2Cmdname(dArith3[i].arg2),
-          Tok2Cmdname(dArith3[i].arg3),
-          Tok2Cmdname(dArith3[i].res));
-    i++;
-  }
-  fprintf(outfile,"/*---------------------------------------------*/\n");
-  i=0;
-  while ((op=dArithM[i].cmd)!=0)
-  {
-    const char *s = iiTwoOps(op);
-    fprintf(outfile,"// operation: %s (...)  ->  %s",
-          s,
-          Tok2Cmdname(dArithM[i].res));
-    switch(dArithM[i].number_of_args)
-    {
-      case -2:
-         fprintf(outfile," ( number of arguments >0 )\n");
-         break;
-      case -1:
-         fprintf(outfile," ( any number of arguments )\n");
-         break;
-      default:
-         fprintf(outfile," ( %d arguments )\n",dArithM[i].number_of_args);
-         break;
-    }
-    i++;
-  }
-  fprintf(outfile,"/*---------------------------------------------*/\n");
-  i=0;
-  while ((op=dAssign[i].res)!=0)
-  {
-    fprintf(outfile,"// assign: %s =  %s\n",
-          Tok2Cmdname(op/*dAssign[i].res*/),
-          Tok2Cmdname(dAssign[i].arg));
-    i++;
-  }
-/*-------------------------------------------------------------------*/
-  fprintf(outfile,"/*---------------------------------------------*/\n");
-  for (j=257;j<=MAX_TOK+1;j++)
-  {
-    for(i=257;i<=MAX_TOK+1;i++)
-    {
-      if ((i!=j) && (j!=IDHDL) && (j!=DEF_CMD) && (j!=ANY_TYPE)
-      && iiTestConvert(i,j))
-      {
-        fprintf(outfile,"// convert %s -> %s\n",
-          Tok2Cmdname(i), Tok2Cmdname(j));
-        if (j==ANY_TYPE) break;
-      }
-    }
-  }
-  fprintf(outfile,"/*---------------------------------------------*/\n");
-  char ops[]="=><+*/[.^,%(;";
-  for(i=0;ops[i]!='\0';i++)
-    fprintf(outfile,"// token %d : %c\n", (int)ops[i], ops[i]);
-  for (i=257;i<=MAX_TOK;i++)
-  {
-    const char *s=iiTwoOps(i);
-    if (s[0]!='$')
-    {
-      fprintf(outfile,"// token %d : %s\n", i, s);
-    }
-  }
-/*-------------------------------------------------------------------*/
-  fprintf(outfile,"/*--max. token: %d, gr: %d --*/\n",MAX_TOK,UMINUS);
-/*-------------------------------------------------------------------*/
-  fprintf(outfile,"/*---------------------------------------------*/\n");
-  fprintf(outfile,
-  "struct sValCmdTab dArithTab1[]=\n"
-  "{\n");
-  for (j=1;j<=MAX_TOK+1;j++)
-  {
-    for(i=0;dArith1[i].cmd!=0;i++)
-    {
-      if (dArith1[i].cmd==j)
-      {
-        fprintf(outfile," { %d,%d },\n",j,i);
-        l1++;
-        break;
-      }
-    }
-  }
-  fprintf(outfile," { 10000,0 }\n};\n");
-  fprintf(outfile,"#define JJTAB1LEN %d\n",l1);
-/*-------------------------------------------------------------------*/
-  fprintf(outfile,
-  "struct sValCmdTab dArithTab2[]=\n"
-  "{\n");
-  for (j=1;j<=MAX_TOK+1;j++)
-  {
-    for(i=0;dArith2[i].cmd!=0;i++)
-    {
-      if (dArith2[i].cmd==j)
-      {
-        fprintf(outfile," { %d,%d },\n",j,i);
-        l2++;
-        break;
-      }
-    }
-  }
-  fprintf(outfile," { 10000,0 }\n};\n");
-  fprintf(outfile,"#define JJTAB2LEN %d\n",l2);
-  fclose(outfile);
-}
-/*-------------------------------------------------------------------*/
-#if 0
-void ttGen2()
-{
-  FILE *outfile = myfopen(iparith_inc,"a");
-  fprintf(outfile,
-  "/****************************************\n"
-  "*  Computer Algebra System SINGULAR     *\n"
-  "****************************************/\n\n");
-/*-------------------------------------------------------------------*/
-  fprintf(outfile,"// identifier table for Singular\n//\n");
-
-  fprintf(outfile,
-  "cmdnames OLDcmds[] =\n"
-  "{  // name-string     alias  tokval toktype\n"
-  "{ \"$INVALID$\",            0,  -1, 0},\n");
-  int i=1;
-  int m=-1;
-  int id_nr=0;
-  BOOLEAN f=FALSE;
-  loop
-  {
-    while (cmds[i].tokval!=0)
-    {
-      if ((cmds[i].tokval!=-1)&&(cmds[i].name!=NULL))
-      {
-        if(m==-1)
-        {
-          m=i;
-          f=TRUE;
-        }
-        else if(strcmp(cmds[m].name,cmds[i].name)>0)
-        {
-          m=i;
-          f=TRUE;
-        }
-      }
-      i++;
-    }
-    if(f)
-    {
-      id_nr++;
-      if(cmds[m].tokval==VRTIMER) fprintf(outfile,"#ifdef HAVE_RTIMER\n");
-      fprintf(outfile,"  {\"%s\", %*d, %3d, ",cmds[m].name,
-                                             20-strlen(cmds[m].name),
-                                             cmds[m].alias,
-                                             cmds[m].tokval);
-      switch(cmds[m].toktype)
-      {
-        case CMD_1:            fprintf(outfile,"CMD_1 },\n"); break;
-        case CMD_2:            fprintf(outfile,"CMD_2 },\n"); break;
-        case CMD_3:            fprintf(outfile,"CMD_3 },\n"); break;
-        case CMD_12:           fprintf(outfile,"CMD_12 },\n"); break;
-        case CMD_123 :         fprintf(outfile,"CMD_123 },\n"); break;
-        case CMD_23:           fprintf(outfile,"CMD_23 },\n"); break;
-        case CMD_M:            fprintf(outfile,"CMD_M },\n"); break;
-        case SYSVAR:           fprintf(outfile,"SYSVAR },\n"); break;
-        case ROOT_DECL:        fprintf(outfile,"ROOT_DECL },\n"); break;
-        case ROOT_DECL_LIST:   fprintf(outfile,"ROOT_DECL_LIST },\n"); break;
-        case RING_DECL:        fprintf(outfile,"RING_DECL },\n"); break;
-        case NONE:             fprintf(outfile,"NONE },\n"); break;
-        default:               if((cmds[m].toktype>' ')
-                               &&(cmds[m].toktype<127))
-                               {
-                                 fprintf(outfile,"'%c' },\n",cmds[m].toktype);
-                               }
-                               else
-                               {
-                                 fprintf(outfile,"%d },\n",cmds[m].toktype);
-                               }
-                               break;
-      }
-      if(cmds[m].tokval==VRTIMER) fprintf(outfile,"#endif\n");
-      cmds[m].name=NULL;
-      m=-1;
-      i=1;
-      f=FALSE;
-    }
-    else break;
-  }
-  fprintf(outfile,
-"/* list of scanner identifiers/only for feread/reservedName */\n");
-  f=FALSE;
-  i=1;m=-1;
-  loop
-  {
-    while (cmds[i].tokval!=0)
-    {
-      if (cmds[i].name!=NULL)
-      {
-        if(m==-1)
-        {
-          m=i;
-          f=TRUE;
-        }
-        else if(strcmp(cmds[m].name,cmds[i].name)>0)
-        {
-          m=i;
-          f=TRUE;
-        }
-      }
-      i++;
-    }
-    if(f)
-    {
-      fprintf(outfile,"  {\"%s\", %*d,  -1, 0 },\n",cmds[m].name,
-                                             20-strlen(cmds[m].name),
-                                             0/*cmds[m].alias*/
-                                             /*-1 cmds[m].tokval*/
-                                             /*0 cmds[m].toktype*/);
-      cmds[m].name=NULL;
-      m=-1;
-      i=1;
-      f=FALSE;
-    }
-    else break;
-  }
-  fprintf(outfile,
-"/* end of list marker */\n"
-"  { NULL, 0, 0, 0}\n"
-"};\n"
-"#ifdef HAVE_RTIMER\n"
-"#define LAST_IDENTIFIER %d\n"
-"#else\n"
-"#define LAST_IDENTIFIER %d\n"
-"#endif\n",id_nr,id_nr-1);
-  fclose(outfile);
-}
-#endif
-/*---------------------------------------------------------------------*/
-/**
- * @brief generate cmds initialisation
-**/
-/*---------------------------------------------------------------------*/
-
-void ttGen2b()
-{
-  int cmd_size = (sizeof(cmds)/sizeof(cmdnames))-1;
-
-  FILE *outfile = myfopen(iparith_inc,"a");
-  fprintf(outfile,
-  "/****************************************\n"
-  "*  Computer Algebra System SINGULAR     *\n"
-  "****************************************/\n\n");
-/*-------------------------------------------------------------------*/
-  fprintf(outfile,"// identifier table for Singular\n//\n");
-
-  fprintf(
-    outfile,
-    "#ifdef MODULE_GENERATOR\n"
-    "#define omAlloc0(A) malloc(A)\n"
-    "#endif\n"
-    "void iiInitCmdName()\n{\n"
-    "  sArithBase.nCmdUsed      = 0;\n"
-    "  sArithBase.nCmdAllocated = %d;\n"
-    "  sArithBase.sCmds = (cmdnames*)omAlloc0(sArithBase.nCmdAllocated*sizeof(cmdnames));\n"
-    "\n"
-    "  // name-string                   alias  tokval toktype index\n",
-    cmd_size);
-  int m=0;
-  int id_nr=0;
-
-  qsort(&cmds, cmd_size, sizeof(cmdnames), (&_gentable_sort_cmds));
-
-  for(m=0; m<cmd_size; m++)
-  {
-    if(cmds[m].tokval>0) id_nr++;
-    if(cmds[m].tokval==VRTIMER) fprintf(outfile,"#ifdef HAVE_RTIMER\n");
-    fprintf(outfile,"  iiArithAddCmd(\"%s\", %*d, %3d, ",cmds[m].name,
-            20-strlen(cmds[m].name),
-            cmds[m].alias,
-            cmds[m].tokval);
-    switch(cmds[m].toktype)
-    {
-        case CMD_1:            fprintf(outfile,"CMD_1"); break;
-        case CMD_2:            fprintf(outfile,"CMD_2"); break;
-        case CMD_3:            fprintf(outfile,"CMD_3"); break;
-        case CMD_12:           fprintf(outfile,"CMD_12"); break;
-        case CMD_123 :         fprintf(outfile,"CMD_123"); break;
-        case CMD_23:           fprintf(outfile,"CMD_23"); break;
-        case CMD_M:            fprintf(outfile,"CMD_M"); break;
-        case SYSVAR:           fprintf(outfile,"SYSVAR"); break;
-        case ROOT_DECL:        fprintf(outfile,"ROOT_DECL"); break;
-        case ROOT_DECL_LIST:   fprintf(outfile,"ROOT_DECL_LIST"); break;
-        case RING_DECL:        fprintf(outfile,"RING_DECL"); break;
-        case NONE:             fprintf(outfile,"NONE"); break;
-        default:
-          if((cmds[m].toktype>' ') &&(cmds[m].toktype<127))
-          {
-            fprintf(outfile,"'%c'",cmds[m].toktype);
-          }
-          else
-          {
-            fprintf(outfile,"%d",cmds[m].toktype);
-          }
-          break;
-#if 0
-          fprintf(outfile,"  iiArithAddCmd(\"%s\", %*d,  -1, 0 );\n",
-              cmds[m].name, 20-strlen(cmds[m].name),
-              0/*cmds[m].alias*/
-              /*-1 cmds[m].tokval*/
-              /*0 cmds[m].toktype*/);
-#endif
-    }
-    fprintf(outfile,", %d);\n", m);
-    if(cmds[m].tokval==VRTIMER) fprintf(outfile,"#endif\n");
-  }
-  fprintf(outfile, "/* end of list marker */\n");
-  fprintf(outfile,
-          "#ifdef HAVE_RTIMER\n"
-          "  sArithBase.nLastIdentifier = %d;\n"
-          "#else /* HAVE_RTIMER */\n"
-          "  sArithBase.nLastIdentifier = %d;\n"
-          "#endif /* HAVE_RTIMER */\n",
-          id_nr,id_nr-1);
-
-
-  fprintf(outfile,
-"}\n"
-"#ifdef HAVE_RTIMER\n"
-"#define LAST_IDENTIFIER %d\n"
-"#else\n"
-"#define LAST_IDENTIFIER %d\n"
-"#endif\n",id_nr,id_nr-1);
-  fclose(outfile);
-}
-/*-------------------------------------------------------------------*/
-#if 0
-void ttGen3()
-{
-  FILE *outfile = myfopen("mpsr_tok.inc","w");
-  fprintf(outfile,
-  "/****************************************\n"
-  "*  Computer Algebra System SINGULAR     *\n"
-  "****************************************/\n\n");
-/*-------------------------------------------------------------------*/
-  fprintf(outfile,"// token table for Singular\n//\n");
-
-  fprintf(outfile,
-  "short vtok[] =\n"
-  "{\n");
-  // operations with 1 arg: ===========================================
-  int i=0;
-  while (dArith1[i].cmd!=0)
-  {
-    if ((dArith1[i].p!=jjWRONG)
-    &&((i==0)||(dArith1[i].cmd!=dArith1[i-1].cmd)))
-    {
-      fprintf(outfile,"  %d,\n",dArith1[i].cmd);
-    }
-    i++;
-  }
-  // operations with 2 args: ===========================================
-  i=0;
-  while (dArith2[i].cmd!=0)
-  {
-    if ((dArith2[i].p!=jjWRONG2)
-    &&((i==0)||(dArith2[i].cmd!=dArith2[i-1].cmd)))
-    {
-      fprintf(outfile,"  %d,\n",dArith2[i].cmd);
-    }
-    i++;
-  }
-  // operations with 3 args: ===========================================
-  i=0;
-  while (dArith3[i].cmd!=0)
-  {
-    if (
-    ((i==0)||(dArith3[i].cmd!=dArith3[i-1].cmd)))
-    {
-      fprintf(outfile,"  %d,\n",dArith3[i].cmd);
-    }
-    i++;
-  }
-  // operations with many args: ===========================================
-  i=0;
-  while (dArithM[i].cmd!=0)
-  {
-    if (
-    ((i==0)||(dArithM[i].cmd!=dArithM[i-1].cmd)))
-    {
-      fprintf(outfile,"  %d,\n",dArithM[i].cmd);
-    }
-    i++;
-  }
-  // ====================================================================
-  fprintf(outfile,
-  "/* end of list marker */\n"
-  " %d };\n",MAX_TOK);
-  fclose(outfile);
-}
-#endif
-void ttGen4()
-{
-  FILE *outfile = myfopen("plural_cmd.xx","w");
-  int i;
-  const char *old_s="";
-  fprintf(outfile,
-  "@c *****************************************\n"
-  "@c *  Computer Algebra System SINGULAR     *\n"
-  "@c *****************************************\n\n");
-/*-------------------------------------------------------------------*/
-  fprintf(outfile,"@multicolumn .45 .45\n");
-  int op;
-  i=0;
-  while ((op=dArith1[i].cmd)!=0)
-  {
-    if (dArith1[i].p!=jjWRONG)
-    {
-      const char *s = iiTwoOps(op);
-      if ((s!=NULL) && (isalpha(s[0])) && (strcmp(s,old_s)!=0))
-      {
-        old_s=s;
-        #ifdef HAVE_PLURAL
-        switch (dArith1[i].valid_for & PLURAL_MASK)
-        {
-          case NO_PLURAL:
-            fprintf(outfile,"@item @ref{%s} @tab @code{---}\n",s);
-            break;
-          case ALLOW_PLURAL:
-            fprintf(outfile,"@item @ref{%s} @tab @ref{%s (plural)}\n",s,s);
-            break;
-          case COMM_PLURAL:
-            fprintf(outfile,"@item @ref{%s} @tab %s\n",s,s);
-            break;
-        }
-        #endif
-        #ifdef HAVE_RINGS
-        #endif
-      }
-    }
-    i++;
-  }
-  fprintf(outfile,"@c ---------------------------------------------\n");
-  i=0;
-  while ((op=dArith2[i].cmd)!=0)
-  {
-    if (dArith2[i].p!=jjWRONG2)
-    {
-      const char *s = iiTwoOps(op);
-      if ((s!=NULL) && (isalpha(s[0])) && (strcmp(s,old_s)!=0))
-      {
-        old_s=s;
-        #ifdef HAVE_PLURAL
-        switch (dArith2[i].valid_for & PLURAL_MASK)
-        {
-          case NO_PLURAL:
-            fprintf(outfile,"@item @ref{%s} @tab @code{---}\n",s);
-            break;
-          case ALLOW_PLURAL:
-            fprintf(outfile,"@item @ref{%s} @tab @ref{%s (plural)}\n",s,s);
-            break;
-          case COMM_PLURAL:
-            fprintf(outfile,"@item @ref{%s} @tab %s\n",s,s);
-            break;
-        }
-        #endif
-        #ifdef HAVE_RINGS
-        #endif
-      }
-    }
-    i++;
-  }
-  fprintf(outfile,"@c ---------------------------------------------\n");
-  i=0;
-  while ((op=dArith3[i].cmd)!=0)
-  {
-    const char *s = iiTwoOps(op);
-    if (dArith3[i].p!=jjWRONG3)
-    {
-      if ((s!=NULL) && (isalpha(s[0])) && (strcmp(s,old_s)!=0))
-      {
-        old_s=s;
-        #ifdef HAVE_PLURAL
-        switch (dArith3[i].valid_for & PLURAL_MASK)
-        {
-          case NO_PLURAL:
-            fprintf(outfile,"@item @ref{%s} @tab @code{---}\n",s);
-            break;
-          case ALLOW_PLURAL:
-            fprintf(outfile,"@item @ref{%s} @tab @ref{%s (plural)}\n",s,s);
-            break;
-          case COMM_PLURAL:
-            fprintf(outfile,"@item @ref{%s} @tab %s\n",s,s);
-            break;
-        }
-        #endif
-        #ifdef HAVE_RINGS
-        #endif
-      }
-    }
-    i++;
-  }
-  fprintf(outfile,"@c ---------------------------------------------\n");
-  i=0;
-  while ((op=dArithM[i].cmd)!=0)
-  {
-    const char *s = iiTwoOps(op);
-    if ((s!=NULL) && (isalpha(s[0])) && (strcmp(s,old_s)!=0))
-    {
-        old_s=s;
-        #ifdef HAVE_PLURAL
-        switch (dArithM[i].valid_for & PLURAL_MASK)
-        {
-          case NO_PLURAL:
-            fprintf(outfile,"@item @ref{%s} @tab @code{---}\n",s);
-            break;
-          case ALLOW_PLURAL:
-            fprintf(outfile,"@item @ref{%s} @tab @ref{%s (plural)}\n",s,s);
-            break;
-          case COMM_PLURAL:
-            fprintf(outfile,"@item @ref{%s} @tab %s\n",s,s);
-            break;
-        }
-        #endif
-        #ifdef HAVE_RINGS
-        #endif
-    }
-    i++;
-  }
-  fprintf(outfile,"@c ---------------------------------------------\n");
-  fprintf(outfile,"@end table\n");
-  fclose(outfile);
-}
-/*-------------------------------------------------------------------*/
-#else
 #include <iparith.inc>
-#endif
 
 /*=================== operations with 2 args. ============================*/
+/* must be ordered: first operations for chars (infix ops),
+ * then alphabetically */
 
 BOOLEAN iiExprArith2(leftv res, leftv a, int op, leftv b, BOOLEAN proccall)
 {
-#ifndef GENTABLE
   memset(res,0,sizeof(sleftv));
   BOOLEAN call_failed=FALSE;
 
@@ -9299,15 +8147,15 @@ BOOLEAN iiExprArith2(leftv res, leftv a, int op, leftv b, BOOLEAN proccall)
   }
   a->CleanUp();
   b->CleanUp();
-#endif
   return TRUE;
 }
 
 /*==================== operations with 1 arg. ===============================*/
+/* must be ordered: first operations for chars (infix ops),
+ * then alphabetically */
 
 BOOLEAN iiExprArith1(leftv res, leftv a, int op)
 {
-#ifndef GENTABLE
   memset(res,0,sizeof(sleftv));
   BOOLEAN call_failed=FALSE;
 
@@ -9494,15 +8342,15 @@ BOOLEAN iiExprArith1(leftv res, leftv a, int op)
     res->rtyp = UNKNOWN;
   }
   a->CleanUp();
-#endif
   return TRUE;
 }
 
 /*=================== operations with 3 args. ============================*/
+/* must be ordered: first operations for chars (infix ops),
+ * then alphabetically */
 
 BOOLEAN iiExprArith3(leftv res, int op, leftv a, leftv b, leftv c)
 {
-#ifndef GENTABLE
   memset(res,0,sizeof(sleftv));
   BOOLEAN call_failed=FALSE;
 
@@ -9709,10 +8557,11 @@ BOOLEAN iiExprArith3(leftv res, int op, leftv a, leftv b, leftv c)
   b->CleanUp();
   c->CleanUp();
         //Print("op: %d,result typ:%d\n",op,res->rtyp);
-#endif
   return TRUE;
 }
 /*==================== operations with many arg. ===============================*/
+/* must be ordered: first operations for chars (infix ops),
+ * then alphabetically */
 
 BOOLEAN jjANY2LIST(leftv res, leftv v, int cnt)
 {
@@ -9731,7 +8580,6 @@ BOOLEAN jjANY2LIST(leftv res, leftv v, int cnt)
 
 BOOLEAN iiExprArithM(leftv res, leftv a, int op)
 {
-#ifndef GENTABLE
   memset(res,0,sizeof(sleftv));
 
   if (!errorreported)
@@ -9849,14 +8697,12 @@ BOOLEAN iiExprArithM(leftv res, leftv a, int op)
   }
   if (a!=NULL) a->CleanUp();
         //Print("op: %d,result typ:%d\n",op,res->rtyp);
-#endif
   return TRUE;
 }
 
 /*=================== general utilities ============================*/
 int IsCmd(const char *n, int & tok)
 {
-#ifndef GENTABLE
   int i;
   int an=1;
   int en=sArithBase.nLastIdentifier;
@@ -9949,13 +8795,9 @@ int IsCmd(const char *n, int & tok)
     }
   }
   return sArithBase.sCmds[i].toktype;
-#else
-  return 0;
-#endif
 }
 static int iiTabIndex(const jjValCmdTab dArithTab, const int len, const int op)
 {
-#ifndef GENTABLE
   int a=0;
   int e=len;
   int p=len/2;
@@ -9968,40 +8810,10 @@ static int iiTabIndex(const jjValCmdTab dArithTab, const int len, const int op)
   }
   while ( a <= e);
 
-#endif
   assume(0);
   return 0;
 }
 
-#ifdef GENTABLE
-const char * Tok2Cmdname(int tok)
-{
-  int i = 0;
-  if (tok < 0)
-  {
-    return cmds[0].name;
-  }
-  if (tok==COMMAND) return "command";
-  if (tok==ANY_TYPE) return "any_type";
-  if (tok==NONE) return "nothing";
-  //if (tok==IFBREAK) return "if_break";
-  //if (tok==VECTOR_FROM_POLYS) return "vector_from_polys";
-  //if (tok==ORDER_VECTOR) return "ordering";
-  //if (tok==REF_VAR) return "ref";
-  //if (tok==OBJECT) return "object";
-  //if (tok==PRINT_EXPR) return "print_expr";
-  if (tok==IDHDL) return "identifier";
-  while (cmds[i].tokval!=0)
-  {
-    if ((cmds[i].tokval == tok)&&(cmds[i].alias==0))
-    {
-      return cmds[i].name;
-    }
-    i++;
-  }
-  return cmds[0].name;
-}
-#else /* GENTABLE */
 const char * Tok2Cmdname(int tok)
 {
   int i = 0;
@@ -10030,7 +8842,6 @@ const char * Tok2Cmdname(int tok)
   }
   return sArithBase.sCmds[0].name;
 }
-#endif /* GENTABLE */
 
 
 /*---------------------------------------------------------------------*/
@@ -10084,7 +8895,6 @@ int iiInitArithmetic()
 {
   int i;
   //printf("iiInitArithmetic()\n");
-#ifndef GENTABLE
   memset(&sArithBase, 0, sizeof(sArithBase));
   iiInitCmdName();
   /* fix last-identifier */
@@ -10114,7 +8924,6 @@ int iiInitArithmetic()
   //iiArithAddCmd("mygcd", 2, GCD_CMD, CMD_2);
   //iiArithRemoveCmd("mygcd");
   //iiArithAddCmd("kkk", 1, 1234, CMD_1);
-#endif   /* !GENTABLE */
   return 0;
 }
 
@@ -10164,7 +8973,6 @@ int iiArithAddItem2list(
 
 int iiArithFindCmd(const char *szName)
 {
-#ifndef GENTABLE
   int an=0;
   int i = 0,v = 0;
   int en=sArithBase.nLastIdentifier;
@@ -10221,9 +9029,6 @@ int iiArithFindCmd(const char *szName)
   //  return i;
   //Print("RET-2\n");
   return -2;
-#else
-  return 0;
-#endif
 }
 
 char *iiArithGetCmd( int nPos )
@@ -10319,56 +9124,3 @@ int iiArithAddCmd(
   }
   return 0;
 }
-
-#ifdef GENTABLE
-  // some special cmds which do not fit in with the others, and
-  // nevertheless need to be transmitted
-short ExtraCmds[] =
-{
-  OPTION_CMD,
-  NAMES_CMD,
-//  RESERVEDNAME_CMD,
-  PROC_CMD,
-  MAP_CMD,
-  PACKAGE_CMD,
-  '=',
-  0
-};
-
-// This returns 1 if tok is a token which can appear in a Singular
-// (quoted) command, and 0 otherwise
-short IsCmdToken(short tok)
-{
-  int i = 0;
-  // cmds with one arg
-  while (dArith1[i].cmd != 0)
-    if (dArith1[i].cmd == tok) return 1;
-    else i++;
-
-  // cmds with two args
-  i=0;
-  while (dArith2[i].cmd != 0)
-    if (dArith2[i].cmd == tok) return 1;
-    else i++;
-
-  // cmds with three args
-  i=0;
-  while (dArith3[i].cmd != 0)
-    if (dArith3[i].cmd == tok) return 1;
-    else i++;
-
-  // cmds with many args
-  i=0;
-  while (dArithM[i].cmd != 0)
-    if (dArithM[i].cmd == tok) return 1;
-    else i++;
-
-  // cmds which are somewhat special (like those having 0 args)
-  i=0;
-  while (ExtraCmds[i] != 0)
-    if (ExtraCmds[i] == tok) return 1;
-    else i++;
-
-  return 0;
-}
-#endif

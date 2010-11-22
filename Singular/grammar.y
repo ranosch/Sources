@@ -364,13 +364,11 @@ lines:
               writeTime("used time:");
               startTimer();
             }
-            #ifdef HAVE_RTIMER
             if (rtimerv)
             {
               writeRTime("used real time:");
               startRTimer();
             }
-            #endif
             prompt_char = '>';
 #ifdef HAVE_SDB
             if (sdb_flags & 2) { sdb_flags=1; YYERROR; }
@@ -418,7 +416,7 @@ pprompt:
             currentVoice->ifsw=0;
             if (inerror)
             {
-/*  bison failed here
+/*  bison failed here*/
               if ((inerror!=3) && ($1.i<UMINUS) && ($1.i>' '))
               {
                 // 1: yyerror called
@@ -427,7 +425,8 @@ pprompt:
                 inerror=3;
                 Print(" error at token `%s`\n",iiTwoOps($1.i));
               }
-*/
+/**/
+
             }
             if (!errorreported) WerrorS("...parse error");
             yyerror("");
@@ -510,23 +509,9 @@ elemexpr:
           }
         | elemexpr '(' exprlist ')'
           {
-            if ($1.rtyp==LIB_CMD)
-            {
-              if(iiExprArith1(&$$,&$3,LIB_CMD)) YYERROR;
-            }
-            else
-            {
-              if ($1.Typ()==UNKNOWN)
-              {
-                if(iiExprArith2(&$$,&$1,'(',&$3)) YYERROR;
-              }
-              else
-              {
-                $1.next=(leftv)omAllocBin(sleftv_bin);
-                memcpy($1.next,&$3,sizeof(sleftv));
-                if(iiExprArithM(&$$,&$1,'(')) YYERROR;
-              }
-            }
+            $1.next=(leftv)omAllocBin(sleftv_bin);
+            memcpy($1.next,&$3,sizeof(sleftv));
+            if(iiExprArithM(&$$,&$1,'(')) YYERROR;
           }
         | '[' exprlist ']'
           {

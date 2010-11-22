@@ -39,87 +39,6 @@
 
 extern int iiInitArithmetic();
 
-const char *singular_date=__DATE__ " " __TIME__;
-
-#include <kernel/si_gmp.h>
-
-int mmInit( void );
-int mmIsInitialized=mmInit();
-
-extern "C"
-{
-  void omSingOutOfMemoryFunc()
-  {
-    fprintf(stderr, "\nSingular error: no more memory\n");
-    omPrintStats(stderr);
-    m2_end(14);
-    /* should never get here */
-    exit(1);
-  }
-}
-
-int mmInit( void )
-{
-  if(mmIsInitialized==0)
-  {
-
-#ifndef LIBSINGULAR
-#if defined(OMALLOC_USES_MALLOC) || defined(X_OMALLOC)
-    /* in mmstd.c, for some architectures freeSize() unconditionally uses the *system* free() */
-    /* sage ticket 5344: http://trac.sagemath.org/sage_trac/ticket/5344 */
-#include <omalloc/omalloc.h>
-    /* do not rely on the default in Singular as libsingular may be different */
-    mp_set_memory_functions(omMallocFunc,omReallocSizeFunc,omFreeSizeFunc);
-#else
-    mp_set_memory_functions(malloc,reallocSize,freeSize);
-#endif
-#endif // ifndef LIBSINGULAR
-    om_Opts.OutOfMemoryFunc = omSingOutOfMemoryFunc;
-#ifndef OM_NDEBUG
-    om_Opts.ErrorHook = dErrorBreak;
-#endif
-    omInitInfo();
-#ifdef OM_SING_KEEP
-    om_Opts.Keep = OM_SING_KEEP;
-#endif
-  }
-  mmIsInitialized=1;
-  return 1;
-}
-
-#ifdef LIBSINGULAR
-int siInit(char *name)
-{
-  // hack such that all shared' libs in the bindir are loaded correctly
-  feInitResources(name);
-  iiInitArithmetic();
-
-#if 0
-  SingularBuilder::Ptr SingularInstance = SingularBuilder::instance();
-#else
-  basePack=(package)omAlloc0(sizeof(*basePack));
-  currPack=basePack;
-  idhdl h;
-  h=enterid("Top", 0, PACKAGE_CMD, &IDROOT, TRUE);
-  IDPACKAGE(h)->language = LANG_TOP;
-  IDPACKAGE(h)=basePack;
-  currPackHdl=h;
-  basePackHdl=h;
-
-  slStandardInit();
-  myynest=0;
-#endif
-  if (! feOptValue(FE_OPT_NO_STDLIB))
-  {
-    int vv=verbose;
-    verbose &= ~Sy_bit(V_LOAD_LIB);
-    iiLibCmd(omStrDup("standard.lib"), TRUE,TRUE,TRUE);
-    verbose=vv;
-  }
-  errorreported = 0;
-}
-#endif
-
 #if ! defined(LIBSINGULAR)
 /*0 implementation*/
 int main(          /* main entry to Singular */
@@ -135,7 +54,7 @@ int main(          /* main entry to Singular */
   On(SW_USE_CHINREM_GCD);
   //On(SW_USE_FF_MOD_GCD);
   //On(SW_USE_fieldGCD);
-  Off(SW_USE_EZGCD_P);
+  On(SW_USE_EZGCD_P);
   On(SW_USE_QGCD);
   Off(SW_USE_NTL_SORT); // may be changed by an command line option
 #endif
@@ -143,30 +62,12 @@ int main(          /* main entry to Singular */
 #ifdef INIT_BUG
   jjInitTab1();
 #endif
-#ifdef GENTABLE
-  extern void ttGen1();
-  extern void ttGen2b();
-  extern void ttGen4();
-  extern void mpsr_ttGen(); // For initialization of (CMD, MP_COP) tables
-  extern char *iparith_inc;
-  #ifdef HAVE_MPSR
-  extern char *mpsr_Tok_inc;
-  #endif
-  mpsr_ttGen();
-  ttGen4();
-  ttGen1();
-  ttGen2b();
-  rename(iparith_inc,"iparith.inc");
-  rename("plural_cmd.xx","plural_cmd.inc");
-  #ifdef HAVE_MPSR
-  rename(mpsr_Tok_inc,"mpsr_Tok.inc");
-  #endif
-#else
   // Don't worry: ifdef OM_NDEBUG, then all these calls are undef'ed
   omInitRet_2_Info(argv[0]);
   omInitGetBackTrace();
 
   /* initialize components */
+  factoryError=WerrorS;
   siRandomStart=inits();
   feOptSpec[FE_OPT_RANDOM].value = (void*) ((long)siRandomStart);
   int optc, option_index;
@@ -231,15 +132,15 @@ int main(          /* main entry to Singular */
   if (TEST_V_QUIET)
   {
     (printf)(
-"                     SINGULAR                             /"
+"                     SINGULAR                                 /"
 #ifndef MAKE_DISTRIBUTION
 "  Development"
 #endif
 "\n"
-" A Computer Algebra System for Polynomial Computations   /   version %s\n"
-"                                                       0<\n"
-"     by: G.-M. Greuel, G. Pfister, H. Schoenemann        \\   %s\n"
-"FB Mathematik der Universitaet, D-67653 Kaiserslautern    \\\n"
+" A Computer Algebra System for Polynomial Computations       /   version %s\n"
+"                                                           0<\n"
+" by: W. Decker, G.-M. Greuel, G. Pfister, H. Schoenemann     \\   %s\n"
+"FB Mathematik der Universitaet, D-67653 Kaiserslautern        \\\n"
 , S_VERSION1,S_VERSION2);
   }
   else
@@ -347,7 +248,6 @@ int main(          /* main entry to Singular */
   setjmp(si_start_jmpbuf);
   yyparse();
   m2_end(0);
-#endif
   return 0;
 }
 #endif // not LIBSINGULAR

@@ -708,9 +708,9 @@ VERSION_SEP="-"
 
 SINGULAR_MAJOR_VERSION=${SINGULAR_MAJOR_VERSION:-3}
 SINGULAR_MINOR_VERSION=${SINGULAR_MINOR_VERSION:-1}
-SINGULAR_SUB_VERSION=${SINGULAR_SUB_VERSION:-1}
+SINGULAR_SUB_VERSION=${SINGULAR_SUB_VERSION:-2}
 SINGULAR_VERSION="${SINGULAR_VERSION:-$SINGULAR_MAJOR_VERSION${VERSION_SEP}$SINGULAR_MINOR_VERSION${VERSION_SEP}$SINGULAR_SUB_VERSION}"
-VERSION_DATE=${VERSION_DATE:-"Feb 2010"}
+VERSION_DATE=${VERSION_DATE:-"Oct 2010"}
 
 
 
@@ -5265,6 +5265,14 @@ else
     echo "$ac_t""none" 1>&6
     { echo "configure: error: can not build with gmp" 1>&2; exit 1; }
   fi
+fi
+
+echo $ac_n "checking gfan lib""... $ac_c" 1>&6
+if test "$enable_gfanlib" = yes; then
+  echo "yes"
+  NEED_LIBS="${NEED_LIBS} -lcddgmp -lgfan"
+else
+  echo "no"
 fi
 
 echo $ac_n "checking whether to use libsvd""... $ac_c" 1>&6

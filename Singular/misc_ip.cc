@@ -52,7 +52,7 @@ void divTimes(mpz_t n, mpz_t d, int* times)
   mpz_clear(q);
 }
 
-void divTimes_ui(mpz_t n, long d, int* times)
+void divTimes_ui(mpz_t n, unsigned long d, int* times)
 {
   *times = 0;
   mpz_t r; mpz_init(r);
@@ -68,15 +68,17 @@ void divTimes_ui(mpz_t n, long d, int* times)
   mpz_clear(q);
 }
 
-/* returns an object of type lists which contains the entries
-   theInts[0..(length-1)] as INT_CMDs */
-lists makeListsObject(const int* theInts, int length)
+static inline void divTimes_ui_ui(unsigned long *n, unsigned long d, int* times)
 {
-  lists L=(lists)omAllocBin(slists_bin);
-  L->Init(length);
-  for (int i = 0; i < length; i++)
-    { L->m[i].rtyp = INT_CMD; L->m[i].data = (void*)theInts[i]; }
-  return L;
+  *times = 0;
+  unsigned long q=(*n) / d;
+  unsigned long r=(*n) % d;
+  while (r==0)
+  {
+    (*times)++;
+    (*n)=q;
+    q=(*n)/d; r=(*n)%d;
+  }
 }
 
 void setListEntry(lists L, int index, mpz_t n)
@@ -96,16 +98,18 @@ void setListEntry(lists L, int index, mpz_t n)
   L->m[index].rtyp = BIGINT_CMD; L->m[index].data = (void*)nn;
 }
 
-void setListEntry_ui(lists L, int index, long ui)
+void setListEntry_ui(lists L, int index, unsigned long ui)
 { /* assumes n > 0 */
   /* try to fit nn into an int: */
-  if (((ui<<3)>>3)==ui)
+  int i=(int)ui;
+  if ((((unsigned long)i)==ui) && (((i<<3)>>3)==i))
   {
-    L->m[index].rtyp = INT_CMD; L->m[index].data = (void*)ui;
+    L->m[index].rtyp = INT_CMD; L->m[index].data = (void*)i;
   }
   else
   {
-    number nn = nlInit(ui,NULL);
+    number nn = nlRInit(ui);
+    mpz_set_ui(nn->z,ui);
     L->m[index].rtyp = BIGINT_CMD; L->m[index].data = (void*)nn;
   }
 }
@@ -179,68 +183,119 @@ lists primeFactorisation(const number n, const number pBound)
   mpz_t sr; mpz_init(sr); int index = 0; int add;
   lists primes = (lists)omAllocBin(slists_bin); primes->Init(1000);
   int* multiplicities = new int[1000];
+  int positive=1; int probTest = 0;
 
-  divTimes_ui(nn, 2, &tt);
-  if (tt > 0)
+  if (!nlIsZero(n))
   {
-    setListEntry_ui(primes, index, 2);
-    multiplicities[index++] = tt;
-  }
-
-  divTimes_ui(nn, 3, &tt);
-  if (tt > 0)
-  {
-    setListEntry_ui(primes, index, 3);
-    multiplicities[index++] = tt;
-  }
-
-  unsigned long p_ui=5; add = 2;
-  mpz_sqrt(sr, nn);
-  if ((mpz_cmp_ui(b, 0) == 0) || (mpz_cmp(pb, sr) > 0)) mpz_set(pb, sr);
-  int limit=mpz_get_ui(pb);
-  if ((limit==0)||(mpz_cmp_ui(pb,limit)!=0)) limit=1<<31;
-  while (p_ui <=limit)
-  {
-    divTimes_ui(nn, p_ui, &tt);
+    if (!nlGreaterZero(n))
+    {
+      positive=-1;
+      mpz_neg(nn,nn);
+    }
+    divTimes_ui(nn, 2, &tt);
     if (tt > 0)
     {
-      setListEntry_ui(primes, index, p_ui);
+      setListEntry_ui(primes, index, 2);
       multiplicities[index++] = tt;
-      //mpz_sqrt(sr, nn);
-      //if ((mpz_cmp_ui(b, 0) == 0) || (mpz_cmp(pb, sr) > 0)) mpz_set(pb, sr);
-      if (mpz_size1(nn)<=2) 
+    }
+
+    divTimes_ui(nn, 3, &tt);
+    if (tt > 0)
+    {
+      setListEntry_ui(primes, index, 3);
+      multiplicities[index++] = tt;
+    }
+
+    unsigned long p_ui=5; add = 2;
+    BOOLEAN b_is_0=(mpz_cmp_ui(b, 0) == 0);
+    BOOLEAN sr_sets_pb=FALSE;
+    mpz_sqrt(sr, nn);
+    // there are 3 possible limits, we take the minimum:
+    // - argument pBound (if >0)
+    // - sr = sqrt(nn)
+    // - 1<<31
+    unsigned long  limit=~(0L);
+    if (b_is_0 || (mpz_cmp(pb, sr) > 0))
+    {
+      mpz_set(pb, sr);
+      sr_sets_pb=TRUE;
+    }
+    if (mpz_cmp_ui(pb, limit)<0)
+    {
+     limit=mpz_get_ui(pb);
+    }
+    else
+    {
+      mpz_set_ui(pb,limit);
+    }
+    while (p_ui <=limit)
+    {
+      divTimes_ui(nn, p_ui, &tt);
+      if (tt > 0)
       {
-        mpz_sqrt(sr, nn);
-        if ((mpz_cmp_ui(b, 0) == 0) || (mpz_cmp(pb, sr) > 0)) mpz_set(pb, sr);
-        unsigned long l=mpz_get_ui(sr);
-        if (l<limit) limit=l;
+        setListEntry_ui(primes, index, p_ui);
+        multiplicities[index++] = tt;
+        //mpz_sqrt(sr, nn);
+        //if ((mpz_cmp_ui(b, 0) == 0) || (mpz_cmp(pb, sr) > 0)) mpz_set(pb, sr);
+        if (mpz_size1(nn)<=2)
+        {
+          mpz_sqrt(sr, nn);
+          if (sr_sets_pb || (mpz_cmp(pb, sr) > 0)) mpz_set(pb, sr);
+          unsigned long l=mpz_get_ui(sr);
+          if (l<limit) { limit=l; }
+          if (mpz_size1(nn)<=1)
+          {
+            unsigned long nn_ui=mpz_get_ui(nn);
+            while (p_ui <=limit)
+            {
+              divTimes_ui_ui(&nn_ui, p_ui, &tt);
+              if (tt > 0)
+              {
+                setListEntry_ui(primes, index, p_ui);
+                multiplicities[index++] = tt;
+                if (nn_ui==1) break;
+                if (nn_ui<(limit/6)) { limit=nn_ui/6;}
+              }
+              p_ui +=add;
+              //add += 2; if (add == 6) add = 2;
+	      add =2+2*(add==2);
+            }
+            mpz_set_ui(nn,nn_ui);
+            break;
+          }
+        }
       }
+      p_ui +=add;
+      //add += 2; if (add == 6) add = 2;
+      add =2+2*(add==2);
     }
-    p_ui +=add;
-    add += 2; if (add == 6) add = 2;
-  }
-  mpz_set_ui(p, p_ui);
-  mpz_sqrt(sr, nn);
-  if ((mpz_cmp_ui(b, 0) == 0) || (mpz_cmp(pb, sr) > 0)) mpz_set(pb, sr);
-  while (mpz_cmp(pb, p) >= 0)
-  {
-    divTimes(nn, p, &tt);
-    if (tt > 0)
+    mpz_set_ui(p, p_ui);
+    mpz_sqrt(sr, nn);
+    if (b_is_0 || sr_sets_pb || (mpz_cmp(pb, sr) > 0)) mpz_set(pb, sr);
+    while (mpz_cmp(pb, p) >= 0)
     {
-      setListEntry(primes, index, p);
-      multiplicities[index++] = tt;
-      mpz_sqrt(sr, nn);
-      if ((mpz_cmp_ui(b, 0) == 0) || (mpz_cmp(pb, sr) > 0)) mpz_set(pb, sr);
+      divTimes(nn, p, &tt);
+      if (tt > 0)
+      {
+        setListEntry(primes, index, p);
+        multiplicities[index++] = tt;
+        if (mpz_cmp_ui(nn,1)==0) break;
+        mpz_sqrt(sr, nn);
+        if (b_is_0 || sr_sets_pb || (mpz_cmp(pb, sr) > 0)) mpz_set(pb, sr);
+      }
+      mpz_add_ui(p, p, add);
+      //add += 2; if (add == 6) add = 2;
+      add =2+2*(add==2);
     }
-    mpz_add_ui(p, p, add);
-    add += 2; if (add == 6) add = 2;
-  }
-  if ((mpz_cmp_ui(nn, 1) > 0) &&
-      ((mpz_cmp_ui(b, 0) == 0) || (mpz_cmp(nn, b) <= 0)))
-  {
-    setListEntry(primes, index, nn);
-    multiplicities[index++] = 1;
-    mpz_set_ui(nn, 1);
+    if ((mpz_cmp_ui(nn, 1) > 0) &&
+        (b_is_0 || (mpz_cmp(nn, b) <= 0)))
+    {
+      setListEntry(primes, index, nn);
+      multiplicities[index++] = 1;
+      mpz_set_ui(nn, 1);
+    }
+    if ((mpz_cmp_ui(nn, 1) > 0) && (mpz_probab_prime_p(nn, 25) != 0))
+      probTest = 1;
   }
 
   lists primesL = (lists)omAllocBin(slists_bin);
@@ -264,11 +319,10 @@ lists primeFactorisation(const number n, const number pBound)
 
   lists L=(lists)omAllocBin(slists_bin);
   L->Init(4);
-  setListEntry(L, 0, nn);
-  L->m[1].rtyp = LIST_CMD; L->m[1].data = (void*)primesL;
-  L->m[2].rtyp = LIST_CMD; L->m[2].data = (void*)multiplicitiesL;
-  int probTest = 0;
-  if (mpz_probab_prime_p(nn, 25) != 0) probTest = 1;
+  if (positive==-1) mpz_neg(nn,nn);
+  L->m[0].rtyp = LIST_CMD; L->m[0].data = (void*)primesL;
+  L->m[1].rtyp = LIST_CMD; L->m[1].data = (void*)multiplicitiesL;
+  setListEntry(L, 2, nn);
   L->m[3].rtyp =  INT_CMD; L->m[3].data = (void*)probTest;
   mpz_clear(nn); mpz_clear(pb); mpz_clear(b); mpz_clear(p); mpz_clear(sr);
 
@@ -315,6 +369,7 @@ lists primeFactorisation(const number n, const number pBound)
 //#endif /* HAVE_LIBPARSER */
 
 #ifdef HAVE_FACTORY
+#define SI_DONT_HAVE_GLOBAL_VARS
 #include <factory/factory.h>
 // libfac:
   extern const char * libfac_version;
@@ -339,14 +394,8 @@ int inits(void)
   t=initTimer();
   /*t=(int)time(NULL);*/
   if (t==0) t=1;
-#ifdef HAVE_RTIMER
   initRTimer();
-#endif
-#ifdef buildin_rand
   siSeed=t;
-#else
-  srand((unsigned int)t);
-#endif
 #ifdef HAVE_FACTORY
   factoryseed(t);
 #endif
@@ -863,6 +912,7 @@ void p_SetRingOfLeftv(leftv l, ring r)
 #endif
 #endif
 
+#if 0 /* debug only */
 void listall(int showproc)
 {
       idhdl hh=basePack->idroot;
@@ -917,6 +967,8 @@ void listall(int showproc)
       Print("currRing:%lx, currPack:%lx,basePack:%lx\n",(long)currRing,(long)currPack,(long)basePack);
       iiCheckPack(currPack);
 }
+#endif
+
 #ifndef NDEBUG
 void checkall()
 {
@@ -1014,3 +1066,85 @@ void m2_end(int i)
   exit(i);
 }
 }
+
+const char *singular_date=__DATE__ " " __TIME__;
+
+int mmInit( void );
+int mmIsInitialized=mmInit();
+
+extern "C"
+{
+  void omSingOutOfMemoryFunc()
+  {
+    fprintf(stderr, "\nSingular error: no more memory\n");
+    omPrintStats(stderr);
+    m2_end(14);
+    /* should never get here */
+    exit(1);
+  }
+}
+
+int mmInit( void )
+{
+  if(mmIsInitialized==0)
+  {
+
+#ifndef LIBSINGULAR
+#if defined(OMALLOC_USES_MALLOC) || defined(X_OMALLOC)
+    /* in mmstd.c, for some architectures freeSize() unconditionally uses the *system* free() */
+    /* sage ticket 5344: http://trac.sagemath.org/sage_trac/ticket/5344 */
+#include <omalloc/omalloc.h>
+    /* do not rely on the default in Singular as libsingular may be different */
+    mp_set_memory_functions(omMallocFunc,omReallocSizeFunc,omFreeSizeFunc);
+#else
+    mp_set_memory_functions(malloc,reallocSize,freeSize);
+#endif
+#endif // ifndef LIBSINGULAR
+    om_Opts.OutOfMemoryFunc = omSingOutOfMemoryFunc;
+#ifndef OM_NDEBUG
+#ifndef __OPTIMIZE__
+    om_Opts.ErrorHook = dErrorBreak;
+#endif
+#endif
+    omInitInfo();
+#ifdef OM_SING_KEEP
+    om_Opts.Keep = OM_SING_KEEP;
+#endif
+  }
+  mmIsInitialized=1;
+  return 1;
+}
+
+#ifdef LIBSINGULAR
+int siInit(char *name)
+{
+  // hack such that all shared' libs in the bindir are loaded correctly
+  feInitResources(name);
+  iiInitArithmetic();
+
+#if 0
+  SingularBuilder::Ptr SingularInstance = SingularBuilder::instance();
+#else
+  basePack=(package)omAlloc0(sizeof(*basePack));
+  currPack=basePack;
+  idhdl h;
+  h=enterid("Top", 0, PACKAGE_CMD, &IDROOT, TRUE);
+  IDPACKAGE(h)->language = LANG_TOP;
+  IDPACKAGE(h)=basePack;
+  currPackHdl=h;
+  basePackHdl=h;
+
+  slStandardInit();
+  myynest=0;
+#endif
+  if (! feOptValue(FE_OPT_NO_STDLIB))
+  {
+    int vv=verbose;
+    verbose &= ~Sy_bit(V_LOAD_LIB);
+    iiLibCmd(omStrDup("standard.lib"), TRUE,TRUE,TRUE);
+    verbose=vv;
+  }
+  errorreported = 0;
+}
+#endif
+

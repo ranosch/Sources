@@ -115,7 +115,7 @@ static void GetCmdArgs(int *argc, char ***argv, char *str)
  * MPfile  specific stuff
  *
  ***************************************************************/
-LINKAGE BOOLEAN slOpenMPFile(si_link l, short flag)
+LINKAGE BOOLEAN slOpenMPFile(si_link l, short flag, leftv u)
 {
   const char *argv[] = {"--MPtransp", "FILE", "--MPmode", "append",
                         "--MPfile", "/tmp/mpout"};
@@ -304,7 +304,7 @@ LINKAGE MP_Link_pt slOpenMPFork(si_link l, int n_argc, char **n_argv)
 
 
 
-LINKAGE BOOLEAN slOpenMPTcp(si_link l, short flag)
+LINKAGE BOOLEAN slOpenMPTcp(si_link l, short flag, leftv u)
 {
   MP_Link_pt link = NULL;
   char **argv;
@@ -557,7 +557,7 @@ LINKAGE int Batch_do(const char* port, const char* host)
   slInit(silink, istr);
   omFree(istr);
   // open link
-  if (slOpen(silink, SI_LINK_OPEN))
+  if (slOpen(silink, SI_LINK_OPEN,NULL))
   {
     fprintf(stderr, "Batch side could not connect on port %s and host %s\n",
             port, host);

@@ -101,7 +101,6 @@ syStrategy syLaScala(ideal arg, int& maxlength, intvec* weights = NULL);
 syStrategy syHilb(ideal arg,int * length);
 syStrategy syKosz(ideal arg,int * length);
 
-void syDeleteRes(resolvente * res,int length);
 void syKillComputation(syStrategy syzstr, ring r=currRing);
 intvec * syBettiOfComputation(syStrategy syzstr, BOOLEAN minim=TRUE,int * row_shift=NULL, intvec *weights=NULL);
 BOOLEAN syBetti1(leftv res, leftv u);
@@ -119,7 +118,6 @@ void syKillEmptyEntres(resolvente res,int length);
 extern int *  currcomponents;
 extern long *  currShiftedComponents;
 
-int syzcomp1dpc(poly p1, poly p2);
 void syDeletePair(SObject * so);
 void syInitializePair(SObject * so);
 void syCopyPair(SObject * argso, SObject * imso);

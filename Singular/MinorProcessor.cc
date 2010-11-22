@@ -272,6 +272,8 @@ MinorProcessor::MinorProcessor ()
   _columns = 0;
 }
 
+MinorProcessor::~MinorProcessor () { }
+
 IntMinorProcessor::IntMinorProcessor ()
 {
   _intMatrix = 0;
@@ -903,7 +905,7 @@ PolyMinorValue PolyMinorProcessor::getMinor(const int dimension,
   return PolyMinorValue();
 }
 
-PolyMinorValue PolyMinorProcessor::getNextMinor(const char* algorithm, 
+PolyMinorValue PolyMinorProcessor::getNextMinor(const char* algorithm,
                                                 const ideal& iSB)
 {
   /* call a helper method which computes the minor (without using a
