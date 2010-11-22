@@ -183,6 +183,9 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   }
 #endif  
   int i;
+  // store #elements in redGB for freeing the memory of F5Rules in the end of this
+  // iteration step
+  long oldLength  = IDELEMS( redGB );
   // create array of leading monomials of previously computed elements in redGB
   F5Rules* f5Rules        = (F5Rules*) omAlloc(sizeof(struct F5Rules));
   // malloc memory for slabel
@@ -236,17 +239,6 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
                     negBitmaskShifted, offsets
                   );
     }
-    // delete the reduction strategy strat since the current iteration step is
-    // completed right now
-    clearStrat( strat, redGB );
-    omFree( firstRuleLabel );
-    for( i=0; i<IDELEMS(redGB); i++ )
-    {
-      omFree( f5Rules->label[i] );
-    }
-    omFree( f5Rules->slabel );
-    omFree( f5Rules->label );
-    omFree( f5Rules );
     // next all new elements are added to redGB & redGB is being reduced
     Lpoly* temp;
 #if F5EDEBUG2
@@ -281,6 +273,18 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
 #if F5EDEBUG1
   Print("F5CITER-END\n");
 #endif  
+  // delete the reduction strategy strat since the current iteration step is
+  // completed right now
+  clearStrat( strat, redGB );
+  omFree( firstRuleLabel );
+  for( i=0; i<oldLength; i++ )
+  {
+    omFree( f5Rules->label[i] );
+  }
+  omFree( f5Rules->slabel );
+  omFree( f5Rules->label );
+  omFree( f5Rules );
+  
   return redGB;
 }
 
@@ -2507,6 +2511,9 @@ poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
 
 void clearStrat(kStrategy strat, ideal F, ideal Q)
 {
+#if F5EDEBUG3
+  Print("CLEARSTRAT - BEGINNING\n");
+#endif
   int i;
   cleanT(strat);
   omFreeSize((ADDRESS)strat->T,strat->tmax*sizeof(TObject));
@@ -2535,7 +2542,9 @@ void clearStrat(kStrategy strat, ideal F, ideal Q)
     }
   }
   idDelete(&strat->Shdl);
-
+#if F5EDEBUG3
+  Print("CLEARSTRAT - END\n");
+#endif
 }
 
 
