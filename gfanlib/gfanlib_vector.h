@@ -306,11 +306,28 @@ public:
 
 typedef Vector<Integer> ZVector;
 typedef Vector<Rational> QVector;
+typedef Vector<int> IntVector;
 
 inline QVector ZToQVector(ZVector const &v)
 {
   QVector ret(v.size());
   for(int i=0;i<v.size();i++)ret[i]=Rational(v[i]);
+  return ret;
+}
+
+
+inline IntVector ZToIntVector(ZVector const &v)
+{
+  IntVector ret(v.size());
+  for(int i=0;i<v.size();i++)ret[i]=v[i].toInt();
+  return ret;
+}
+
+
+inline ZVector IntToZVector(IntVector const &v)
+{
+  ZVector ret(v.size());
+  for(int i=0;i<v.size();i++)ret[i]=Integer(v[i]);
   return ret;
 }
 

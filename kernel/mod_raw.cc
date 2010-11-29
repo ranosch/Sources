@@ -154,55 +154,13 @@ extern "C" {
  * SECTION generic ELF: ix86-linux / alpha-linux / IA64-linux /x86_64_Linux  *
  *                      SunOS-5 / IRIX-6 / ppcMac-Darwin / FreeeBSD          *
  *****************************************************************************/
-#if defined(ix86_Linux)
+// relying on gcc to define __ELF__, check with cpp -dM /dev/null
+// Mac OsX is an ELF system, but does not define __ELF__
+#if defined(__ELF__)
 #define HAVE_ELF_SYSTEM
 #endif
 
-#if defined(ix86_Linux_libc5)
-#define HAVE_ELF_SYSTEM
-#endif
-
-#if defined(DecAlpha_Linux)
-#define HAVE_ELF_SYSTEM
-#endif
-
-#if defined(IA64_Linux)
-#define HAVE_ELF_SYSTEM
-#endif
-
-#if defined(x86_64_Linux)
-#define HAVE_ELF_SYSTEM
-#endif
-
-#if defined(ppc_Linux)
-#define HAVE_ELF_SYSTEM
-#endif
-
-#if defined(hppa_Linux)
-#define HAVE_ELF_SYSTEM
-#endif
-
-#if defined(SunOS_5)
-#define HAVE_ELF_SYSTEM
-#endif
-
-#ifdef IRIX_6
-#define HAVE_ELF_SYSTEM
-#endif
-
-#ifdef ppcMac_darwin
-#define HAVE_ELF_SYSTEM
-#endif
-
-#ifdef ix86Mac_darwin
-#define HAVE_ELF_SYSTEM
-#endif
-
-#ifdef ix86_freebsd
-#define HAVE_ELF_SYSTEM
-#endif
-
-#ifdef sparc64_Linux
+#if defined(ix86Mac_darwin)
 #define HAVE_ELF_SYSTEM
 #endif
 
