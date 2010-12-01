@@ -56,7 +56,7 @@ struct F5Rules
 /// exponent vector.
 struct RewRules 
 {
-  unsigned long   size;   ///< number of the rules in the list
+  unsigned long   size;   ///< current number of rules in the list
   int**           label;  ///< array of exponent vectors of the rules
   unsigned long*  slabel; ///< array of short exponent vecotrs of the rules
 };
@@ -75,11 +75,11 @@ struct RewRules
 /// TODO----Note that the elements are still non-redundant for F5C+. 
 struct Lpoly 
 {
-  Lpoly*        next;   ///< pointer to the next element in the linked list
-  poly          p;      ///< polynomial part
-  unsigned long sExp;   ///< short exponent vector of the leading monomial of \c p
-  RewRules* rewRule;    ///< exponent vector, i.e. the label/signature
-  BOOLEAN   redundant;  ///< Lpoly redundant?
+  Lpoly*        next;     ///< pointer to the next element in the linked list
+  poly          p;        ///< polynomial part
+  unsigned long sExp;     ///< short exponent vector of the leading monomial of \c p
+  unsigned long rewRule;  ///< idx of the corresponding label in rewRules
+  BOOLEAN   redundant;    ///< Lpoly redundant?
   // NOTE: You do not need the short exponent vector as you never check
   // with this, but only with multiples of it in the critical pair
   //long    slabel; ///< short exponent vector of the label/signature
@@ -128,13 +128,13 @@ struct Cpair
   unsigned long   smLabel1;   ///<  short exponent vector of \c mLabel1
   int*            mult1;      ///<  multiplier of the 1st poly
   poly            p1;         ///<  1st labeled poly
-  RewRules*       rewRule1;   ///<  rule for criterion2 checks
+  unsigned long   rewRule1;   ///<  index of rule for criterion2 checks
   int*            mLabel2;    ///<  exponent vector of the 2nd multiplier * label 
                               ///   of p2
   unsigned long   smLabel2;   ///<  short exponent vector of \c mLabel2
   int*            mult2;      ///<  multiplier of the 2nd poly
   poly            p2;         ///<  2nd labeled poly
-  RewRules*       rewRule2;   ///<  rule for criterion2 checks
+  unsigned long   rewRule2;   ///<  index of rule for criterion2 checks
 };
 
 
@@ -209,6 +209,8 @@ void criticalPairInit (
                                     ///       the previous iteration step  
   const F5Rules& f5Rules,           ///<[in]  list of exponent vectors to check the F5 
                                     ///       Criterion, i.e. Criterion 1
+  const RewRules& rewRules,         ///<[in]  list of exponent vectors to check the Rewritten
+                                    ///       Criterion, i.e. Criterion 2
   CpairDegBound** bounds,           ///<[in,out]  list of critical pair 
                                     ///           degree bounds               
   int numVariables,                 ///<[in] global stuff for faster exponent computations
@@ -232,6 +234,8 @@ void criticalPairPrev (
                                     ///       the previous iteration step  
   const F5Rules& f5Rules,           ///<[in]  list of exponent vectors to check the F5 
                                     ///       Criterion
+  const RewRules& rewRules,         ///<[in]  list of exponent vectors to check the Rewritten
+                                    ///       Criterion, i.e. Criterion 2
   CpairDegBound** bounds,           ///<[in,out]  list of critical pair 
                                     ///           degree bounds               
   int numVariables,                 ///<[in] global stuff for faster exponent computations
@@ -253,6 +257,8 @@ void criticalPairCurr (
                             ///       polynomial of p at this point
   const F5Rules& f5Rules,   ///<[in]  list of exponent vectors to check the F5 
                             ///       Criterion
+  const RewRules& rewRules, ///<[in]  list of exponent vectors to check the Rewritten
+                            ///       Criterion, i.e. Criterion 2
   CpairDegBound** bounds,   ///<[in,out]  list of critical pair 
                             ///           degree bounds               
   int numVariables,         ///<[in] global stuff for faster exponent computations
@@ -294,7 +300,9 @@ inline BOOLEAN criterion1 (
 inline BOOLEAN criterion2 (
   const int*          mLabel,  ///<[in]  multiplied labeled to be checked
   const unsigned long smLabel, ///<[in]  corresponding short exponent vector
-  RewRules*     rewRules       ///<[in]  rules for Rewritten Criterion checks
+  const RewRules*   rewRules,  ///<[in]  rules for Rewritten Criterion checks
+  const unsigned rewRulePos    ///<[in]  position from which the rule check 
+                               ///       should start
                           );
 
 
@@ -346,14 +354,9 @@ void currReduction  (
                           ///           reductions  
   Spoly* spolyFirst,      ///<[in]  first s-polynomial in the list to be reduced
   Spoly* spolyLast,       ///<[in]  last s-polynomial in the list to be reduced
-  RewRules* rewRuleCurr,  ///<[in,out]  1st rewrite rule in the list of all pre-
-                          ///           computed rewrite rules of this degree 
-                          ///           step
-  RewRules** rewRuleLast, ///<[in,out]  last rewrite rule in the list of all pre-
-                          ///           computed rewrite rules of this degree step
-                          ///           needed for higher label reductions!
-                          ///           Note that it can change due to higher label 
-                          ///           reductions!
+  RewRules* rewRules,     ///<[in,out]  rewrite rules 
+  unsigned long currPos,  ///<[in,out]  position in the rewRules array of the first
+                          ///           rewrite rule of this degree step
   ideal redGB,            ///<[in]  previous GB for reduction & generation of new 
                           ///       critical pairs 
   CpairDegBound** cp,     ///<[in,out]  pointer of the deg bound critical pair list,

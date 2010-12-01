@@ -57,7 +57,10 @@
 #define setMaxIdeal 64
 #define NUMVARS currRing->ExpL_Size
 int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
-
+// size for strat in the corresponding iteration steps
+// this is needed for the lengths of the rules arrays in the following
+unsigned long stratSize = 0;
+ 
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
 ideal f5cMain(ideal F, ideal Q) 
@@ -134,6 +137,8 @@ ideal f5cMain(ideal F, ideal Q)
   omFree(shift);
   omFree(negBitmaskShifted);
   omFree(offsets);
+  create_count_f5 = 0;
+  stratSize       = 0;
   return r;
 }
 
@@ -170,6 +175,7 @@ ideal f5cIter (
   strat->syzComp  = 0;
   strat->ak       = idRankFreeModule( redGB );
   prepRedGBReduction( strat, redGB );
+  stratSize       = strat->sl;
 #if F5EDEBUG3
   Print("F5CITER-AFTER PREPREDUCTION\n");
   Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
@@ -200,6 +206,10 @@ ideal f5cIter (
   rewRules->label   = (int**) omAlloc((2*(strat->sl))*sizeof(int*));
   rewRules->slabel  = (unsigned long*) omAlloc((2*(strat->sl))*
                       sizeof(unsigned long)); 
+  for(i=0; i<=2*(strat->sl-1); i++) 
+  {
+    rewRules->label[i]  =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+  } 
   pTest( redGB->m[0] );
   // use the strategy strat to get the F5 Rules:
   // When preparing strat we have already computed & stored the short exonent
@@ -212,12 +222,14 @@ ideal f5cIter (
   } 
 
   f5Rules->size = i++;
-  // initialize a first (dummy) rewrite rule for the initial polynomial of this
-  // iteration step
-  // Note that we are allocating & setting all entries to zero for this first 
-  // rewrite rule
+  // Initialize a first (dummy) rewrite rule for the initial polynomial of this
+  // iteration step:
+  // (a) Note that we are allocating & setting all entries to zero for this first 
+  //     rewrite rule.
+  // (b) Note also that the size of strat is >=1.
   rewRules->label[0]  = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
   rewRules->slabel[0] = 0;
+  rewRules->size      = 1;
   // reduce and initialize the list of Lpolys with the current ideal generator p
 #if F5EDEBUG3
   Print("Before reduction\n");
@@ -236,13 +248,14 @@ ideal f5cIter (
     gCurr->next       = NULL;
     gCurr->sExp       = pGetShortExpVector(p);
     gCurr->p          = p;
-    gCurr->rewRule    = rewRules[0];
+    gCurr->rewRule    = 0;
     gCurr->redundant  = FALSE;
      
     // initializing the list of critical pairs for this iteration step 
     CpairDegBound* cpBounds = NULL;
-    criticalPairInit( gCurr, redGB, *f5Rules, &cpBounds, numVariables, shift,
-                      negBitmaskShifted, offsets
+    criticalPairInit( 
+                      gCurr, redGB, *f5Rules, *rewRules, &cpBounds, numVariables, 
+                      shift, negBitmaskShifted, offsets
                     ); 
     if( cpBounds )
     {
@@ -273,7 +286,7 @@ ideal f5cIter (
       pWrite(gCurr->p);
 #endif
       idInsertPoly( redGB, gCurr->p );
-      temp = gCurr;
+      temp  = gCurr;
       gCurr = gCurr->next;
       omFree(temp);
 #if F5EDEBUG2
@@ -285,8 +298,9 @@ ideal f5cIter (
 #if F5EDEBUG1
   Print("F5CITER-END\n");
 #endif  
-  // delete the reduction strategy strat since the current iteration step is
-  // completed right now
+  // free memory
+  // Delete the F5 Rules, the Rewritten Rules, and the reduction strategy 
+  // strat, since the current iteration step is completed right now.
   oldLength = strat->sl;
   for( i=0; i<=oldLength; i++ )
   {
@@ -314,8 +328,8 @@ ideal f5cIter (
 
 void criticalPairInit ( 
                         Lpoly* gCurr, const ideal redGB, 
-                        const F5Rules& f5Rules, CpairDegBound** cpBounds, 
-                        int numVariables, int* shift, 
+                        const F5Rules& f5Rules, const RewRules& rewRules,
+                        CpairDegBound** cpBounds, int numVariables, int* shift, 
                         unsigned long* negBitmaskShifted, int* offsets
                       )
 {
@@ -476,8 +490,8 @@ void criticalPairInit (
 
 
 void criticalPairPrev ( 
-                        Lpoly* gCurr, const ideal redGB, 
-                        const F5Rules& f5Rules, CpairDegBound** cpBounds, 
+                        Lpoly* gCurr, const ideal redGB, const F5Rules& f5Rules, 
+                        const RewRules& rewRules, CpairDegBound** cpBounds, 
                         int numVariables, int* shift, unsigned long* negBitmaskShifted, 
                         int* offsets
                       )
@@ -529,22 +543,22 @@ void criticalPairPrev (
       {
         cpTemp->mult1[j]    =   -temp;  
         cpTemp->mult2[j]    =   0; 
-        cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j] - temp;
-        critPairDeg         +=  (cpTemp->rewRule1->label[j] - temp); 
+        cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
+        critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
       }
       else
       {
         cpTemp->mult1[j]    =   0;  
         cpTemp->mult2[j]    =   temp;  
-        cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
-        critPairDeg         +=  cpTemp->rewRule1->label[j]; 
+        cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j];
+        critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j]; 
       }
     }
     cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
     
     // testing the F5 Criterion
     if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) &&
-        !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, cpTemp->rewRule1)
+        !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
       )
     {
       // completing the construction of the new critical pair and inserting it
@@ -592,22 +606,22 @@ void criticalPairPrev (
     {
       cpTemp->mult1[j]    =   -temp;  
       cpTemp->mult2[j]    =   0; 
-      cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j] - temp;
-      critPairDeg         +=  (cpTemp->rewRule1->label[j] - temp);
+      cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
+      critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
     }
     else
     {
       cpTemp->mult1[j]    =   0;  
       cpTemp->mult2[j]    =   temp;  
-      cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
-      critPairDeg         +=  cpTemp->rewRule1->label[j];
+      cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j];
+      critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j]; 
     }
   }
   cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
   
   // testing the F5 Criterion
   if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) &&
-      !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, cpTemp->rewRule1)
+      !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
     )
   {
     // completing the construction of the new critical pair and inserting it
@@ -639,7 +653,7 @@ void criticalPairPrev (
 
 
 void criticalPairCurr ( 
-                        Lpoly* gCurr, const F5Rules& f5Rules, 
+                        Lpoly* gCurr, const F5Rules& f5Rules, const RewRules& rewRules,
                         CpairDegBound** cpBounds, int numVariables, 
                         int* shift, unsigned long* negBitmaskShifted, int* offsets
                       )
@@ -708,17 +722,17 @@ void criticalPairCurr (
         pairNeeded          =   TRUE;
         cpTemp->mult1[j]    =   -temp;  
         cpTemp->mult2[j]    =   0; 
-        cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j] - temp;
-        cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j];
-        critPairDeg         +=  cpTemp->rewRule1->label[j] - temp; 
+        cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
+        cpTemp->mLabel2[j]  =   rewRules.label[cpTemp->rewRule2][j];
+        critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
       }
       else
       {
         cpTemp->mult1[j]    =   0;  
         cpTemp->mult2[j]    =   temp;  
-        cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
-        cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j] + temp;
-        critPairDeg         +=  cpTemp->rewRule1->label[j]; 
+        cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j];
+        cpTemp->mLabel2[j]  =   rewRules.label[cpTemp->rewRule2][j] + temp;
+        critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j]; 
       }
     }
     // compute only if there is a "real" multiple of p1 needed
@@ -731,10 +745,11 @@ void criticalPairCurr (
       cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
       
       // testing the F5 & Rewritten Criterion
-      if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+      if( 
+          !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
           && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
-          && !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, cpTemp->rewRule1)
-          && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, cpTemp->rewRule2)
+          && !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
+          && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, &rewRules, cpTemp->rewRule2)
         ) 
       {
         // completing the construction of the new critical pair and inserting it
@@ -757,7 +772,7 @@ void criticalPairCurr (
           int* mLabelTempHolder           = cpTemp->mLabel1;
           int* multTempHolder             = cpTemp->mult1;
           unsigned long smLabelTempHolder = cpTemp->smLabel1;  
-          RewRules* rewRuleTempHolder     = cpTemp->rewRule1;
+          unsigned long rewRuleTempHolder = cpTemp->rewRule1;
           unsigned long* expTempHolder    = cpTemp->mLabelExp;
 
           cpTemp->p1                      = cpTemp->p2;
@@ -822,17 +837,17 @@ void criticalPairCurr (
       pairNeeded          =   TRUE;
       cpTemp->mult1[j]    =   -temp;  
       cpTemp->mult2[j]    =   0; 
-      cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j] - temp;
-      cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j];
-      critPairDeg         +=  cpTemp->rewRule1->label[j] - temp;
+      cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
+      cpTemp->mLabel2[j]  =   rewRules.label[cpTemp->rewRule2][j];
+      critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
     }
     else
     {
       cpTemp->mult1[j]    =   0;  
       cpTemp->mult2[j]    =   temp;  
-      cpTemp->mLabel1[j]  =   cpTemp->rewRule1->label[j];
-      cpTemp->mLabel2[j]  =   cpTemp->rewRule2->label[j] + temp;
-      critPairDeg         +=  cpTemp->rewRule1->label[j];
+      cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j];
+      cpTemp->mLabel2[j]  =   rewRules.label[cpTemp->rewRule2][j] + temp;
+      critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j]; 
     }
   }
   if( pairNeeded )
@@ -841,10 +856,11 @@ void criticalPairCurr (
     cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
     
     // testing the F5 Criterion
-    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+    if( 
+        !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
         && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
-        && !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, cpTemp->rewRule1)
-        && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, cpTemp->rewRule2)
+        && !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
+        && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, &rewRules, cpTemp->rewRule2)
       ) 
     {
       // completing the construction of the new critical pair and inserting it
@@ -867,7 +883,7 @@ void criticalPairCurr (
         int* mLabelTempHolder           = cpTemp->mLabel1;
         int* multTempHolder             = cpTemp->mult1;
         unsigned long smLabelTempHolder = cpTemp->smLabel1;  
-        RewRules* rewRuleTempHolder     = cpTemp->rewRule1;
+        unsigned long rewRuleTempHolder = cpTemp->rewRule1;
         unsigned long* expTempHolder    = cpTemp->mLabelExp;
 
         cpTemp->p1                      = cpTemp->p2;
@@ -1066,7 +1082,7 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
     
 #endif
   nextElement:
-  for( ; i < f5Rules->size; i++)
+  for( ; i < stratSize; i++)
   {
 #if F5EDEBUG2
     Print("F5 Rule: ");
@@ -1095,8 +1111,6 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 #endif
       return TRUE;
     }
-      //Print("HERE\n");
-
   }
 #if F5EDEBUG1
   Print("CRITERION1-END \n");
@@ -1106,65 +1120,56 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 
 
 
-inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel, 
-                            RewRules* rewRules
+inline BOOLEAN criterion2 ( 
+                            const int* mLabel, const unsigned long smLabel, 
+                            const RewRules* rewRules, const unsigned long rewRulePos
                           )
 {
+  unsigned long i   = rewRulePos + 1;
+  unsigned long end = rewRules->size;
+  int j             = currRing->N;
 #if F5EDEBUG1
-    Print("CRITERION2-BEGINNING %p\n", rewRules);
+    Print("CRITERION2-BEGINNING\nTested Element: ");
 #endif
-  int j = currRing->N;
-  if( rewRules->next )
-  {
-    RewRules* temp = rewRules->next;
-    //Print("%p\n", temp);
 #if F5EDEBUG2
-    int counter = 0;
-    poly p = pOne();
-    pSetExp(p,2,1);
-    //pWrite(p);
-    Print("SHORTEXP %ld\n", pGetShortExpVector(p) );
-    Print("Tested Element: %ld\n",smLabel);
     while( j )
     {
       Print("%d ",mLabel[(currRing->N)-j]);
       j--;
     }
     j = currRing->N;
-    Print("\n");
+    Print("\n %ld\n",smLabel);
+    
 #endif
-    nextElement:
-    while( NULL != temp )
-    {
+  nextElement:
+  for( ; i < end; i++)
+  {
 #if F5EDEBUG2
-    Print("SHORTEXP %ld\n", temp->slabel );
-    counter++;
+    Print("Rewrite Rule: ");
     while( j )
     {
-      Print("%d ",temp->label[(currRing->N)-j]);
+      Print("%d ",rewRules->label[i][(currRing->N)-j]);
       j--;
     }
     j = currRing->N;
-    Print("\n");
+    Print("\n %ld\n",rewRules->slabel[i]);
 #endif
-      if(!(smLabel & temp->slabel))
+    if(!(smLabel & rewRules->slabel[i]))
+    {
+      while(j)
       {
-        while(j)
+        if(mLabel[j] < rewRules->label[i][j])
         {
-          if(mLabel[j] < temp->label[j])
-          {
-            j     = currRing->N;
-            temp  = temp->next;
-            goto nextElement;
-          }
-          j--;
+          j = currRing->N;
+          i++;
+          goto nextElement;
         }
-#if F5EDEBUG1
+        j--;
+      }
+#if F5EDEBUG2
         Print("CRITERION2-END-DETECTED \n");
 #endif
-          return TRUE;
-      }
-      temp  = temp->next;
+      return TRUE;
     }
   }
 #if F5EDEBUG1
@@ -1186,26 +1191,23 @@ void computeSpols (
 #endif
   // check whether a new deg step starts or not
   // needed to keep the synchronization of RewRules list and Spoly list alive
-  BOOLEAN start           = TRUE; 
-  BOOLEAN newStep         = TRUE; 
-  Cpair* temp             = NULL;
-  Cpair* tempDel          = NULL;
-  RewRules* rewRulesFirst = NULL;
-  RewRules* rewRulesLast  = NULL;
-  // if a higher label reduction happens we need
-  // to store rule corresponding to the current computed
-  // polynomial to be able to combine them after finishing
-  // the reduction process 
-  RewRules* rewRulesCurr  = NULL; 
-  Spoly* spolysLast       = NULL;
-  Spoly* spolysFirst      = NULL;
+  BOOLEAN start               = TRUE; 
+  BOOLEAN newStep             = TRUE; 
+  Cpair* temp                 = NULL;
+  Cpair* tempDel              = NULL;
+  // rewRulesCurr stores the index of the first rule of the current degree step
+  // Note that if there are higher label reductions taking place in currReduction() 
+  // one has access to the last actual rewrite rule via rewRules->size.
+  unsigned long rewRulesCurr  = rewRules->size;
+  Spoly* spolysLast           = NULL;
+  Spoly* spolysFirst          = NULL;
   // start the rewriter rules list with a NULL element for the recent,
   // i.e. initial element in \c gCurr
-  rewRulesLast            = (*gCurr)->rewRule;
+  rewRulesLast                = (*gCurr)->rewRule;
   // this will go on for the complete current iteration step!
   // => after computeSpols() terminates this iteration step is done!
-  int* multTemp           = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
-  int* multLabelTemp      = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
+  int* multTemp               = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
+  int* multLabelTemp          = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
   poly sp;
   while( cp )
   {
@@ -1231,28 +1233,48 @@ void computeSpols (
         )
       {
         //Print("HERE RULES\n");
-        RewRules* newRule   = (RewRules*) omAlloc( sizeof(RewRules) );
-        newRule->next       = NULL;
-        newRule->label      = temp->mLabel1;
-        newRule->slabel     = ~temp->smLabel1;
+        if( rewRules->size < 2*(stratSize) )
+        {
+          // copy data from critical pair rule to rewRule
+          register unsigned long _length  = currRing->N+1;
+          register unsigned long _i       = 0;
+          register int* _d                = rewRules->label[rewRules->size];
+          register int* _s                = temp->mLabel1;
+          while( _i<_length )
+          {
+            _d[_i]  = _s[_i];
+          }
+          rewRules->slabel[rewRules->size]  = ~temp->smLabel1;
+          rewRules->size++;
+        }
+        else
+        {
+          //////////////////////////////////////////////////////////////////
+          //////////////////////////////////////////////////////////////////
+          // TODO: copy array and allocate more memory
+          //////////////////////////////////////////////////////////////////
+          //////////////////////////////////////////////////////////////////
+          rewRules->label   = (int**) omRealloc( rewRules->label, 3*(rewRules->size) );
+          rewRules->slabel  = (unsigned long*)omRealloc( rewRules->slabel, 3*(rewRules->size) );
+
+          // now we can go on adding the new rule to rewRules
+  
+          // copy data from critical pair rule to rewRule
+          register unsigned long _length  = currRing->N+1;
+          register unsigned long _i       = 0;
+          register int* _d                = rewRules->label[rewRules->size];
+          register int* _s                = temp->mLabel1;
+          while( _i<_length )
+          {
+            _d[_i]  = _s[_i];
+          }
+          rewRules->slabel[rewRules->size]  = ~temp->smLabel1;
+          rewRules->size++;
+
+        } 
 #if F5EDEBUG2
         Print("CPSLABEL: %ld\n", temp->smLabel1);
         Print("NRSLABEL: %ld\n", newRule->slabel);
-#endif
-        rewRulesLast->next  = newRule;
-        rewRulesLast        = newRule; 
-        if( start )
-        {
-          rewRulesFirst = newRule; 
-          start         = FALSE;
-        }
-        if( newStep )
-        {
-          rewRulesCurr  = newRule; 
-          newStep       = FALSE;
-        }
-#if F5EDEBUG2
-        Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast,rewRulesLast->next);
 #endif
 
         // from this point on, rewRulesLast != NULL, thus we do not need to test this
@@ -1346,7 +1368,8 @@ void computeSpols (
     }
     // all rules and s-polynomials of this degree step are computed and 
     // prepared for further reductions in currReduction()
-    currReduction ( strat, spolysFirst, spolysLast, rewRulesCurr, &rewRulesLast, 
+    currReduction ( 
+                    strat, spolysFirst, spolysLast, rewRules, sizeCurrDeg, 
                     redGB, &cp, gCurr, f5Rules, multTemp, multLabelTemp, 
                     numVariables, shift, negBitmaskShifted, offsets
                   );
@@ -1379,6 +1402,9 @@ void computeSpols (
   // free memory
   omFree( multTemp );
   omFree( multLabelTemp );
+  // the following is false as we use arrays for rewRules right now which will be 
+  // deleted in f5cIter(), similar to f5Rules
+  /*
   RewRules* tempRule;
   while( rewRulesFirst )
   {
@@ -1387,6 +1413,7 @@ void computeSpols (
     omFree( tempRule->label );
     omFree( tempRule );
   }
+  */
 }
 
 /////////////////////////////////////////////////////////////
@@ -1419,8 +1446,8 @@ inline void kBucketCopyToPoly(kBucket_pt bucket, poly *p, int *length)
 
 
 void currReduction  ( 
-                      kStrategy strat, Spoly* spolysFirst, Spoly* spolysLast, 
-                      RewRules* rewRulesCurr, RewRules** rewRulesLast,
+                      kStrategy strat, Spoly* spolysFirst, Spoly* spolysLast,
+                      RewRules* rewRules, unsigned long currPos,
                       ideal redGB, CpairDegBound** cp, Lpoly** gCurrFirst, 
                       const F5Rules* f5Rules, int* multTemp, 
                       int* multLabelTemp, int numVariables, int* shift, 
@@ -1876,10 +1903,11 @@ void currReduction  (
       newElement->next      = *gCurrFirst;
       newElement->p         = spTemp->p; 
       newElement->sExp      = pGetShortExpVector(spTemp->p); 
-      newElement->rewRule   = rewRulesCurr; 
+      newElement->rewRule   = &rewRules[currPos]; 
       newElement->redundant = redundant;
       // update pointer to last element in gCurr list
       *gCurrFirst           = newElement;
+      currPos++;
 #if F5EDEBUG0
       Print("ELEMENT ADDED TO GCURR: ");
       pWrite( pHead((*gCurrFirst)->p) );
