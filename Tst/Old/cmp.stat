@@ -1,4 +1,4 @@
-1 >> tst_memory_0 :: 1284378480:3115- 13145 :3-1-1:ix86-Linux:mamawutz:170736
-1 >> tst_memory_1 :: 1284378480:3115- 13145 :3-1-1:ix86-Linux:mamawutz:827392
-1 >> tst_memory_2 :: 1284378480:3115- 13145 :3-1-1:ix86-Linux:mamawutz:827392
-1 >> tst_timer_1 :: 1284378480:3115- 13145 :3-1-1:ix86-Linux:mamawutz:49
+1 >> tst_memory_0 :: 1284378480:3115- 13145 :3-1-1:ix86-Linux:mamawutz:170736 1291015281:3120- exported :3-1-2:x86_64-Linux:ederc-mbp:778104
+1 >> tst_memory_1 :: 1284378480:3115- 13145 :3-1-1:ix86-Linux:mamawutz:827392 1291015281:3120- exported :3-1-2:x86_64-Linux:ederc-mbp:1425408
+1 >> tst_memory_2 :: 1284378480:3115- 13145 :3-1-1:ix86-Linux:mamawutz:827392 1291015281:3120- exported :3-1-2:x86_64-Linux:ederc-mbp:1478656
+1 >> tst_timer_1 :: 1284378480:3115- 13145 :3-1-1:ix86-Linux:mamawutz:49 1291015281:3120- exported :3-1-2:x86_64-Linux:ederc-mbp:25

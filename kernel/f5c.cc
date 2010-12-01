@@ -189,17 +189,18 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   // create array of leading monomials of previously computed elements in redGB
   F5Rules* f5Rules        = (F5Rules*) omAlloc(sizeof(struct F5Rules));
   // malloc memory for slabel
-  f5Rules->label  = (int**) omAlloc(IDELEMS(redGB)*sizeof(int*));
-  f5Rules->slabel = (unsigned long*) omAlloc0(IDELEMS(redGB)*
+  f5Rules->label  = (int**) omAlloc((strat->sl+1)*sizeof(int*));
+  f5Rules->slabel = (unsigned long*) omAlloc(IDELEMS(redGB)*
                     sizeof(unsigned long)); 
   pTest( redGB->m[0] );
-
-  for(i=0; i<IDELEMS(redGB); i++) 
+  // use the strategy strat to get the F5 Rules:
+  // When preparing strat we have already computed & stored the short exonent
+  // vectors there => do not recompute them again 
+  for(i=0; i<=strat->sl; i++) 
   {
     f5Rules->label[i]  =  (int*) omAlloc((currRing->N+1)*sizeof(int));
-    pGetExpV(redGB->m[i], f5Rules->label[i]);
-    f5Rules->slabel[i] =  pGetShortExpVector(redGB->m[i]); // bit complement ~
-    pTest( redGB->m[i] );
+    pGetExpV(strat->S[i], f5Rules->label[i]);
+    f5Rules->slabel[i] =  strat->sevS[i]; // bit complement ~
   } 
 
   f5Rules->size = i++;
