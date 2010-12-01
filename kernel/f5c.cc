@@ -94,12 +94,13 @@ ideal f5cMain(ideal F, ideal Q)
   /// reading/writing/comparison
   int i = 0;
   /// declaration of global variables used for exponent vector
-  int numVariables  = currRing->N;
+  int numVariables                  = currRing->N;
   /// reading/writing/comparison
-  int* shift              = (int*) omAlloc((currRing->N+1)*sizeof(int));
-  unsigned long* negBitmaskShifted  = (unsigned long*) omAlloc((currRing->N+1)*sizeof(unsigned long));
-  int* offsets            = (int*) omAlloc((currRing->N+1)*sizeof(int));
-  const unsigned long _bitmasks[4] = {-1, 0x7fff, 0x7f, 0x3};
+  int* shift                        = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  unsigned long* negBitmaskShifted  = (unsigned long*) omAlloc((currRing->N+1)*
+                                      sizeof(unsigned long));
+  int* offsets                      = (int*) omAlloc((currRing->N+1)*sizeof(int));
+  const unsigned long _bitmasks[4]  = {-1, 0x7fff, 0x7f, 0x3};
   for( ; i<currRing->N+1; i++)
   {
     shift[i]                = currRing->VarOffset[i] >> 24;
@@ -138,7 +139,8 @@ ideal f5cMain(ideal F, ideal Q)
 
 
 
-ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift, 
+ideal f5cIter ( 
+                poly p, ideal redGB, int numVariables, int* shift, 
                 unsigned long* negBitmaskShifted, int* offsets
               )
 {
@@ -166,8 +168,8 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   // reductions with redGB in this iteration step
   kStrategy strat = new skStrategy;
   strat->syzComp  = 0;
-  strat->ak       = idRankFreeModule(redGB);
-  prepRedGBReduction(strat, redGB);
+  strat->ak       = idRankFreeModule( redGB );
+  prepRedGBReduction( strat, redGB );
 #if F5EDEBUG3
   Print("F5CITER-AFTER PREPREDUCTION\n");
   Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
@@ -185,29 +187,37 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   int i;
   // store #elements in redGB for freeing the memory of F5Rules in the end of this
   // iteration step
-  long oldLength  = IDELEMS( redGB );
+  unsigned long oldLength;
   // create array of leading monomials of previously computed elements in redGB
-  F5Rules* f5Rules        = (F5Rules*) omAlloc(sizeof(struct F5Rules));
-  // malloc memory for slabel
-  f5Rules->label  = (int**) omAlloc((strat->sl+1)*sizeof(int*));
-  f5Rules->slabel = (unsigned long*) omAlloc(IDELEMS(redGB)*
-                    sizeof(unsigned long)); 
+  F5Rules* f5Rules    = (F5Rules*) omAlloc(sizeof(struct F5Rules));
+  RewRules* rewRules  = (RewRules*) omAlloc(sizeof(struct RewRules));
+  // malloc memory for all rules
+  f5Rules->label    = (int**) omAlloc((strat->sl+1)*sizeof(int*));
+  f5Rules->slabel   = (unsigned long*) omAlloc((strat->sl+1)*
+                      sizeof(unsigned long)); 
+  // malloc two times the size of the previous Groebner basis
+  // Note that we possibly need more memory in this iteration step!
+  rewRules->label   = (int**) omAlloc((2*(strat->sl))*sizeof(int*));
+  rewRules->slabel  = (unsigned long*) omAlloc((2*(strat->sl))*
+                      sizeof(unsigned long)); 
   pTest( redGB->m[0] );
   // use the strategy strat to get the F5 Rules:
   // When preparing strat we have already computed & stored the short exonent
   // vectors there => do not recompute them again 
   for(i=0; i<=strat->sl; i++) 
   {
-    f5Rules->label[i]  =  (int*) omAlloc((currRing->N+1)*sizeof(int));
-    pGetExpV(strat->S[i], f5Rules->label[i]);
+    f5Rules->label[i]  =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+    pGetExpV( strat->S[i], f5Rules->label[i] );
     f5Rules->slabel[i] =  strat->sevS[i]; // bit complement ~
   } 
 
   f5Rules->size = i++;
   // initialize a first (dummy) rewrite rule for the initial polynomial of this
   // iteration step
-  int* firstRuleLabel = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
-  RewRules firstRule  = { NULL, firstRuleLabel, 0 };
+  // Note that we are allocating & setting all entries to zero for this first 
+  // rewrite rule
+  rewRules->label[0]  = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
+  rewRules->slabel[0] = 0;
   // reduce and initialize the list of Lpolys with the current ideal generator p
 #if F5EDEBUG3
   Print("Before reduction\n");
@@ -226,7 +236,7 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
     gCurr->next       = NULL;
     gCurr->sExp       = pGetShortExpVector(p);
     gCurr->p          = p;
-    gCurr->rewRule    = &firstRule;
+    gCurr->rewRule    = rewRules[0];
     gCurr->redundant  = FALSE;
      
     // initializing the list of critical pairs for this iteration step 
@@ -236,8 +246,9 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
                     ); 
     if( cpBounds )
     {
-      computeSpols( strat, cpBounds, redGB, &gCurr, f5Rules, numVariables, shift, 
-                    negBitmaskShifted, offsets
+      computeSpols( 
+                    strat, cpBounds, redGB, &gCurr, f5Rules, rewRules, 
+                    numVariables, shift, negBitmaskShifted, offsets
                   );
     }
     // next all new elements are added to redGB & redGB is being reduced
@@ -276,9 +287,8 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
 #endif  
   // delete the reduction strategy strat since the current iteration step is
   // completed right now
-  clearStrat( strat, redGB );
-  omFree( firstRuleLabel );
-  for( i=0; i<oldLength; i++ )
+  oldLength = strat->sl;
+  for( i=0; i<=oldLength; i++ )
   {
     omFree( f5Rules->label[i] );
   }
@@ -286,14 +296,26 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
   omFree( f5Rules->label );
   omFree( f5Rules );
   
+  oldLength = rewRules->size;
+  for( i=0; i<=oldLength; i++ )
+  {
+    omFree( rewRules->label[i] );
+  }
+  omFree( rewRules->slabel );
+  omFree( rewRules->label );
+  omFree( rewRules );
+  
+  clearStrat( strat, redGB );
+  
   return redGB;
 }
 
 
 
-void criticalPairInit ( Lpoly* gCurr, const ideal redGB, 
-                        const F5Rules& f5Rules,  
-                        CpairDegBound** cpBounds, int numVariables, int* shift, 
+void criticalPairInit ( 
+                        Lpoly* gCurr, const ideal redGB, 
+                        const F5Rules& f5Rules, CpairDegBound** cpBounds, 
+                        int numVariables, int* shift, 
                         unsigned long* negBitmaskShifted, int* offsets
                       )
 {
@@ -337,7 +359,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
     // steps, i.e. elements already in redGB
     cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = 0; 
     cpTemp->mult2[0]    = 0; 
-    critPairDeg = 0;
+    critPairDeg         = 0;
     for(j=1; j<=currRing->N; j++)
     {
       temp  = expVecNewElement[j] - expVecTemp[j];
@@ -372,7 +394,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets );
       insertCritPair(cpTemp, critPairDeg, cpBounds);
-      Cpair* cp = (Cpair*) omAlloc( sizeof(Cpair) );
+      Cpair* cp         = (Cpair*) omAlloc( sizeof(Cpair) );
       cpTemp            = cp;
       cpTemp->next      = NULL;
       cpTemp->mLabelExp = NULL;
@@ -400,7 +422,7 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
   // steps, i.e. elements already in redGB
   cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetComp(cpTemp->p1); 
   cpTemp->mult2[0]    = pGetComp(redGB->m[IDELEMS(redGB)-1]); 
-  critPairDeg = 0;
+  critPairDeg         = 0;
   for(j=1; j<=currRing->N; j++)
   {
     temp  = expVecNewElement[j] - expVecTemp[j];
@@ -453,7 +475,8 @@ void criticalPairInit ( Lpoly* gCurr, const ideal redGB,
 
 
 
-void criticalPairPrev ( Lpoly* gCurr, const ideal redGB, 
+void criticalPairPrev ( 
+                        Lpoly* gCurr, const ideal redGB, 
                         const F5Rules& f5Rules, CpairDegBound** cpBounds, 
                         int numVariables, int* shift, unsigned long* negBitmaskShifted, 
                         int* offsets
@@ -498,7 +521,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
     // steps, i.e. elements already in redGB
     cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
     cpTemp->mult2[0]    = pGetExp(redGB->m[i], 0); 
-    critPairDeg = 0;
+    critPairDeg         = 0;
     for(j=1; j<=currRing->N; j++)
     {
       temp  = expVecNewElement[j] - expVecTemp[j];
@@ -561,7 +584,7 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
   // steps, i.e. elements already in redGB
   cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
   cpTemp->mult2[0]    = pGetExp(redGB->m[IDELEMS(redGB)-1], 0); 
-  critPairDeg = 0;
+  critPairDeg         = 0;
   for(j=1; j<=currRing->N; j++)
   {
     temp  = expVecNewElement[j] - expVecTemp[j];
@@ -615,7 +638,8 @@ void criticalPairPrev ( Lpoly* gCurr, const ideal redGB,
 
 
 
-void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules, 
+void criticalPairCurr ( 
+                        Lpoly* gCurr, const F5Rules& f5Rules, 
                         CpairDegBound** cpBounds, int numVariables, 
                         int* shift, unsigned long* negBitmaskShifted, int* offsets
                       )
@@ -675,7 +699,7 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
     // steps, i.e. elements already in redGB
     cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
     cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetExp(cpTemp->p2, 0); 
-    critPairDeg = 0;
+    critPairDeg         = 0;
     for(j=1; j<currRing->N+1; j++)
     {
       temp  = expVecNewElement[j] - expVecTemp[j];
@@ -787,9 +811,9 @@ void criticalPairCurr ( Lpoly* gCurr, const F5Rules& f5Rules,
   // pair generated by the new element and elements of the previous iteration
   // steps, i.e. elements already in redGB
   cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
-  cpTemp->rewRule2  = gCurrIter->rewRule;
+  cpTemp->rewRule2    = gCurrIter->rewRule;
   cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetExp(gCurrIter->p, 0); 
-  critPairDeg = 0;
+  critPairDeg         = 0;
   for(j=1; j<=currRing->N; j++)
   {
     temp  = expVecNewElement[j] - expVecTemp[j];
@@ -1151,8 +1175,9 @@ inline BOOLEAN criterion2 ( const int* mLabel, const unsigned long smLabel,
 
 
 
-void computeSpols ( kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCurr, 
-                    const F5Rules* f5Rules, int numVariables, 
+void computeSpols ( 
+                    kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCurr, 
+                    const F5Rules* f5Rules, RewRules* rewRules, int numVariables, 
                     int* shift, unsigned long* negBitmaskShifted, int* offsets
                   )
 {

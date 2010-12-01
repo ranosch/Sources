@@ -56,9 +56,9 @@ struct F5Rules
 /// exponent vector.
 struct RewRules 
 {
-  RewRules*     next;   ///< pointer to the next element in the linked list
-  int*          label;  ///< exponent vector of the rule
-  unsigned long slabel; ///< short exponent vecotr of the rule
+  unsigned long   size;   ///< number of the rules in the list
+  int**           label;  ///< array of exponent vectors of the rules
+  unsigned long*  slabel; ///< array of short exponent vecotrs of the rules
 };
 
  
@@ -312,6 +312,7 @@ void computeSpols (
   Lpoly**         gCurr,      ///<[in,out]  pointer to the list of reducers of the 
                               ///           current iteration step
   const F5Rules*  f5Rules,    ///<[in]  rules for F5 Criterion checks
+  RewRules* rewRules,         ///<[in]  rules for Rewritten Criterion checks
   int numVariables,           ///<[in]  global stuff for faster exponent computations
   int* shift,                 ///<[in]  global stuff for faster exponent computations
   unsigned long* negBit,      ///<[in]  global stuff for faster exponent computations
