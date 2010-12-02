@@ -50,16 +50,17 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
-#define F5EDEBUG0 0 
-#define F5EDEBUG1 0 
+#define F5EDEBUG0 1 
+#define F5EDEBUG1 1 
 #define F5EDEBUG2 0 
 #define F5EDEBUG3 0 
 #define setMaxIdeal 64
 #define NUMVARS currRing->ExpL_Size
 int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
-// size for strat in the corresponding iteration steps
+// size for strat & rewRules in the corresponding iteration steps
 // this is needed for the lengths of the rules arrays in the following
-unsigned long stratSize = 0;
+unsigned long rewRulesSize  = 0;
+unsigned long stratSize     = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -175,7 +176,8 @@ ideal f5cIter (
   strat->syzComp  = 0;
   strat->ak       = idRankFreeModule( redGB );
   prepRedGBReduction( strat, redGB );
-  stratSize       = strat->sl;
+  stratSize       = strat->sl+1;
+  rewRulesSize    = 2*(strat->sl+1);
 #if F5EDEBUG3
   Print("F5CITER-AFTER PREPREDUCTION\n");
   Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
@@ -201,12 +203,23 @@ ideal f5cIter (
   f5Rules->label    = (int**) omAlloc((strat->sl+1)*sizeof(int*));
   f5Rules->slabel   = (unsigned long*) omAlloc((strat->sl+1)*
                       sizeof(unsigned long)); 
+  
   // malloc two times the size of the previous Groebner basis
   // Note that we possibly need more memory in this iteration step!
-  rewRules->label   = (int**) omAlloc((2*(strat->sl))*sizeof(int*));
-  rewRules->slabel  = (unsigned long*) omAlloc((2*(strat->sl))*
+  Print("HERE %d -- %d\n",strat->sl, rewRulesSize);
+  rewRules->label   = (int**) omAlloc((rewRulesSize)*sizeof(int*));
+  Print("HERE %d -- %d\n",strat->sl, rewRulesSize);
+  rewRules->slabel  = (unsigned long*) omAlloc((rewRulesSize)*
                       sizeof(unsigned long)); 
-  for(i=0; i<=2*(strat->sl-1); i++) 
+  Print("HERE %d -- %d\n",strat->sl, rewRulesSize);
+  // Initialize a first (dummy) rewrite rule for the initial polynomial of this
+  // iteration step:
+  // (a) Note that we are allocating & setting all entries to zero for this first 
+  //     rewrite rule.
+  // (b) Note also that the size of strat is >=1.
+  rewRules->label[0]  = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
+  rewRules->slabel[0] = 0;
+  for(i=1; i<rewRulesSize; i++) 
   {
     rewRules->label[i]  =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
   } 
@@ -222,13 +235,6 @@ ideal f5cIter (
   } 
 
   f5Rules->size = i++;
-  // Initialize a first (dummy) rewrite rule for the initial polynomial of this
-  // iteration step:
-  // (a) Note that we are allocating & setting all entries to zero for this first 
-  //     rewrite rule.
-  // (b) Note also that the size of strat is >=1.
-  rewRules->label[0]  = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
-  rewRules->slabel[0] = 0;
   rewRules->size      = 1;
   // reduce and initialize the list of Lpolys with the current ideal generator p
 #if F5EDEBUG3
@@ -237,7 +243,7 @@ ideal f5cIter (
 #endif
   p = reduceByRedGBPoly( p, strat );
 #if F5EDEBUG3
-  Print("After reduction: ")
+  Print("After reduction: ");
   pTest( p );
   pWrite( pHead(p) );
 #endif
@@ -304,21 +310,24 @@ ideal f5cIter (
   oldLength = strat->sl;
   for( i=0; i<=oldLength; i++ )
   {
-    omFree( f5Rules->label[i] );
+    omFreeSize( f5Rules->label[i], (currRing->N+1)*sizeof(int) );
   }
-  omFree( f5Rules->slabel );
-  omFree( f5Rules->label );
-  omFree( f5Rules );
-  
-  oldLength = rewRules->size;
-  for( i=0; i<=oldLength; i++ )
+  omFreeSize( f5Rules->slabel, oldLength*sizeof(unsigned long) );
+  omFreeSize( f5Rules->label, oldLength*sizeof(int*) );
+  omFreeSize( f5Rules, sizeof(F5Rules) );
+  Print("HERE1\n");
+  Print("REWRULESSIZE: %ld\n", rewRulesSize );  
+/*
+  for( i=0; i<rewRulesSize; i++ )
   {
-    omFree( rewRules->label[i] );
+    Print("%ld -- %d\n",i, rewRules->label[i][1] );
+    omFreeSize( rewRules->label[i], (currRing->N+1)*sizeof(int) );
   }
-  omFree( rewRules->slabel );
-  omFree( rewRules->label );
-  omFree( rewRules );
-  
+  omFreeSize( rewRules->slabel, rewRulesSize*sizeof(unsigned long) );
+  omFreeSize( rewRules->label, rewRulesSize*sizeof(int*) );
+  Print("HERE2\n");
+  omFreeSize( rewRules, sizeof(RewRules) );
+  */
   clearStrat( strat, redGB );
   
   return redGB;
@@ -1144,7 +1153,7 @@ inline BOOLEAN criterion2 (
   nextElement:
   for( ; i < end; i++)
   {
-#if F5EDEBUG2
+#if F5EDEBUG1
     Print("Rewrite Rule: ");
     while( j )
     {
@@ -1166,7 +1175,7 @@ inline BOOLEAN criterion2 (
         }
         j--;
       }
-#if F5EDEBUG2
+#if F5EDEBUG1
         Print("CRITERION2-END-DETECTED \n");
 #endif
       return TRUE;
@@ -1198,12 +1207,12 @@ void computeSpols (
   // rewRulesCurr stores the index of the first rule of the current degree step
   // Note that if there are higher label reductions taking place in currReduction() 
   // one has access to the last actual rewrite rule via rewRules->size.
-  unsigned long rewRulesCurr  = rewRules->size;
+  unsigned long rewRulesCurr;
   Spoly* spolysLast           = NULL;
   Spoly* spolysFirst          = NULL;
   // start the rewriter rules list with a NULL element for the recent,
   // i.e. initial element in \c gCurr
-  rewRulesLast                = (*gCurr)->rewRule;
+  //rewRulesLast                = (*gCurr)->rewRule;
   // this will go on for the complete current iteration step!
   // => after computeSpols() terminates this iteration step is done!
   int* multTemp               = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
@@ -1219,6 +1228,10 @@ void computeSpols (
     CpairDegBound* cpDel  = cp;
     cp                    = cp->next;
     omFree( cpDel );
+    // save current position of rewrite rules in array to synchronize them at the end of
+    // currReduction() with the corresponding labeled polynomial
+    rewRulesCurr  = rewRules->size;
+
     // compute all s-polynomials of this degree step and reduce them
     // w.r.t. redGB as preparation for the current reduction steps 
     while( NULL != temp )
@@ -1228,13 +1241,14 @@ void computeSpols (
       // if the pair is not rewritable add the corresponding rule and 
       // and compute the corresponding s-polynomial (and pre-reduce it
       // w.r.t. redGB
-      if( !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1) ||
-          (temp->mLabel2 && !criterion2(temp->mLabel1, temp->smLabel1, temp->rewRule1)) 
+      if( !criterion2(temp->mLabel1, temp->smLabel1, rewRules, temp->rewRule1) ||
+          (temp->mLabel2 && !criterion2(temp->mLabel2, temp->smLabel2, rewRules, temp->rewRule2)) 
         )
       {
-        //Print("HERE RULES\n");
-        if( rewRules->size < 2*(stratSize) )
+        Print("HERE RULES\n");
+        if( rewRules->size < rewRulesSize )
         {
+          Print("POSITION: %ld/%ld\n",rewRules->size,rewRulesSize);
           // copy data from critical pair rule to rewRule
           register unsigned long _length  = currRing->N+1;
           register unsigned long _i       = 0;
@@ -1243,40 +1257,70 @@ void computeSpols (
           while( _i<_length )
           {
             _d[_i]  = _s[_i];
+            _i++;
           }
           rewRules->slabel[rewRules->size]  = ~temp->smLabel1;
           rewRules->size++;
         }
         else
         {
-          //////////////////////////////////////////////////////////////////
-          //////////////////////////////////////////////////////////////////
-          // TODO: copy array and allocate more memory
-          //////////////////////////////////////////////////////////////////
-          //////////////////////////////////////////////////////////////////
-          rewRules->label   = (int**) omRealloc( rewRules->label, 3*(rewRules->size) );
-          rewRules->slabel  = (unsigned long*)omRealloc( rewRules->slabel, 3*(rewRules->size) );
-
+#if F5EDEBUG1
+          Print("ALLOC MORE MEMORY\n");
+#endif
+          unsigned int old                = rewRulesSize;
+          rewRulesSize                    = 3*rewRulesSize;
+          Print("SIZES: %ld -- %ld\n",old, rewRulesSize);
+          RewRules* newRules              = (RewRules*) omAlloc( sizeof(RewRules) );
+          newRules->label                 = (int**) omAlloc( rewRulesSize*sizeof(int*) );
+          newRules->slabel                = (unsigned long*)omAlloc( rewRulesSize*sizeof(unsigned long) );
+          newRules->size                  = rewRules->size;
+          register unsigned long _length  = currRing->N+1;
+          register unsigned long ctr      = 0;
+          for( ; ctr<old; ctr++ )
+          {
+            newRules->label[ctr]      =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+            register unsigned long _i = 0;
+            register int* _d          = newRules->label[ctr];
+            register int* _s          = rewRules->label[ctr];
+            while( _i<_length )
+            {
+              _d[_i]  = _s[_i]; 
+              _i++;
+            }
+            omFreeSize( rewRules->label[ctr], (currRing->N+1)*sizeof(int) );
+            newRules->slabel[ctr] = rewRules->slabel[ctr];
+          }
+          omFreeSize( rewRules->slabel, old*sizeof(unsigned long) );
+          for( ; ctr<rewRulesSize; ctr++ )
+          {
+            newRules->label[ctr] =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+            Print("MORE RULES: %ld -- %d\n", ctr, newRules->label[ctr][0]);
+          }
+          omFreeSize( rewRules, sizeof(RewRules) );
+          rewRules  = newRules;
           // now we can go on adding the new rule to rewRules
   
           // copy data from critical pair rule to rewRule
-          register unsigned long _length  = currRing->N+1;
-          register unsigned long _i       = 0;
-          register int* _d                = rewRules->label[rewRules->size];
-          register int* _s                = temp->mLabel1;
+          register unsigned long _i = 0;
+          register int* _d          = rewRules->label[rewRules->size];
+          register int* _s          = temp->mLabel1;
           while( _i<_length )
           {
             _d[_i]  = _s[_i];
+            _i++;
           }
           rewRules->slabel[rewRules->size]  = ~temp->smLabel1;
           rewRules->size++;
 
         } 
-#if F5EDEBUG2
-        Print("CPSLABEL: %ld\n", temp->smLabel1);
-        Print("NRSLABEL: %ld\n", newRule->slabel);
+#if F5EDEBUG1
+        Print("RULE #%d: ",rewRules->size);
+        for( int _l=0; _l<currRing->N+1; _l++ )
+        {
+          Print("%d  ",rewRules->label[rewRules->size-1][_l]);
+        }
+        Print("\n-------------------------------------\n");
 #endif
-
         // from this point on, rewRulesLast != NULL, thus we do not need to test this
         // again in the following iteration over the list of critical pairs
         
@@ -1369,7 +1413,7 @@ void computeSpols (
     // all rules and s-polynomials of this degree step are computed and 
     // prepared for further reductions in currReduction()
     currReduction ( 
-                    strat, spolysFirst, spolysLast, rewRules, sizeCurrDeg, 
+                    strat, spolysFirst, spolysLast, rewRules, rewRulesCurr, 
                     redGB, &cp, gCurr, f5Rules, multTemp, multLabelTemp, 
                     numVariables, shift, negBitmaskShifted, offsets
                   );
@@ -1447,7 +1491,7 @@ inline void kBucketCopyToPoly(kBucket_pt bucket, poly *p, int *length)
 
 void currReduction  ( 
                       kStrategy strat, Spoly* spolysFirst, Spoly* spolysLast,
-                      RewRules* rewRules, unsigned long currPos,
+                      RewRules* rewRules, unsigned long rewRulesCurr,
                       ideal redGB, CpairDegBound** cp, Lpoly** gCurrFirst, 
                       const F5Rules* f5Rules, int* multTemp, 
                       int* multLabelTemp, int numVariables, int* shift, 
@@ -1487,6 +1531,12 @@ void currReduction  (
 #if F5EDEBUG2
     Print("SPTEMP TO BE REDUCED: %p : %p -- ", spTemp, spTemp->p );
     pWrite( pHead(spTemp->p) );
+    Print("RULE #%d: ",rewRulesCurr);
+    for( int _l=0; _l<currRing->N+1; _l++ )
+    {
+      Print("%d  ",rewRules->label[rewRulesCurr][_l]);
+    }
+    Print("\n-------------------------------------\n");
 #endif
     kBucket* bucket                 = kBucketCreate();
     kBucketInit( bucket, spTemp->p, pLength(spTemp->p) );
@@ -1525,14 +1575,14 @@ void currReduction  (
           // compute the multiple of the rule of temp & multTemp
           for( i=1;i<(currRing->N)+1; i++ )
           {
-            multLabelTemp[i]  = multTemp[i] + temp->rewRule->label[i];
+            multLabelTemp[i]  = multTemp[i] + rewRules->label[temp->rewRule][i];
           }
-          multLabelTemp[0]    = temp->rewRule->label[0];
+          multLabelTemp[0]    = rewRules->label[temp->rewRule][0];
           multLabelShortExp   = ~getShortExpVecFromArray( multLabelTemp );
           
           // test the multiplied label by both criteria 
           if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules ) && 
-              !criterion2( multLabelTemp, multLabelShortExp, temp->rewRule )
+              !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
             )
           { 
             static unsigned long* multTempExp = (unsigned long*) 
@@ -1586,32 +1636,75 @@ void currReduction  (
               newPoly = reduceByRedGBPoly( newPoly, strat );
               
               // add the new rule even when newPoly is zero!
-              RewRules* newRule   = (RewRules*) omAlloc( sizeof(RewRules) );
-              newRule->next       = NULL;
-              newRule->label = (int*) omAlloc( (currRing->N+1) * sizeof(int) );
-              int j = 0;
-              for( j=0;j<currRing->N+1;j++ )
+              // Note that we possibly need more memory in this iteration step!
+              if( rewRules->size < rewRulesSize )
               {
-                newRule->label[j] = multLabelTemp[j];
+                // copy data from critical pair rule to rewRule
+                register unsigned long _length  = currRing->N+1;
+                register unsigned long _i       = 0;
+                register int* _d                = rewRules->label[rewRules->size];
+                register int* _s                = multLabelTemp;
+                while( _i<_length )
+                {
+                  _d[_i]  = _s[_i];
+                  _i++;
+                }
+                rewRules->slabel[rewRules->size]  = ~multLabelShortExp;
+                rewRules->size++;
               }
-              newRule->slabel       = ~multLabelShortExp;
-              // insert the new element at the right position, i.e.
-              // ordered w.r.t. the corresponding rewrite rule
-              RewRules* tempRew     = rewRulesCurr;
-              Spoly* tempSpoly      = spTemp;
-              while ( NULL != tempSpoly->next && 
-                      expCmp( multLabelTempExp, tempSpoly->next->labelExp ) == 1 
-                    )
+              else
               {
-                tempSpoly = tempSpoly->next;
-                tempRew   = tempRew->next;
-              }
-              newRule->next = tempRew->next;
-              tempRew->next = newRule;
-              if( NULL == tempRew->next )
-              {
-                (*rewRulesLast) = newRule; 
-              }
+#if F5EDEBUG1
+          Print("ALLOC MORE MEMORY\n");
+#endif
+                unsigned int old                = rewRulesSize;
+                rewRulesSize                    = 3*rewRulesSize;
+          Print("SIZES: %ld -- %ld\n",old, rewRulesSize);
+                RewRules* newRules              = (RewRules*) omAlloc( sizeof(RewRules) );
+                newRules->label                 = (int**) omAlloc( rewRulesSize*sizeof(int*) );
+                newRules->slabel                = (unsigned long*)omAlloc( rewRulesSize*sizeof(unsigned long) );
+                newRules->size                  = rewRules->size;
+                register unsigned long _length  = currRing->N+1;
+                register unsigned long ctr      = 0;
+                for( ; ctr<old; ctr++ )
+                {
+                  newRules->label[ctr]      =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                  register unsigned long _i = 0;
+                  register int* _d          = newRules->label[ctr];
+                  register int* _s          = rewRules->label[ctr];
+                  while( _i<_length )
+                  {
+                    _d[_i]  = _s[_i];
+                    _i++;
+                  }
+                  omFreeSize( rewRules->label[ctr], (currRing->N+1)*sizeof(int) );
+                  newRules->slabel[ctr] = rewRules->slabel[ctr];
+                }
+                omFreeSize( rewRules->slabel, old*sizeof(unsigned long) );
+                for( ; ctr<rewRulesSize; ctr++ )
+                {
+                  newRules->label[ctr] =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                  Print("MORE RULES: %ld -- %d\n", ctr, newRules->label[ctr][0]);
+                }
+                omFreeSize( rewRules, sizeof(RewRules) );
+                rewRules  = newRules;
+                // now we can go on adding the new rule to rewRules
+        
+                // copy data from critical pair rule to rewRule
+                register unsigned long _i = 0;
+                register int* _d          = rewRules->label[rewRules->size];
+                register int* _s          = multLabelTemp;
+                while( _i<_length )
+                {
+                  _d[_i]  = _s[_i];
+                  _i++;
+                }
+                rewRules->slabel[rewRules->size]  = ~multLabelShortExp;
+                rewRules->size++;
+
+              } 
+              // insert the new element at the right position, i.e. at the
+              // end of the list of spolynomials
               
               if( NULL != newPoly )
               {
@@ -1622,8 +1715,9 @@ void currReduction  (
               Spoly* spNew      = (Spoly*) omAlloc( sizeof(struct Spoly) );
               spNew->p          = newPoly;
               spNew->labelExp   = multLabelTempExp;
-              spNew->next       = tempSpoly->next;
-              tempSpoly->next   = spNew;
+              spNew->next       = NULL;
+              spolysLast->next  = spNew;
+              spolysLast        = spNew;
 #if F5EDEBUG1
               Print("ADDED TO LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
               Print("%p -- ",spolysLast);
@@ -1767,7 +1861,8 @@ void currReduction  (
               pWrite( kBucketGetLm(bucket) );
               pTest( spTemp->p );
 #endif
-        if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
+        if( isDivisibleGetMult( 
+                                temp->p, temp->sExp, kBucketGetLm( bucket ), 
                                 bucketExp, &multTemp, &isMult
                               ) 
           )
@@ -1779,14 +1874,14 @@ void currReduction  (
             // compute the multiple of the rule of temp & multTemp
             for( i=1; i<(currRing->N)+1; i++ )
             {
-              multLabelTemp[i]  = multTemp[i] + temp->rewRule->label[i];
+              multLabelTemp[i]  = multTemp[i] + rewRules->label[temp->rewRule][i];
             }
             
             multLabelShortExp  = getShortExpVecFromArray( multLabelTemp );
             
             // test the multiplied label by both criteria 
             if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules ) && 
-                !criterion2( multLabelTemp, multLabelShortExp, temp->rewRule )
+                !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
               )
             {  
               static unsigned long* multTempExp = (unsigned long*) 
@@ -1903,27 +1998,28 @@ void currReduction  (
       newElement->next      = *gCurrFirst;
       newElement->p         = spTemp->p; 
       newElement->sExp      = pGetShortExpVector(spTemp->p); 
-      newElement->rewRule   = &rewRules[currPos]; 
+      newElement->rewRule   = rewRulesCurr; 
       newElement->redundant = redundant;
       // update pointer to last element in gCurr list
       *gCurrFirst           = newElement;
-      currPos++;
 #if F5EDEBUG0
       Print("ELEMENT ADDED TO GCURR: ");
       pWrite( pHead((*gCurrFirst)->p) );
       poly pSig = pOne(); 
       for( int lale = 1; lale < (currRing->N+1); lale++ )
       {
-        pSetExp( pSig, lale, rewRulesCurr->label[lale] );
+        pSetExp( pSig, lale, rewRules->label[rewRulesCurr][lale] );
       }
       pWrite( pSig );
       pTest( (*gCurrFirst)->p );
       pDelete( &pSig );
 #endif
-      criticalPairPrev( *gCurrFirst, redGB, *f5Rules, cp, numVariables, 
+      criticalPairPrev( 
+                        *gCurrFirst, redGB, *f5Rules, *rewRules, cp, numVariables, 
                         shift, negBitmaskShifted, offsets 
                       );
-      criticalPairCurr( *gCurrFirst, *f5Rules, cp, numVariables, 
+      criticalPairCurr( 
+                        *gCurrFirst, *f5Rules, *rewRules, cp, numVariables, 
                         shift, negBitmaskShifted, offsets 
                       );
     }
@@ -1931,15 +2027,10 @@ void currReduction  (
     {
       pDelete( &spTemp->p );
     }
-    rewRulesCurr  = rewRulesCurr->next;
+    rewRulesCurr  = rewRulesCurr++;
     Spoly* spDel  = spTemp;
     spTemp        = spTemp->next;
     // free memory of spTemp stuff
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-// why is the deletion of spTemp->labelExp not working?
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
     omFree( spDel->labelExp );
     omFree( spDel );
     // free memory of bucket

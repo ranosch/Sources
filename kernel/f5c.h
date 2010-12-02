@@ -298,11 +298,11 @@ inline BOOLEAN criterion1 (
 /// @return 1, if the label is detected by the Rewritten Criterion; 0, else
 /// @sa criterion1
 inline BOOLEAN criterion2 (
-  const int*          mLabel,  ///<[in]  multiplied labeled to be checked
-  const unsigned long smLabel, ///<[in]  corresponding short exponent vector
-  const RewRules*   rewRules,  ///<[in]  rules for Rewritten Criterion checks
-  const unsigned rewRulePos    ///<[in]  position from which the rule check 
-                               ///       should start
+  const int*          mLabel,     ///<[in]  multiplied labeled to be checked
+  const unsigned long smLabel,    ///<[in]  corresponding short exponent vector
+  const RewRules*   rewRules,     ///<[in]  rules for Rewritten Criterion checks
+  const unsigned long rewRulePos  ///<[in]  position from which the rule check 
+                                  ///       should start
                           );
 
 
