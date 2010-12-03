@@ -2306,133 +2306,19 @@ static poly redMoraNF (poly h,kStrategy strat, int flag)
 
 void prepRedGBReduction(kStrategy strat, ideal F, ideal Q, int lazyReduce)
 {
-  int i;
-  LObject   h;
-
-  strat->kHEdgeFound = ppNoether != NULL;
-  strat->kNoether=pCopy(ppNoether);
-  test|=Sy_bit(OPT_REDTAIL);
-  if (TEST_OPT_STAIRCASEBOUND
-  && (0<Kstd1_deg)
-  && ((!strat->kHEdgeFound)
-    ||(TEST_OPT_DEGBOUND && (pWTotaldegree(strat->kNoether)<Kstd1_deg))))
-  {
-    pDelete(&strat->kNoether);
-    strat->kNoether=pOne();
-    pSetExp(strat->kNoether,1, Kstd1_deg+1);
-    pSetm(strat->kNoether);
-    strat->kHEdgeFound=TRUE;
-  }
-  initBuchMoraCrit(strat);
-  initBuchMoraPos(strat);
-  initMora(F,strat);
-  strat->enterS = enterSMoraNF;
-  /*- set T -*/
-  strat->tl = -1;
-  strat->tmax = setmaxT;
-  strat->T = initT();
-  strat->R = initR();
-  strat->sevT = initsevT();
-  /*- set S -*/
-  strat->sl = -1;
-  /*- init local data struct.-------------------------- -*/
-  /*Shdl=*/initS(F,Q,strat);
-  if ((strat->ak!=0)
-  && (strat->kHEdgeFound))
-  {
-    if (strat->ak!=1)
-    {
-      pSetComp(strat->kNoether,1);
-      pSetmComp(strat->kNoether);
-      poly p=pHead(strat->kNoether);
-      pSetComp(p,strat->ak);
-      pSetmComp(p);
-      p=pAdd(strat->kNoether,p);
-      strat->kNoether=pNext(p);
-      p_LmFree(p,currRing);
-    }
-  }
-  if (TEST_OPT_INTSTRATEGY && ((lazyReduce & KSTD_NF_LAZY)==0))
-  {
-    for (i=strat->sl; i>=0; i--)
-      pNorm(strat->S[i]);
-  }
-  
-  assume(!(idIs0(F)&&(Q==NULL)));
-
-// lazy_reduce flags: can be combined by |
-//#define KSTD_NF_LAZY   1
-  // do only a reduction of the leading term
-//#define KSTD_NF_ECART  2
-  // only local: recude even with bad ecart
-  //poly   p;
-
-  //if ((idIs0(F))&&(Q==NULL))
-  //  return pCopy(q); /*F=0*/
-  //strat->ak = si_max(idRankFreeModule(F),pMaxComp(q));
   /*- creating temp data structures------------------- -*/
-  strat->kHEdgeFound = ppNoether != NULL;
-  strat->kNoether    = pCopy(ppNoether);
+  BITSET save_test=test;
   test|=Sy_bit(OPT_REDTAIL);
-  test&=~Sy_bit(OPT_INTSTRATEGY);
-  if (TEST_OPT_STAIRCASEBOUND
-  && (! TEST_V_DEG_STOP)
-  && (0<Kstd1_deg)
-  && ((!strat->kHEdgeFound)
-    ||(TEST_OPT_DEGBOUND && (pWTotaldegree(strat->kNoether)<Kstd1_deg))))
-  {
-    pDelete(&strat->kNoether);
-    strat->kNoether=pOne();
-    pSetExp(strat->kNoether,1, Kstd1_deg+1);
-    pSetm(strat->kNoether);
-    strat->kHEdgeFound=TRUE;
-  }
   initBuchMoraCrit(strat);
-  initBuchMoraPos(strat);
-  initMora(F,strat);
-  strat->enterS = enterSMoraNF;
-  /*- set T -*/
-  strat->tl = -1;
-  strat->tmax = setmaxT;
-  strat->T = initT();
-  strat->R = initR();
-  strat->sevT = initsevT();
+  strat->initEcart = initEcartBBA;
+  strat->enterS = enterSBba;
+#ifndef NO_BUCKETS
+  strat->use_buckets = (!TEST_OPT_NOT_BUCKETS) && (!rIsPluralRing(currRing));
+#endif
   /*- set S -*/
   strat->sl = -1;
-  /*- init local data struct.-------------------------- -*/
+  /*- init local data struct.---------------------------------------- -*/
   /*Shdl=*/initS(F,Q,strat);
-  if ((strat->ak!=0)
-  && (strat->kHEdgeFound))
-  {
-    if (strat->ak!=1)
-    {
-      pSetComp(strat->kNoether,1);
-      pSetmComp(strat->kNoether);
-      poly p=pHead(strat->kNoether);
-      pSetComp(p,strat->ak);
-      pSetmComp(p);
-      p=pAdd(strat->kNoether,p);
-      strat->kNoether=pNext(p);
-      p_LmFree(p,currRing);
-    }
-  }
-  if ((lazyReduce & KSTD_NF_LAZY)==0)
-  {
-    for (i=strat->sl; i>=0; i--)
-      pNorm(strat->S[i]);
-  }
-  /*- puts the elements of S also to T -*/
-  for (i=0; i<=strat->sl; i++)
-  {
-    h.p = strat->S[i];
-    h.ecart = strat->ecartS[i];
-    if (strat->sevS[i] == 0) strat->sevS[i] = pGetShortExpVector(h.p);
-    else assume(strat->sevS[i] == pGetShortExpVector(h.p));
-    h.length = pLength(h.p);
-    h.sev = strat->sevS[i];
-    h.SetpFDeg();
-    enterT(h,strat);
-  }
 }
 
 
@@ -2449,22 +2335,32 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
   BITSET save_test=test;
   // create the s-polynomial corresponding to the critical pair cp
   poly q = createSpoly( cp, numVariables, shift, negBitmaskShifted, offsets );
-  /*- compute------------------------------------------- -*/
-  p = pCopy(q);
-  deleteHC(&p,&o,&j,strat);
-  if (TEST_OPT_PROT) 
-  { 
-    PrintS("r"); 
-    mflush(); 
-  }
-  if (p!=NULL) p = redMoraNF(p,strat, lazyReduce & KSTD_NF_ECART);
+  /*- compute------------------------------------------------------- -*/
+  //if ((TEST_OPT_INTSTRATEGY)&&(lazyReduce==0))
+  //{
+  //  for (i=strat->sl;i>=0;i--)
+  //    pNorm(strat->S[i]);
+  //}
+  kTest(strat);
+  if (TEST_OPT_PROT) { PrintS("r"); mflush(); }
+  int max_ind;
+  p = redNF(pCopy(q),max_ind,lazyReduce & KSTD_NF_NONORM,strat);
   if ((p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
   {
-    if (TEST_OPT_PROT) 
-    { 
-      PrintS("t"); mflush(); 
+    if (TEST_OPT_PROT) { PrintS("t"); mflush(); }
+    #ifdef HAVE_RINGS
+    if (rField_is_Ring())
+    {
+      p = redtailBba_Z(p,max_ind,strat);
     }
-    p = redtail(p,strat->sl,strat);
+    else
+    #endif
+    {
+      BITSET save=test;
+      test &= ~Sy_bit(OPT_INTSTRATEGY);
+      p = redtailBba(p,max_ind,strat,(lazyReduce & KSTD_NF_NONORM)==0);
+      test=save;
+    }
   }
   test=save_test;
   if (TEST_OPT_PROT) PrintLn();
@@ -2485,22 +2381,32 @@ poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
 #if F5EDEBUG3
   pTest( q );
 #endif
-  p = pCopy(q);
-  deleteHC(&p,&o,&j,strat);
-  if (TEST_OPT_PROT) 
-  { 
-    PrintS("r"); 
-    mflush(); 
-  }
-  if (p!=NULL) p = redMoraNF(p,strat, lazyReduce & KSTD_NF_ECART);
+  /*- compute------------------------------------------------------- -*/
+  //if ((TEST_OPT_INTSTRATEGY)&&(lazyReduce==0))
+  //{
+  //  for (i=strat->sl;i>=0;i--)
+  //    pNorm(strat->S[i]);
+  //}
+  kTest(strat);
+  if (TEST_OPT_PROT) { PrintS("r"); mflush(); }
+  int max_ind;
+  p = redNF(pCopy(q),max_ind,lazyReduce & KSTD_NF_NONORM,strat);
   if ((p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
   {
-    if (TEST_OPT_PROT) 
-    { 
-      PrintS("t"); 
-      mflush(); 
+    if (TEST_OPT_PROT) { PrintS("t"); mflush(); }
+    #ifdef HAVE_RINGS
+    if (rField_is_Ring())
+    {
+      p = redtailBba_Z(p,max_ind,strat);
     }
-    p = redtail(p,strat->sl,strat);
+    else
+    #endif
+    {
+      BITSET save=test;
+      test &= ~Sy_bit(OPT_INTSTRATEGY);
+      p = redtailBba(p,max_ind,strat,(lazyReduce & KSTD_NF_NONORM)==0);
+      test=save;
+    }
   }
   test=save_test;
   if (TEST_OPT_PROT) PrintLn();
@@ -2514,33 +2420,16 @@ void clearStrat(kStrategy strat, ideal F, ideal Q)
 #if F5EDEBUG3
   Print("CLEARSTRAT - BEGINNING\n");
 #endif
-  int i;
-  cleanT(strat);
-  omFreeSize((ADDRESS)strat->T,strat->tmax*sizeof(TObject));
-  omFreeSize((ADDRESS)strat->ecartS,IDELEMS(strat->Shdl)*sizeof(int));
-  omFreeSize((ADDRESS)strat->sevS,IDELEMS(strat->Shdl)*sizeof(unsigned long));
-  omFreeSize((ADDRESS)strat->NotUsedAxis,(pVariables+1)*sizeof(BOOLEAN));
-  omFree(strat->sevT);
-  omFree(strat->S_2_R);
-  omFree(strat->R);
-
-  if ((Q!=NULL)&&(strat->fromQ!=NULL))
-  {
-    i=((IDELEMS(Q)+IDELEMS(F)+15)/16)*16;
-    omFreeSize((ADDRESS)strat->fromQ,i*sizeof(int));
-    strat->fromQ=NULL;
-  }
-  pDelete(&strat->kHEdge);
-  pDelete(&strat->kNoether);
-  if ((TEST_OPT_WEIGHTM)&&(F!=NULL))
-  {
-    pRestoreDegProcs(pFDegOld, pLDegOld);
-    if (ecartWeights)
-    {
-      omFreeSize((ADDRESS *)&ecartWeights,(pVariables+1)*sizeof(short));
-      ecartWeights=NULL;
-    }
-  }
+  /*- release temp data------------------------------- -*/
+  omfree(strat->sevS);
+  omfree(strat->ecartS);
+  omfree(strat->T);
+  omfree(strat->sevT);
+  omfree(strat->R);
+  omfree(strat->S_2_R);
+  omfree(strat->L);
+  omfree(strat->B);
+  omfree(strat->fromQ);
   idDelete(&strat->Shdl);
 #if F5EDEBUG3
   Print("CLEARSTRAT - END\n");
