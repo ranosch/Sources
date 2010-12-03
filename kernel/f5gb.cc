@@ -982,7 +982,7 @@ Criterion 2, i.e. Rewritten Criterion, for its second call in computeSPols(), wi
 inline bool criterion2(poly t, LPolyOld* l, RList* rules, RuleOld* testedRuleOld) {
     //Print("------------------------------IN CRITERION 2/2-----------------------------------------\n");
     //Print("LAST RuleOld TESTED: %p",testedRuleOld);
-  /*  Print("RULES: \n#######################################\n");
+    Print("RULES: \n#######################################\n");
         RNode* tempR    =   rules->getFirst();
         while(NULL != tempR) {
             pWrite(tempR->getRuleOldTerm());
@@ -994,17 +994,17 @@ inline bool criterion2(poly t, LPolyOld* l, RList* rules, RuleOld* testedRuleOld
         //pWrite(l->getTerm());
         pWrite(ppMult_qq(t,l->getTerm()));
         //Print("%d\n\n",l->getIndex());
-  */
+  
 // start at the previously added element to gPrev, as all other elements will have the same index for sure
 	RNode* testNode =   rules->getFirst();
     // save the monom t1*label_term(l) as it is tested various times in the following
     poly u1 = ppMult_qq(t,l->getTerm());
 	// first element added to rTag was NULL, check for this
 	while(NULL != testNode && testNode->getRuleOld() != l->getRuleOld()) {
-        //pWrite(testNode->getRuleOldTerm());
+        pWrite(testNode->getRuleOldTerm());
         if(pLmDivisibleByNoComp(testNode->getRuleOldTerm(),u1)) {
             //pWrite(testNode->getRuleOldTerm());
-            //Print("--------------------------Criterion 2 NOT passed!------------------------------\n");
+            Print("--------------------------Criterion 2 NOT passed!------------------------------\n");
             //Print("INDEX: %d\n",l->getIndex());
             pDelete(&u1);
     //Print("------------------------------IN CRITERION 2/2-----------------------------------------\n\n");

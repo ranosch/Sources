@@ -320,7 +320,7 @@ void computeSpols (
   Lpoly**         gCurr,      ///<[in,out]  pointer to the list of reducers of the 
                               ///           current iteration step
   const F5Rules*  f5Rules,    ///<[in]  rules for F5 Criterion checks
-  RewRules* rewRules,         ///<[in]  rules for Rewritten Criterion checks
+  RewRules** rewRules,        ///<[in]  rules for Rewritten Criterion checks
   int numVariables,           ///<[in]  global stuff for faster exponent computations
   int* shift,                 ///<[in]  global stuff for faster exponent computations
   unsigned long* negBit,      ///<[in]  global stuff for faster exponent computations
@@ -354,7 +354,7 @@ void currReduction  (
                           ///           reductions  
   Spoly* spolyFirst,      ///<[in]  first s-polynomial in the list to be reduced
   Spoly* spolyLast,       ///<[in]  last s-polynomial in the list to be reduced
-  RewRules* rewRules,     ///<[in,out]  rewrite rules 
+  RewRules** rewRules,    ///<[in,out]  rewrite rules 
   unsigned long currPos,  ///<[in,out]  position in the rewRules array of the first
                           ///           rewrite rule of this degree step
   ideal redGB,            ///<[in]  previous GB for reduction & generation of new 
