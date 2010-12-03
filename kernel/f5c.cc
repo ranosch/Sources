@@ -164,9 +164,23 @@ ideal f5cIter ( poly p, ideal redGB, int numVariables, int* shift,
 #endif  
   // create the reduction structure "strat" which is needed for all 
   // reductions with redGB in this iteration step
-  kStrategy strat = new skStrategy;
-  strat->syzComp  = 0;
-  strat->ak       = idRankFreeModule(redGB);
+  kStrategy strat   = new skStrategy;
+  BOOLEAN b         = pLexOrder;
+  BOOLEAN toReset   = FALSE;
+  BOOLEAN delete_w  = TRUE;
+  if (rField_has_simple_inverse())
+  {  
+    strat->LazyPass = 20;
+  }
+  else
+  {
+    strat->LazyPass = 2;
+  }
+  strat->LazyDegree   = 1;
+  strat->enterOnePair = enterOnePairNormal;
+  strat->chainCrit    = chainCritNormal;
+  strat->syzComp      = 0;
+  strat->ak           = idRankFreeModule(redGB);
   prepRedGBReduction(strat, redGB);
 #if F5EDEBUG3
   Print("F5CITER-AFTER PREPREDUCTION\n");
