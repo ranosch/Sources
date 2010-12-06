@@ -216,6 +216,10 @@ ideal f5cIter (
   f5Rules->slabel   = (unsigned long*) omAlloc((strat->sl+1)*
                       sizeof(unsigned long)); 
   
+  // set global variables for the sizes of F5 & Rewritten Rules available
+  rewRulesSize  = 2*(strat->sl+1);
+  stratSize     = strat->sl+1;
+
   // malloc two times the size of the previous Groebner basis
   // Note that we possibly need more memory in this iteration step!
   Print("HERE %d -- %d\n",strat->sl, rewRulesSize);
@@ -990,6 +994,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
         // then delete them as they will be detected by the Rewritten Criterion
         // of F5 nevertheless
         tempForDel  = cp;
+        /*
         while( tempForDel->next )
         {
           if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
@@ -1006,6 +1011,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
             tempForDel  = tempForDel->next;
           }
         }
+        */
       }
       else
       {
@@ -1028,6 +1034,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
         // then delete them as they will be detected by the Rewritten Criterion
         // of F5 nevertheless
         tempForDel    = cp;
+        /*
         while( tempForDel->next )
         {
           if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
@@ -1044,6 +1051,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
             tempForDel  = tempForDel->next;
           }
         }
+        */
       }
       else
         {
@@ -1107,6 +1115,7 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
     
 #endif
   nextElement:
+  
   for( ; i < stratSize; i++)
   {
 #if F5EDEBUG2
@@ -1162,9 +1171,15 @@ inline BOOLEAN criterion2 (
       Print("%d ",mLabel[(currRing->N)-j]);
       j--;
     }
+    poly pTestRule = pOne();   
+    for( int ctr=0; ctr<=currRing->N; ctr++ )
+    {
+      pSetExp( pTestRule, ctr, mLabel[ctr] );
+    }
     j = currRing->N;
     Print("\n %ld\n",smLabel);
-    
+    pWrite( pTestRule );
+    pDelete( &pTestRule ); 
 #endif
   nextElement:
   for( ; i < end; i++)
@@ -1257,8 +1272,15 @@ void computeSpols (
       // if the pair is not rewritable add the corresponding rule and 
       // and compute the corresponding s-polynomial (and pre-reduce it
       // w.r.t. redGB
-      if( !criterion2(temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1) ||
-          (temp->mLabel2 && !criterion2(temp->mLabel2, temp->smLabel2, (*rewRules), temp->rewRule2)) 
+      Print("NEXT ROUND OF THIS SHIT!\n");
+      ///////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////
+      /////////////// HERE IS THE FUCKIN PROBLEM!!!! ////////////////////
+      ///////////////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////////////
+      if( 
+          !criterion2(temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1) &&
+          (!temp->mLabel2 || !criterion2(temp->mLabel2, temp->smLabel2, (*rewRules), temp->rewRule2)) 
         )
       {
         Print("HERE RULES\n");
@@ -1353,11 +1375,16 @@ void computeSpols (
         pWrite(pHead(temp->p2));
         pTest(temp->p2);
         int ctr = 0;
+        poly pTestRule  = pOne();
         for( ctr=0; ctr<=currRing->N; ctr++ )
         {
           Print("%d ",temp->mLabel1[ctr]);
+          pSetExp( pTestRule, ctr, temp->mLabel1[ctr] );
+          
         }
         Print("\n");
+        pWrite( pTestRule );
+        pDelete( &pTestRule );
 #endif
 
         // check if the critical pair is a trivial one, i.e. a pair generated 
