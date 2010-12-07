@@ -866,7 +866,7 @@ Criterion 2, i.e. Rewritten Criterion
 =====================================
 */
 inline bool criterion2(int idx, poly t, LNode* l, RList* rules, RTagList* rTag) {
-    //Print("------------------------------IN CRITERION 2/1-----------------------------------------\n");
+    Print("------------------------------IN CRITERION 2/1-----------------------------------------\n");
     /*  
     Print("RULES: \n");
         RNode* tempR    =   rules->getFirst();
@@ -881,12 +881,12 @@ inline bool criterion2(int idx, poly t, LNode* l, RList* rules, RTagList* rTag) 
             tempR   =   tempR->getNext();
             i++;
         }
-        //Print("TESTED ELEMENT: ");
-        //pWrite(l->getPoly());
-        //pWrite(l->getTerm());
-        //pWrite(ppMult_qq(t,l->getTerm()));
-        //Print("%d\n\n",l->getIndex());
       */
+        Print("TESTED ELEMENT: ");
+        pWrite(pHead(l->getPoly()));
+        //pWrite(pHead(l->getTerm()));
+        pWrite(ppMult_qq(t,l->getTerm()));
+        //Print("%d\n\n",l->getIndex());
 // start at the previously added element to gPrev, as all other elements will have the same index for sure
     if(idx > l->getIndex()) {
         return false;
@@ -934,7 +934,7 @@ inline bool criterion2(int idx, poly t, LNode* l, RList* rules, RTagList* rTag) 
     //Print("%p\n",testNode->getRule());
     // NOTE: testNode is possibly NULL as rTag->get() returns NULL for elements of index <=1!
     //Print("TESTNODE: %p\n",testNode);
-    //pWrite(testNode->getRuleTerm());
+    //pWrite(testNode->getRuleOldTerm());
     if(NULL != testNode ) {   
         //pWrite(testNode->getRuleTerm());
     }
@@ -950,14 +950,14 @@ inline bool criterion2(int idx, poly t, LNode* l, RList* rules, RTagList* rTag) 
     while(NULL != testNode && testNode->getRuleOld() != l->getRuleOld() 
           && l->getIndex() == testNode->getRuleOldIndex()) {
         //Print("%p\n",testNode);
-        //pWrite(testNode->getRuleTerm());
+        pWrite(testNode->getRuleOldTerm());
         //pWrite(t);
         //pWrite(l->getTerm());
         //pWrite(u1);
         //Print("%d\n",testNode->getRuleIndex());
         if(pLmDivisibleByNoComp(testNode->getRuleOldTerm(),u1)) {
-            //pWrite(testNode->getRuleOldTerm());
-            //Print("-----------------Criterion 2 NOT passed!-----------------------------------\n");
+            pWrite(testNode->getRuleOldTerm());
+            Print("-----------------Criterion 2 NOT passed!-----------------------------------\n");
             //Print("INDEX: %d\n",l->getIndex());
             pDelete(&u1);
     //Print("------------------------------IN CRITERION 2/1-----------------------------------------\n\n");

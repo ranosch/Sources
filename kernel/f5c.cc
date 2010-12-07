@@ -586,6 +586,10 @@ void criticalPairPrev (
     cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
     
     // testing the F5 Criterion
+#if F5EDEBUG1
+    Print("2nd generator of pair: ");
+    pWrite( pHead(redGB->m[i]) );
+#endif
     if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) &&
         !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
       )
@@ -648,6 +652,10 @@ void criticalPairPrev (
   }
   cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
   
+#if F5EDEBUG1
+    Print("2nd generator of pair: ");
+    pWrite( pHead(redGB->m[IDELEMS(redGB)-1]) );
+#endif
   // testing the F5 Criterion
   if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) &&
       !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
@@ -1867,7 +1875,7 @@ Print("HERE2\n\n");
                   for( ; ctr<rewRulesCurr+insertOffset+1; ctr++ )
                   {
                     register unsigned long _i = 0;
-                    register int* _d          = newRules->label[ctr+1];
+                    register int* _d          = newRules->label[ctr];
                     register int* _s          = rewRules->label[ctr];
                     while( _i<_length )
                     {
