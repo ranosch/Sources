@@ -883,9 +883,9 @@ inline bool criterion2(int idx, poly t, LNode* l, RList* rules, RTagList* rTag) 
         }
       */
         Print("TESTED ELEMENT: ");
-        pWrite(pHead(l->getPoly()));
         //pWrite(pHead(l->getTerm()));
         pWrite(ppMult_qq(t,l->getTerm()));
+        pWrite(pHead(l->getPoly()));
         //Print("%d\n\n",l->getIndex());
 // start at the previously added element to gPrev, as all other elements will have the same index for sure
     if(idx > l->getIndex()) {
@@ -1084,7 +1084,7 @@ void computeSPols(CNode* first, RTagList* rTag, RList* rules, LList* sPolyList, 
         pWrite(pHead(temp->getLp1Poly()));
         //Print("redundant: %d\n",temp->getAdLp1()->getDel());
         pWrite(pHead(temp->getLp2Poly()));
-        //Print("redundant: %d\n",temp->getAdLp2()->getDel());
+
         //pWrite(pHead(ppMult_qq(temp->getT1(),temp->getLp1Poly())));
         //  sp      =   ksOldSpolyRedNew(ppMult_qq(temp->getT1(),temp->getLp1Poly()),
         //      ppMult_qq(temp->getT2(),temp->getLp2Poly()));
@@ -1764,9 +1764,10 @@ void findReducers(testPoly* checkedPrev, testPair* checkedPairs, LList* f5Criter
         kBucket* bucket  =   kBucketCreate();
         kBucketInit(bucket,tempPoly,0);
         tempPoly    =   kBucketGetLm(bucket);
-        //Print("\n\n\nTO BE REDUCED:  ");
-        //pWrite(l->getPoly());
-        //pWrite(l->getTerm());
+        Print("\n\n\nTO BE REDUCED:  ");
+        pWrite(l->getPoly());
+        Print("LABEL TO BE REDUCED:  ");
+        pWrite(l->getTerm());
         //pWrite(tempPoly);
         while(NULL != tempPoly) {
             // iteration of all elements in gPrev of the current index

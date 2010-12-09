@@ -51,7 +51,7 @@
 #define PDEBUG 0 
 #endif
 #define F5EDEBUG0 1 
-#define F5EDEBUG1 0 
+#define F5EDEBUG1 1 
 #define F5EDEBUG2 0 
 #define F5EDEBUG3 0 
 #define setMaxIdeal 64
@@ -961,7 +961,6 @@ void criticalPairCurr (
 
 void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
 {
-  Cpair* tempForDel = NULL;
 #if F5EDEBUG1
   Print("INSERTCRITPAIR-BEGINNING deg bound %p\n",*bound);
 #endif
@@ -998,28 +997,6 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
         cp->next          = (temp)->next->cp;
         (temp)->next->cp  = cp;
         (temp)->next->length++;
-        // if there exist other elements in the list with the very same label
-        // then delete them as they will be detected by the Rewritten Criterion
-        // of F5 nevertheless
-        tempForDel  = cp;
-        /*
-        while( tempForDel->next )
-        {
-          if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
-          {
-            Cpair* tempDel    = tempForDel->next;
-            tempForDel->next  = (tempForDel->next)->next;
-            omFree( tempDel );
-            (temp)->next->length--;
-          }
-          // tempForDel->next could be NULL as we have deleted one element
-          // inbetween
-          if( tempForDel->next )
-          {
-            tempForDel  = tempForDel->next;
-          }
-        }
-        */
       }
       else
       {
@@ -1038,28 +1015,6 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
         cp->next      = (*bound)->cp;
         (*bound)->cp  = cp;
         (*bound)->length++;
-        // if there exist other elements in the list with the very same label
-        // then delete them as they will be detected by the Rewritten Criterion
-        // of F5 nevertheless
-        tempForDel    = cp;
-        /*
-        while( tempForDel->next )
-        {
-          if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
-          {
-            Cpair* tempDel    = tempForDel->next;
-            tempForDel->next  = (tempForDel->next)->next;
-            omFree( tempDel );
-            (*bound)->length--;
-          }
-          // tempForDel->next could be NULL as we have deleted one element
-          // inbetween
-          if( tempForDel->next )
-          {
-            tempForDel  = tempForDel->next;
-          }
-        }
-        */
       }
       else
         {
@@ -1112,7 +1067,7 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 #if F5EDEBUG1
     Print("CRITERION1-BEGINNING\nTested Element: ");
 #endif
-#if F5EDEBUG2
+#if F5EDEBUG1
     while( j )
     {
       Print("%d ",mLabel[(currRing->N)-j]);
@@ -1126,7 +1081,7 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
   
   for( ; i < stratSize; i++)
   {
-#if F5EDEBUG2
+#if F5EDEBUG1
     Print("F5 Rule: ");
     while( j )
     {
@@ -1148,7 +1103,7 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
         }
         j--;
       }
-#if F5EDEBUG2
+#if F5EDEBUG1
         Print("CRITERION1-END-DETECTED \n");
 #endif
       return TRUE;
@@ -1173,7 +1128,7 @@ inline BOOLEAN criterion2 (
 #if F5EDEBUG1
     Print("CRITERION2-BEGINNING\nTested Element: ");
 #endif
-#if F5EDEBUG2
+#if F5EDEBUG1
     while( j )
     {
       Print("%d ",mLabel[(currRing->N)-j]);
@@ -1281,11 +1236,6 @@ void computeSpols (
       // and compute the corresponding s-polynomial (and pre-reduce it
       // w.r.t. redGB
       Print("NEXT ROUND OF THIS SHIT!\n");
-      ///////////////////////////////////////////////////////////////////
-      ///////////////////////////////////////////////////////////////////
-      /////////////// HERE IS THE FUCKIN PROBLEM!!!! ////////////////////
-      ///////////////////////////////////////////////////////////////////
-      ///////////////////////////////////////////////////////////////////
       if( 
           !criterion2(temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1) &&
           (!temp->mLabel2 || !criterion2(temp->mLabel2, temp->smLabel2, (*rewRules), temp->rewRule2)) 
@@ -1310,7 +1260,7 @@ void computeSpols (
         }
         else
         {
-#if F5EDEBUG1
+#if F5EDEBUG0
           Print("ALLOC MORE MEMORY -- %p\n", (*rewRules)->label[0]);
 #endif
           unsigned int old                = rewRulesSize;
@@ -1344,7 +1294,7 @@ void computeSpols (
           }
           omFreeSize( (*rewRules), sizeof(RewRules) );
           (*rewRules)  = newRules;
-#if F5EDEBUG1
+#if F5EDEBUG0
           Print("MEMORY ALLOCATED -- %p\n", (*rewRules)->label[0]);
 #endif
           // now we can go on adding the new rule to rewRules
@@ -1362,7 +1312,7 @@ void computeSpols (
           (*rewRules)->size++;
 
         } 
-#if F5EDEBUG1
+#if F5EDEBUG0
         Print("RULE #%d: ",(*rewRules)->size);
         for( int _l=0; _l<currRing->N+1; _l++ )
         {
@@ -1373,7 +1323,7 @@ void computeSpols (
         // from this point on, rewRulesLast != NULL, thus we do not need to test this
         // again in the following iteration over the list of critical pairs
         
-#if F5EDEBUG2
+#if F5EDEBUG0
         Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
         Print("%p\n",temp);
         Print("GEN1: %p\n",temp->p1);
@@ -1411,9 +1361,9 @@ void computeSpols (
         {
           sp = temp->p1;
         }
-#if F5EDEBUG3
-        Print("AFTER REDUCTION W.R.T. REDGB:  ");
-        pWrite( sp );
+#if F5EDEBUG0
+        Print("AFTER REDUCTION W.R.T. REDGB -- %p\n", sp);
+        pWrite( pHead(sp) );
         pTest(sp);
 #endif
         if( sp )
@@ -1791,7 +1741,7 @@ Print("HERE\n");
                   register unsigned long _ctr      = 0;
                   for( ; _ctr<old; _ctr++ )
                   {
-                    newRules->label[_ctr]      =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                    newRules->label[_ctr]     =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
                     register unsigned long _i = 0;
                     register int* _d          = newRules->label[_ctr];
                     register int* _s          = rewRules->label[_ctr];
@@ -1829,6 +1779,12 @@ Print("HERE\n");
                 }
                 else
                 {
+                  Print("RULE TO BE ADDED TO THE LIST DUE TO HIGHER LABEL REDUCTION\n");
+                  for( int _l=0; _l<currRing->N+1; _l++ )
+                  {
+                    Print("%d  ",multLabelTemp[_l]);
+                  }
+                  Print("\n-------------------------------------\n");
                   // alloc more memory
                   register unsigned long _length  = currRing->N+1;
                   register unsigned long _ctr      = 0;
@@ -1859,7 +1815,7 @@ Print("HERE2\n\n");
                     newRules->slabel[_ctr] = rewRules->slabel[_ctr];
                   }
                   // _ctr = rewRulesCurr+insertOffset+1 !
-                  newRules->label[_ctr]      =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                  newRules->label[_ctr]     =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
                   register unsigned long _i = 0;
                   register int* _d          = newRules->label[_ctr];
                   register int* _s          = multLabelTemp;
@@ -1894,15 +1850,15 @@ Print("HERE2\n\n");
                   // otherwise!
                   for( ; _ctr<rewRulesSize; _ctr++ )
                   {
-                    newRules->label[_ctr]      =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                    newRules->label[_ctr] =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
                   }
                   
                   omFreeSize( rewRules->slabel, old*sizeof(unsigned long) );
                   omFreeSize( rewRules, sizeof(RewRules) );
                   *rewRulesP  = rewRules  = newRules;
-                  tempSpoly   = spolysLast;
+                  //tempSpoly   = spolysLast;
                 }
-#if F5EDEBUG1
+#if F5EDEBUG0
           Print("MEMORY ALLOCATED -- %p\n", rewRules->label[0]);
 #endif
               } 
@@ -1921,11 +1877,11 @@ Print("HERE2\n\n");
               spNew->next       = tempSpoly->next;
               tempSpoly->next   = spNew;
               tempSpoly         = spNew;
-#if F5EDEBUG2
+#if F5EDEBUG0
           Print("SIZES AFTER: %ld < %ld ?\n",rewRules->size, rewRulesSize);
   Print("LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
   Spoly* lalasp = spTemp;
-  rewRulesTemp  = rewRulesCurr;
+  unsigned long rewRulesTemp  = rewRulesCurr;
   while( lalasp )
   {
     Print("%p -- ",lalasp->p);
@@ -1942,7 +1898,7 @@ Print("HERE2\n\n");
   Print("---------------\n");
   lalasp = spolysFirst;
 #endif
-#if F5EDEBUG1
+#if F5EDEBUG0
               Print("ADDED TO LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
               pWrite( pHead(newPoly) );
               Print("---------------\n");
