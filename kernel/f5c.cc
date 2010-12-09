@@ -220,12 +220,9 @@ ideal f5cIter (
 
   // malloc two times the size of the previous Groebner basis
   // Note that we possibly need more memory in this iteration step!
-  Print("HERE %d -- %d\n",strat->sl, rewRulesSize);
   rewRules->label   = (int**) omAlloc((rewRulesSize)*sizeof(int*));
-  Print("HERE %d -- %d\n",strat->sl, rewRulesSize);
   rewRules->slabel  = (unsigned long*) omAlloc((rewRulesSize)*
                       sizeof(unsigned long)); 
-  Print("HERE %d -- %d\n",strat->sl, rewRulesSize);
   // Initialize a first (dummy) rewrite rule for the initial polynomial of this
   // iteration step:
   // (a) Note that we are allocating & setting all entries to zero for this first 
@@ -282,7 +279,6 @@ ideal f5cIter (
                     numVariables, shift, negBitmaskShifted, offsets
                   );
     }
-    Print("HERE1 -- %p -- %p\n", rewRules, rewRules->label[0]);
     // next all new elements are added to redGB & redGB is being reduced
     Lpoly* temp;
 #if F5EDEBUG2
@@ -327,17 +323,13 @@ ideal f5cIter (
   }
   omFreeSize( f5Rules->label, oldLength*sizeof(int*) );
   omFreeSize( f5Rules, sizeof(F5Rules) );
-  Print("HERE1 -- %p\n",rewRules->label[0]);
-  Print("REWRULESSIZE: %ld\n", rewRulesSize );  
   
   for( i=0; i<rewRulesSize; i++ )
   {
-    Print("%ld -- %d\n",i, rewRules->label[i][1] );
     omFreeSize( rewRules->label[i], (currRing->N+1)*sizeof(int) );
   }
   omFreeSize( rewRules->slabel, rewRulesSize*sizeof(unsigned long) );
   omFreeSize( rewRules->label, rewRulesSize*sizeof(int*) );
-  Print("HERE2\n");
   omFreeSize( rewRules, sizeof(RewRules) );
   clearStrat( strat, redGB );
   
@@ -347,10 +339,10 @@ ideal f5cIter (
 
 
 void criticalPairInit ( 
-                        Lpoly* gCurr, const kStrategy strat, 
-                        const F5Rules& f5Rules, const RewRules& rewRules,
-                        CpairDegBound** cpBounds, int numVariables, int* shift, 
-                        unsigned long* negBitmaskShifted, int* offsets
+  Lpoly* gCurr, const kStrategy strat, 
+  const F5Rules& f5Rules, const RewRules& rewRules,
+  CpairDegBound** cpBounds, int numVariables, int* shift, 
+  unsigned long* negBitmaskShifted, int* offsets
                       )
 {
 #if F5EDEBUG1
@@ -420,8 +412,10 @@ void criticalPairInit (
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       cpTemp->p2        = strat->S[i];
+#if F5EDEBUG1
       Print("2nd gen: ");
       pWrite( pHead(cpTemp->p2) );
+#endif
       // now we really need the memory for the exp label
       cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
                                 sizeof(unsigned long));
@@ -483,8 +477,10 @@ void criticalPairInit (
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     cpTemp->p2        = strat->S[strat->sl];
+#if F5EDEBUG1
     Print("2nd gen: ");
     pWrite( pHead(cpTemp->p2) );
+#endif
     // now we really need the memory for the exp label
     cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
                               sizeof(unsigned long));
@@ -510,10 +506,10 @@ void criticalPairInit (
 
 
 void criticalPairPrev ( 
-                        Lpoly* gCurr, const kStrategy strat, const F5Rules& f5Rules, 
-                        const RewRules& rewRules, CpairDegBound** cpBounds, 
-                        int numVariables, int* shift, unsigned long* negBitmaskShifted, 
-                        int* offsets
+  Lpoly* gCurr, const kStrategy strat, const F5Rules& f5Rules, 
+  const RewRules& rewRules, CpairDegBound** cpBounds, 
+  int numVariables, int* shift, unsigned long* negBitmaskShifted, 
+  int* offsets
                       )
 {
 #if F5EDEBUG1
@@ -1166,7 +1162,7 @@ inline BOOLEAN criterion2 (
         }
         j--;
       }
-#if F5EDEBUG0
+#if F5EDEBUG1
     Print("Rewrite Rule: ");
     j = currRing->N;
     while( j )
@@ -1220,7 +1216,7 @@ void computeSpols (
   poly sp;
   while( cp )
   {
-#if F5EDEBUG0
+#if F5EDEBUG2
     Print("START OF NEW DEG ROUND: CP %ld | %p -- %p: # %d\n",cp->deg,cp->cp,cp,cp->length);
     Print("NEW CPDEG? %p\n",cp->next);
 #endif
@@ -1237,22 +1233,24 @@ void computeSpols (
     while( NULL != temp )
     {
       //Print("Last Element in Rewrules? %p points to %p\n", rewRulesLast, rewRulesLast->next);
+#if F5EDEBUG2
       Print("COMPUTING PAIR: %p -- NEXT PAIR %p\n",temp, temp->next);
       pWrite( pHead(temp->p1) );
       pWrite( pHead(temp->p2) );
+#endif
       // if the pair is not rewritable add the corresponding rule and 
       // and compute the corresponding s-polynomial (and pre-reduce it
       // w.r.t. redGB
-      Print("NEXT ROUND OF THIS SHIT!\n");
       if( 
           !criterion2(temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1) &&
           (!temp->mLabel2 || !criterion2(temp->mLabel2, temp->smLabel2, (*rewRules), temp->rewRule2)) 
         )
       {
-        Print("HERE RULES\n");
         if( (*rewRules)->size < rewRulesSize )
         {
+#if F5EDEBUG2
           Print("POSITION: %ld/%ld\n",(*rewRules)->size,rewRulesSize);
+#endif
           // copy data from critical pair rule to rewRule
           register unsigned long _length  = currRing->N+1;
           register unsigned long _i       = 0;
@@ -1268,12 +1266,11 @@ void computeSpols (
         }
         else
         {
-#if F5EDEBUG0
+#if F5EDEBUG2
           Print("ALLOC MORE MEMORY -- %p\n", (*rewRules)->label[0]);
 #endif
           unsigned int old                = rewRulesSize;
           rewRulesSize                    = 3*rewRulesSize;
-          Print("SIZES: %ld -- %ld\n",old, rewRulesSize);
           RewRules* newRules              = (RewRules*) omAlloc( sizeof(RewRules) );
           newRules->label                 = (int**) omAlloc( rewRulesSize*sizeof(int*) );
           newRules->slabel                = (unsigned long*)omAlloc( rewRulesSize*sizeof(unsigned long) );
@@ -1298,11 +1295,10 @@ void computeSpols (
           for( ; ctr<rewRulesSize; ctr++ )
           {
             newRules->label[ctr] =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-            Print("MORE RULES: %ld -- %d\n", ctr, newRules->label[ctr][0]);
           }
           omFreeSize( (*rewRules), sizeof(RewRules) );
           (*rewRules)  = newRules;
-#if F5EDEBUG0
+#if F5EDEBUG2
           Print("MEMORY ALLOCATED -- %p\n", (*rewRules)->label[0]);
 #endif
           // now we can go on adding the new rule to rewRules
@@ -1320,7 +1316,7 @@ void computeSpols (
           (*rewRules)->size++;
 
         } 
-#if F5EDEBUG0
+#if F5EDEBUG1
         Print("RULE #%d: ",(*rewRules)->size);
         for( int _l=0; _l<currRing->N+1; _l++ )
         {
@@ -1331,7 +1327,7 @@ void computeSpols (
         // from this point on, rewRulesLast != NULL, thus we do not need to test this
         // again in the following iteration over the list of critical pairs
         
-#if F5EDEBUG0
+#if F5EDEBUG1
         Print("CRITICAL PAIR BEFORE S-SPOLY COMPUTATION:\n");
         Print("%p\n",temp);
         Print("GEN1: %p\n",temp->p1);
@@ -1369,7 +1365,7 @@ void computeSpols (
         {
           sp = temp->p1;
         }
-#if F5EDEBUG0
+#if F5EDEBUG2
         Print("AFTER REDUCTION W.R.T. REDGB -- %p\n", sp);
         pWrite( pHead(sp) );
         pTest(sp);
@@ -1430,7 +1426,6 @@ void computeSpols (
                     redGB, &cp, gCurr, f5Rules, multTemp, multLabelTemp, 
                     numVariables, shift, negBitmaskShifted, offsets
                   );
-    Print("HERE1 -- %p -- %p\n", *rewRules, (*rewRules)->label[0]);
     // elements are added to linked list gCurr => start next degree step
     spolysFirst = spolysLast  = NULL;
     newStep     = TRUE; 
@@ -1552,7 +1547,7 @@ void currReduction  (
   // iterate over all elements in the s-polynomial list
   while( NULL != spTemp )
   { 
-#if F5EDEBUG0
+#if F5EDEBUG1
     Print("SPTEMP TO BE REDUCED: %p : %p -- ", spTemp, spTemp->p );
     pWrite( pHead(spTemp->p) );
     Print("RULE #%d of %ld -- ",rewRulesCurr, rewRules->size);
@@ -1662,8 +1657,8 @@ void currReduction  (
               // add the new rule even when newPoly is zero!
               // Note that we possibly need more memory in this iteration step!
 #if F5EDEBUG2
-          Print("SIZES BEFORE: %ld < %ld ?\n",rewRules->size, rewRulesSize);
-          Print("ADDRESS: %p\n", rewRules->label[0]);
+              Print("SIZES BEFORE: %ld < %ld ?\n",rewRules->size, rewRulesSize);
+              Print("ADDRESS: %p\n", rewRules->label[0]);
 #endif
               // get the corresponding offsets for the insertion of the element in the two lists:
               Spoly* tempSpoly            = spTemp;
@@ -1679,7 +1674,6 @@ void currReduction  (
                   register int* _s                = multLabelTemp;
                   while( _i<_length )
                   {
-                    Print("%ld\n",_i);
                     _d[_i]  = _s[_i];
                     _i++;
                   }
@@ -1692,7 +1686,6 @@ void currReduction  (
                 else
                 { 
                   unsigned long insertOffset  = 0;
-                  Print("HERE\n");
                   while( tempSpoly->next && expCmp(multLabelTempExp, tempSpoly->next->labelExp) == 1 )
                   {
                     insertOffset++;
@@ -1710,7 +1703,6 @@ void currReduction  (
                     _i = 0;
                     while( _i<_length )
                     {
-                      Print("%ld\n",_i);
                       _d[_i]  = _s[_i];
                       _i++;
                     }
@@ -1735,14 +1727,12 @@ void currReduction  (
 #endif
                 unsigned int old                = rewRulesSize;
                 rewRulesSize                    = 3*rewRulesSize;
-          Print("SIZES: %ld -- %ld\n",old, rewRulesSize);
                 RewRules* newRules              = (RewRules*) omAlloc( sizeof(RewRules) );
                 newRules->label                 = (int**) omAlloc( rewRulesSize*sizeof(int*) );
                 newRules->slabel                = (unsigned long*)omAlloc( rewRulesSize*sizeof(unsigned long) );
                 newRules->size                  = rewRules->size;
-                // add element at the end 
 
-Print("HERE\n");
+                // add element at the end 
                 if( expCmp( multLabelTempExp, spolysLast->labelExp ) == 1 )
                 {
                   register unsigned long _length  = currRing->N+1;
@@ -1765,7 +1755,6 @@ Print("HERE\n");
                   for( ; _ctr<rewRulesSize; _ctr++ )
                   {
                     newRules->label[_ctr] =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-                    Print("MORE RULES: %ld -- %d\n", _ctr, newRules->label[_ctr][0]);
                   }
                   omFreeSize( rewRules, sizeof(RewRules) );
                   *rewRulesP  = rewRules  = newRules;
@@ -1787,19 +1776,12 @@ Print("HERE\n");
                 }
                 else
                 {
-                  Print("RULE TO BE ADDED TO THE LIST DUE TO HIGHER LABEL REDUCTION\n");
-                  for( int _l=0; _l<currRing->N+1; _l++ )
-                  {
-                    Print("%d  ",multLabelTemp[_l]);
-                  }
-                  Print("\n-------------------------------------\n");
                   // alloc more memory
                   register unsigned long _length  = currRing->N+1;
-                  register unsigned long _ctr      = 0;
-                  unsigned long insertOffset  = 0;
+                  register unsigned long _ctr     = 0;
+                  unsigned long insertOffset      = 0;
                   while( tempSpoly->next && expCmp(multLabelTempExp, tempSpoly->next->labelExp) == 1 )
                   {
-Print("HERE\n");
                     insertOffset++;
                     tempSpoly = tempSpoly->next;
                   }
@@ -1808,8 +1790,7 @@ Print("HERE\n");
                   _ctr      = 0;
                   for( ; _ctr<rewRulesCurr+insertOffset+1 ; _ctr++ )
                   {
-                    newRules->label[_ctr]      =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-                    Print("HERE2 -- %ld\n", _ctr);
+                    newRules->label[_ctr]     =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
                     register unsigned long _i = 0;
                     register int* _d          = newRules->label[_ctr];
                     register int* _s          = rewRules->label[_ctr];
@@ -1819,7 +1800,6 @@ Print("HERE\n");
                       _i++;
                     }
                     omFreeSize( rewRules->label[_ctr], (currRing->N+1)*sizeof(int) );
-Print("HERE2\n\n");
                     newRules->slabel[_ctr] = rewRules->slabel[_ctr];
                   }
                   // _ctr = rewRulesCurr+insertOffset+1 !
@@ -1837,7 +1817,7 @@ Print("HERE2\n\n");
                 
                   for( ; _ctr<old; _ctr++ )
                   {
-                    newRules->label[_ctr+1]      =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                    newRules->label[_ctr+1]   =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
                     register unsigned long _i = 0;
                     register int* _d          = newRules->label[_ctr+1];
                     register int* _s          = rewRules->label[_ctr];
@@ -1866,7 +1846,7 @@ Print("HERE2\n\n");
                   *rewRulesP  = rewRules  = newRules;
                   //tempSpoly   = spolysLast;
                 }
-#if F5EDEBUG0
+#if F5EDEBUG2
           Print("MEMORY ALLOCATED -- %p\n", rewRules->label[0]);
 #endif
               } 
@@ -1885,7 +1865,7 @@ Print("HERE2\n\n");
               spNew->next       = tempSpoly->next;
               tempSpoly->next   = spNew;
               tempSpoly         = spNew;
-#if F5EDEBUG0
+#if F5EDEBUG2
           Print("SIZES AFTER: %ld < %ld ?\n",rewRules->size, rewRulesSize);
   Print("LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
   Spoly* lalasp = spTemp;
@@ -1906,7 +1886,7 @@ Print("HERE2\n\n");
   Print("---------------\n");
   lalasp = spolysFirst;
 #endif
-#if F5EDEBUG0
+#if F5EDEBUG1
               Print("ADDED TO LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
               pWrite( pHead(newPoly) );
               Print("---------------\n");
@@ -1919,12 +1899,10 @@ Print("HERE2\n\n");
               temp      = temp->next;
               if( temp )
               {
-                Print("here back top\n");
                 goto startagainTop;
               }
               else
               {
-                Print("no more stuff left\n");
                 break;
               }
             }
