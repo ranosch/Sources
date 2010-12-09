@@ -41,11 +41,8 @@
 /// exponent vector.
 struct F5Rules 
 {
-  unsigned long   size;   ///<  number of elements in redGB 
   int**           label;  ///<  pointer to an array of exponent vectors for checks
                           ///   of the F5 Criterion
-  unsigned long*  slabel; ///<  pointer to the corresponding short exponent
-                          ///   vectors for faster checks of divisibility
 };
 
  
@@ -205,7 +202,7 @@ ideal f5cIter (
 void criticalPairInit ( 
   Lpoly* gCurr,                     ///<[in]  this is the labeled 
                                     ///       polynomial of p at this point
-  const ideal redGB,                ///<[in]  reduced Groebner basis computed in 
+  const kStrategy strat,            ///<[in]  reduced Groebner basis computed in 
                                     ///       the previous iteration step  
   const F5Rules& f5Rules,           ///<[in]  list of exponent vectors to check the F5 
                                     ///       Criterion, i.e. Criterion 1
@@ -230,7 +227,7 @@ void criticalPairInit (
 void criticalPairPrev ( 
   Lpoly* gCurr,                     ///<[in]  essentially this is the labeled 
                                     ///       polynomial of p at this point
-  const ideal redGB,                ///<[in]  reduced Groebner basis computed in 
+  const kStrategy strat,            ///<[in]  reduced Groebner basis computed in 
                                     ///       the previous iteration step  
   const F5Rules& f5Rules,           ///<[in]  list of exponent vectors to check the F5 
                                     ///       Criterion
@@ -255,6 +252,8 @@ void criticalPairPrev (
 void criticalPairCurr ( 
   Lpoly* gCurr,             ///<[in]  essentially this is the labeled 
                             ///       polynomial of p at this point
+  const kStrategy  strat,   ///<[in]  reduced Groebner basis computed in 
+                            ///       the previous iteration step  
   const F5Rules& f5Rules,   ///<[in]  list of exponent vectors to check the F5 
                             ///       Criterion
   const RewRules& rewRules, ///<[in]  list of exponent vectors to check the Rewritten
@@ -288,7 +287,8 @@ void insertCritPair (
 inline BOOLEAN criterion1 (
   const int*          mLabel,  ///<[in]  multiplied labeled to be checked
   const unsigned long smLabel, ///<[in]  corresponding short exponent vector
-  const F5Rules*      f5Rules  ///<[in]  rules for F5 Criterion checks
+  const F5Rules*      f5Rules, ///<[in]  rules (integer vectors) for F5 Criterion checks
+  const kStrategy     strat    ///<[in]  rules (short exp) for F5 Criterion checks
                           );
 
 
