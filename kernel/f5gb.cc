@@ -130,7 +130,9 @@ LList* F5inc(int i, poly f_i, LList* gPrev, LList* reducers, ideal gbPrev, poly 
     //Print("in f5inc\n");            
     //pWrite(rules->getFirst()->getRuleTerm());
     int iterationstep = i;
-    Print("ITERATION:  %d",iterationstep);
+#if F5DEBUG0
+    Print("ITERATION:  %d\n",iterationstep);
+#endif
     int j;
     //Print("%p\n",gPrev->getFirst());
     //pWrite(gPrev->getFirst()->getPoly());
@@ -191,7 +193,6 @@ LList* F5inc(int i, poly f_i, LList* gPrev, LList* reducers, ideal gbPrev, poly 
           CNode* f5check = critPairsMinDeg;
           bool checker = 1;
           if(highestDegreeGBCriticalPairNotDet != 0 and f5check->getData()->getDeg() > highestDegreeGBCriticalPairNotDet) {
-            Print("new deg bound:  %ld\n",highestDegreeGBCriticalPairNotDet);
             checker = 0;
             while(NULL != f5check) {
               if(f5check->getData()->getDeg() < pDeg(f5check->getLp1Poly())+pDeg(f5check->getLp2Poly())) {
@@ -523,7 +524,9 @@ void arsCheck(testPoly* checkedPrev, testPair* checkedPairs) {
   else {
     arsdeg = 0;
   }
+#if F5DEBUG1
   Print("ARS DEGREE: %ld\n",arsdeg);
+#endif
 }
 
   
@@ -866,6 +869,7 @@ Criterion 2, i.e. Rewritten Criterion
 =====================================
 */
 inline bool criterion2(int idx, poly t, LNode* l, RList* rules, RTagList* rTag) {
+#if F5DEBUG1
     Print("------------------------------IN CRITERION 2/1-----------------------------------------\n");
     /*  
     Print("RULES: \n");
@@ -888,6 +892,7 @@ inline bool criterion2(int idx, poly t, LNode* l, RList* rules, RTagList* rTag) 
         pWrite(pHead(l->getPoly()));
         //Print("%d\n\n",l->getIndex());
 // start at the previously added element to gPrev, as all other elements will have the same index for sure
+#endif
     if(idx > l->getIndex()) {
         return false;
     }
@@ -950,14 +955,18 @@ inline bool criterion2(int idx, poly t, LNode* l, RList* rules, RTagList* rTag) 
     while(NULL != testNode && testNode->getRuleOld() != l->getRuleOld() 
           && l->getIndex() == testNode->getRuleOldIndex()) {
         //Print("%p\n",testNode);
+#if F5DEBUG1
         pWrite(testNode->getRuleOldTerm());
+#endif
         //pWrite(t);
         //pWrite(l->getTerm());
         //pWrite(u1);
         //Print("%d\n",testNode->getRuleIndex());
         if(pLmDivisibleByNoComp(testNode->getRuleOldTerm(),u1)) {
+#if F5DEBUG1
             pWrite(testNode->getRuleOldTerm());
             Print("-----------------Criterion 2 NOT passed!-----------------------------------\n");
+#endif
             //Print("INDEX: %d\n",l->getIndex());
             pDelete(&u1);
     //Print("------------------------------IN CRITERION 2/1-----------------------------------------\n\n");
@@ -982,6 +991,7 @@ Criterion 2, i.e. Rewritten Criterion, for its second call in computeSPols(), wi
 inline bool criterion2(poly t, LPolyOld* l, RList* rules, RuleOld* testedRuleOld) {
     //Print("------------------------------IN CRITERION 2/2-----------------------------------------\n");
     //Print("LAST RuleOld TESTED: %p",testedRuleOld);
+#if F5DEBUG1
     Print("RULES: \n#######################################\n");
         RNode* tempR    =   rules->getFirst();
         while(NULL != tempR) {
@@ -994,18 +1004,22 @@ inline bool criterion2(poly t, LPolyOld* l, RList* rules, RuleOld* testedRuleOld
         //pWrite(l->getTerm());
         pWrite(ppMult_qq(t,l->getTerm()));
         //Print("%d\n\n",l->getIndex());
-  
+#endif  
 // start at the previously added element to gPrev, as all other elements will have the same index for sure
 	RNode* testNode =   rules->getFirst();
     // save the monom t1*label_term(l) as it is tested various times in the following
     poly u1 = ppMult_qq(t,l->getTerm());
 	// first element added to rTag was NULL, check for this
 	while(NULL != testNode && testNode->getRuleOld() != l->getRuleOld()) {
+#if F5DEBUG1
         pWrite(testNode->getRuleOldTerm());
+#endif
         if(pLmDivisibleByNoComp(testNode->getRuleOldTerm(),u1)) {
             //pWrite(testNode->getRuleOldTerm());
+#if F5DEBUG1
             Print("--------------------------Criterion 2 NOT passed!------------------------------\n");
             //Print("INDEX: %d\n",l->getIndex());
+#endif
             pDelete(&u1);
     //Print("------------------------------IN CRITERION 2/2-----------------------------------------\n\n");
                 numberOfDetections++;
@@ -1045,7 +1059,9 @@ void computeSPolsTest(LList* f5CriterionElements, int currIdx, poly u1, poly p1,
   pNorm(sp);
   //sp =   kNF(gbPrev,currQuotient,sp);  
   if(NULL == sp) {
+#if F5DEBUG1
     Print("F5 CRITERION DETECTED ELEMENT REDUCED TO ZERO ALREADY IN COMPUTE SPOLS!\n\n");
+#endif
   }
   else {
     LNode* temp = new LNode(u1,currIdx,sp,NULL);
@@ -1078,6 +1094,7 @@ void computeSPols(CNode* first, RTagList* rTag, RList* rules, LList* sPolyList, 
  */
     while(NULL != temp) {
     //  if(temp->getData()->getDeg() == 11) {
+#if F5DEBUG1
         Print("--------------------------\n");
         //Print("redundant? %d\n",temp->getDel());
         pWrite(ppMult_qq(temp->getT1(),temp->getLp1Term()));
@@ -1093,6 +1110,7 @@ void computeSPols(CNode* first, RTagList* rTag, RList* rules, LList* sPolyList, 
         //  pWrite(pHead(sp));
         Print("--------------------------\n");
        //}
+#endif
       if(!criterion2(temp->getT1(),temp->getAdLp1(),rules,temp->getTestedRuleOld())) {
       //if(temp->getDel() == 0 && !criterion2(temp->getT1(),temp->getAdLp1(),rules,temp->getTestedRuleOld())) {
         if(temp->getLp2Index() == temp->getLp1Index()) {
@@ -1764,11 +1782,13 @@ void findReducers(testPoly* checkedPrev, testPair* checkedPairs, LList* f5Criter
         kBucket* bucket  =   kBucketCreate();
         kBucketInit(bucket,tempPoly,0);
         tempPoly    =   kBucketGetLm(bucket);
+#if F5DEBUG1
         Print("\n\n\nTO BE REDUCED:  ");
         pWrite(l->getPoly());
         Print("LABEL TO BE REDUCED:  ");
         pWrite(l->getTerm());
         //pWrite(tempPoly);
+#endif
         while(NULL != tempPoly) {
             // iteration of all elements in gPrev of the current index
             tempRed =   gPrev->getFirst();
@@ -2080,14 +2100,18 @@ addToG  = 0;
             //pDelete(&redPoly);
         }
         else {
+#if F5DEBUG0
             Print("\nELEMENT ADDED TO GCURR: ");
+#endif
             pNorm(redPoly);
               if(highestDegree < pDeg(redPoly)) { 
                   highestDegree   = pDeg(redPoly);
               }   
+#if F5DEBUG0
             pWrite(pHead(redPoly));
             pWrite(l->getTerm());
             //Print("%d\n",canonicalize);
+#endif
             l->setPoly(redPoly);
             // give "l" the label if it is "useful" (addToG = 0) or "useless"
             // (addToG = 1)
@@ -2201,8 +2225,10 @@ addToG  = 0;
                     if(!criterion2(gPrev->getFirst()->getIndex(), u,tempBad,rules,rTag)) {
                         // passing criterion1 ?
                         if(!criterion1(gPrev,u,tempBad,lTag)) {
+#if F5DEBUG1
                             Print("HIERHIERHIERHIERHIERHIER\n");
                             pWrite( ppMult_qq(u,tempBad->getTerm()) );
+#endif
                             rules->insert(tempBad->getIndex(),ppMult_qq(u,tempBad->getTerm()));
                             numberOfRules++;
                             //gPrev->print();
