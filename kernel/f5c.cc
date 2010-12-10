@@ -407,8 +407,12 @@ void criticalPairInit (
     cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
     
     // testing the F5 Criterion
+
+    // no criteria test in basic algorithm!
+    /*
     if(!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat)) 
     {
+    */
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       cpTemp->p2        = strat->S[i];
@@ -439,7 +443,9 @@ void criticalPairInit (
       cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
       cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
+    /*
     }
+    */
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -472,8 +478,12 @@ void criticalPairInit (
   }
   cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
   // testing the F5 Criterion
+  
+  // no criteria test in the basic algorithm
+  /*
   if(!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat)) 
   {
+  */
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     cpTemp->p2        = strat->S[strat->sl];
@@ -488,6 +498,7 @@ void criticalPairInit (
                         numVariables, shift, negBitmaskShifted, offsets
                       );
     insertCritPair( cpTemp, critPairDeg, cpBounds );
+  /*
   }
   else 
   {
@@ -497,6 +508,7 @@ void criticalPairInit (
     omFree( cpTemp->mLabel1 );
     omFree( cpTemp );
   }
+  */
   omFree(expVecNewElement);
 #if F5EDEBUG1
   Print("CRITPAIRINIT-END\n");
@@ -575,10 +587,14 @@ void criticalPairPrev (
     Print("2nd generator of pair: ");
     pWrite( pHead(strat->S[i]) );
 #endif
+    
+    // no criteria tests in basic algorithm!
+    /*
     if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) &&
         !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
       )
     {
+    */
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       cpTemp->p2        = strat->S[i];
@@ -605,7 +621,9 @@ void criticalPairPrev (
       cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
       cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
+    /*
     }
+    */
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -641,10 +659,14 @@ void criticalPairPrev (
     pWrite( pHead(strat->S[strat->sl]) );
 #endif
   // testing the F5 Criterion
+  
+  // no criteria tests in the basic algorithm!
+  /*
   if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) &&
       !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
     )
   {
+  */
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     cpTemp->p2        = strat->S[strat->sl];
@@ -655,6 +677,7 @@ void criticalPairPrev (
                         numVariables, shift, negBitmaskShifted, offsets
                       );
     insertCritPair(cpTemp, critPairDeg, cpBounds);
+  /*
   }
   else 
   {
@@ -664,6 +687,7 @@ void criticalPairPrev (
     omFree( cpTemp->mLabel1 );
     omFree( cpTemp );
   }
+  */
   omFree(expVecNewElement);
 #if F5EDEBUG1
   Print("CRITPAIRPREV-END\n");
@@ -765,6 +789,9 @@ void criticalPairCurr (
       cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
       
       // testing the F5 & Rewritten Criterion
+      
+      // no criteria tests in the basic algorithm!
+      /*
       if( 
           !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) 
           && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules, strat) 
@@ -772,6 +799,7 @@ void criticalPairCurr (
           && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, &rewRules, cpTemp->rewRule2)
         ) 
       {
+      */
         // completing the construction of the new critical pair and inserting it
         // to the list of critical pairs 
         // now we really need the memory for the exp label
@@ -828,7 +856,9 @@ void criticalPairCurr (
         cpTemp->mLabel2   = (int*) omAlloc((currRing->N+1)*sizeof(int));
         cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
         cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
+      /*
       }
+      */
     }
     pairNeeded  = FALSE;
     gCurrIter   = gCurrIter->next;
@@ -876,6 +906,9 @@ void criticalPairCurr (
     cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
     
     // testing the F5 Criterion
+  
+    // no criteria tests for basic algorithm!
+    /*
     if( 
         !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) 
         && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules, strat) 
@@ -883,6 +916,7 @@ void criticalPairCurr (
         && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, &rewRules, cpTemp->rewRule2)
       ) 
     {
+    */
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       // now we really need the memory for the exp label
@@ -921,6 +955,7 @@ void criticalPairCurr (
       }
       
       insertCritPair(cpTemp, critPairDeg, cpBounds);
+    /*
     } 
     else 
     {
@@ -931,6 +966,7 @@ void criticalPairCurr (
       omFree( cpTemp->mLabel2 );
       omFree( cpTemp );
     }
+    */
   }
   omFree(checkExp);
   omFree(expVecTemp);
@@ -1241,11 +1277,15 @@ void computeSpols (
       // if the pair is not rewritable add the corresponding rule and 
       // and compute the corresponding s-polynomial (and pre-reduce it
       // w.r.t. redGB
+
+      // no criteria tests in the basic algorithm!
+      /*
       if( 
           !criterion2(temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1) &&
           (!temp->mLabel2 || !criterion2(temp->mLabel2, temp->smLabel2, (*rewRules), temp->rewRule2)) 
         )
       {
+      */
         if( (*rewRules)->size < rewRulesSize )
         {
 #if F5EDEBUG2
@@ -1394,6 +1434,7 @@ void computeSpols (
         {
           pDelete( &sp );
         }
+      /*
       }
       else
       {
@@ -1401,6 +1442,7 @@ void computeSpols (
         //  rewrite rule, but which was detected by one of F5's criteria
         omFree( temp->mLabel1 );
       }
+      */
       // free memory
       tempDel  = temp;
       temp     = temp->next;
@@ -1600,10 +1642,14 @@ void currReduction  (
           multLabelShortExp   = ~getShortExpVecFromArray( multLabelTemp );
           
           // test the multiplied label by both criteria 
+      
+          // no criteria tests for the basic algorithm
+          /*
           if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules, strat ) && 
               !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
             )
           { 
+          */
             static unsigned long* multTempExp = (unsigned long*) 
                             omAlloc0( NUMVARS*sizeof(unsigned long) );
             unsigned long* multLabelTempExp = (unsigned long*) 
@@ -1615,8 +1661,10 @@ void currReduction  (
             // a new Lpoly with the higher label and store it in a different 
             // linked list for later reductions
 
+            // in the basic algorithm we do not execute higher label reductions at all!
             if( expCmp( multLabelTempExp, spTemp->labelExp ) == 1 )
             {            
+            /*
 #if F5EDEBUG1
               Print("HIGHER LABEL REDUCTION \n");
 #endif
@@ -1891,7 +1939,8 @@ void currReduction  (
               pWrite( pHead(newPoly) );
               Print("---------------\n");
 #endif
-              
+             */ // end of basic algorithm stuff!
+             
               // get back on track for the old poly which has to be checked for 
               // reductions by the following element in gCurr
               isMult    = FALSE;
@@ -1959,7 +2008,9 @@ void currReduction  (
               break;
             }
             goto startagainTop;
+          /*
           }
+          */
         }
         // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
         // criterion again => go on with reduction steps
@@ -2047,10 +2098,14 @@ void currReduction  (
             multLabelShortExp  = getShortExpVecFromArray( multLabelTemp );
             
             // test the multiplied label by both criteria 
+            
+            // no criteria tests for the basic algorithm!
+            /*
             if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules, strat ) && 
                 !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
               )
-            {  
+            { 
+            */ 
               static unsigned long* multTempExp = (unsigned long*) 
                               omAlloc0( NUMVARS*sizeof(unsigned long) );
               static unsigned long* multLabelTempExp = (unsigned long*) 
@@ -2107,7 +2162,9 @@ void currReduction  (
                 goto kBucketLmZero;
               }
               goto startagainTail;
+            /*
             }
+            */
           }
           // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
           // criterion again => go on with reduction steps
