@@ -50,8 +50,8 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
-#define F5EDEBUG0 0 
-#define F5EDEBUG1 0 
+#define F5EDEBUG0 1 
+#define F5EDEBUG1 1 
 #define F5EDEBUG2 0 
 #define F5EDEBUG3 0 
 #define setMaxIdeal 64
@@ -1587,6 +1587,7 @@ void currReduction  (
   spTemp = spolysFirst;
 #endif
   // iterate over all elements in the s-polynomial list
+  startComplete:
   while( NULL != spTemp )
   { 
 #if F5EDEBUG1
@@ -1955,62 +1956,99 @@ void currReduction  (
                 break;
               }
             }
-            // else we can go on and reduce sp
-            // The multiplied reducer will be reduced w.r.t. strat before the 
-            // bucket reduction starts!
-            static poly multiplier = pOne();
-            static poly multReducer;
-            getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
-                                negBitmaskShifted, offsets
-                              );
-            // throw away the leading monomials of reducer and bucket
-            pSetm( multiplier );
-            p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
-            kBucketExtractLm(bucket);
-            // build the multiplied reducer (note that we do not need the leading
-            // term at all!
-#if F5EDEBUG2
-            Print("MULT: %p\n", multiplier );
-            pWrite( multiplier );
-#endif
-            multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
-#if F5EDEBUG2
-            Print("MULTRED BEFORE: %p\n", *multReducer );
-            pWrite( pHead(multReducer) );
-#endif
-            multReducer = reduceByRedGBPoly( multReducer, strat );
-#if F5EDEBUG2
-            Print("MULTRED AFTER: %p\n", *multReducer );
-            pWrite( pHead(multReducer) );
-#endif
-            //  length must be computed after the reduction with 
-            //  redGB!
-            tempLength = pLength( multReducer );
-            
-            kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
-#if F5EDEBUG2
-            Print("AFTER REDUCTION STEP: ");
-            pWrite( kBucketGetLm(bucket) );
-#endif
-            if( canonicalize++ % 40 )
-            {
-              kBucketCanonicalize( bucket );
-              canonicalize = 0;
-            }
-            isMult    = FALSE;
-            redundant = FALSE;
-            if( kBucketGetLm( bucket ) )
-            {
-              temp  = *gCurrFirst;
-            }
             else
             {
-              break;
+              // this is the basic criterion:
+              // the element to be reduced as well as the multiplied reducer have
+              // (a) the same leading monomial
+              // (b) the same label
+              if( expCmp( multLabelTempExp, spTemp->labelExp ) == 0 )
+              {
+                temp = *gCurrFirst;
+                kBucketDeleteAndDestroy( &bucket );
+                rewRulesCurr  = rewRulesCurr++;
+                Spoly* spDel  = spTemp;
+                spTemp        = spTemp->next;
+                // free memory of spTemp stuff
+                omFree( spDel->labelExp );
+                omFree( spDel );
+                Print("here4\n");
+                goto startComplete;
+                /*
+                if( spTemp->next )
+                {
+                  spTemp  = spTemp->next;
+                  pDelete( &spTemp->p );
+                  omFreeSize( spDel, sizeof(Spoly) );
+                  Print("here4\n");
+                  goto startComplete;
+                }
+                else
+                {
+                  pDelete( &spDel->p );
+                  omFreeSize( spDel, sizeof(Spoly) );
+                }
+                */
+              }
+              // only in this case reduction is allowed!
+              else
+              {
+                // else we can go on and reduce sp
+                // The multiplied reducer will be reduced w.r.t. strat before the 
+                // bucket reduction starts!
+                static poly multiplier = pOne();
+                static poly multReducer;
+                getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                                    negBitmaskShifted, offsets
+                                  );
+                // throw away the leading monomials of reducer and bucket
+                pSetm( multiplier );
+                p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+                kBucketExtractLm(bucket);
+                // build the multiplied reducer (note that we do not need the leading
+                // term at all!
+#if F5EDEBUG2
+                Print("MULT: %p\n", multiplier );
+                pWrite( multiplier );
+#endif
+                multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
+#if F5EDEBUG2
+                Print("MULTRED BEFORE: %p\n", *multReducer );
+                pWrite( pHead(multReducer) );
+#endif
+                multReducer = reduceByRedGBPoly( multReducer, strat );
+#if F5EDEBUG2
+                Print("MULTRED AFTER: %p\n", *multReducer );
+                pWrite( pHead(multReducer) );
+#endif
+                //  length must be computed after the reduction with 
+                //  redGB!
+                tempLength = pLength( multReducer );
+                
+                kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+#if F5EDEBUG2
+                Print("AFTER REDUCTION STEP: ");
+                pWrite( kBucketGetLm(bucket) );
+#endif
+                if( canonicalize++ % 40 )
+                {
+                  kBucketCanonicalize( bucket );
+                  canonicalize = 0;
+                }
+                isMult    = FALSE;
+                redundant = FALSE;
+                if( kBucketGetLm( bucket ) )
+                {
+                  temp  = *gCurrFirst;
+                }
+                else
+                {
+                  break;
+                }
+                goto startagainTop;
+          
+              }
             }
-            goto startagainTop;
-          /*
-          }
-          */
         }
         // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
         // criterion again => go on with reduction steps
