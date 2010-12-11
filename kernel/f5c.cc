@@ -53,7 +53,7 @@
 #endif
 #define F5EDEBUG0 1 
 #define F5EDEBUG1 1 
-#define F5EDEBUG2 0 
+#define F5EDEBUG2 1 
 #define F5EDEBUG3 0 
 #define setMaxIdeal 64
 #define NUMVARS currRing->ExpL_Size
@@ -221,6 +221,8 @@ ideal f5cIter (
 
   // malloc two times the size of the previous Groebner basis
   // Note that we possibly need more memory in this iteration step!
+  rewRules->coeff   = (number*) omAlloc((rewRulesSize)*
+                      sizeof(number)); 
   rewRules->label   = (int**) omAlloc((rewRulesSize)*sizeof(int*));
   rewRules->slabel  = (unsigned long*) omAlloc((rewRulesSize)*
                       sizeof(unsigned long)); 
@@ -229,6 +231,7 @@ ideal f5cIter (
   // (a) Note that we are allocating & setting all entries to zero for this first 
   //     rewrite rule.
   // (b) Note also that the size of strat is >=1.
+  rewRules->coeff[0]  = n_Init( 1, currRing );
   rewRules->label[0]  = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
   rewRules->slabel[0] = 0;
   for(i=1; i<rewRulesSize; i++) 
@@ -1321,6 +1324,7 @@ void computeSpols (
             _i++;
           }
           (*rewRules)->slabel[(*rewRules)->size]  = ~temp->smLabel1;
+        Print("TEST %ld -- %ld\n", temp->rewRule1, (*rewRules)->coeff[temp->rewRule1]);
           (*rewRules)->coeff[(*rewRules)->size]   = (*rewRules)->coeff[temp->rewRule1];
           (*rewRules)->size++;
         }
