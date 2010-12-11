@@ -2477,10 +2477,8 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   assume(tailRing != NULL);
 
   poly a1 = pNext(p1), a2 = pNext(p2);
-  number lc1 = pGetCoeff(p1);
-  number lc2 = pGetCoeff(p2);
-  lc2 = n_Div( lc2, lc1, currRing );
-  n_Normalize( lc1, currRing );
+  number lc1 = nInit(1);
+  number lc2 = cp->coeff2;
 #if F5EDEBUG1
   Print("COEFF1: ");
   Print( "%d\n",lc1 );
