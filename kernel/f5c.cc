@@ -45,6 +45,7 @@
 
 #ifdef NDEBUG
 #undef NDEBUG
+#define NDEBUG 1
 #endif
 #ifdef PDEBUG
 #undef PDEBUG
@@ -416,6 +417,7 @@ void criticalPairInit (
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       cpTemp->p2        = strat->S[i];
+      cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
 #if F5EDEBUG1
       Print("2nd gen: ");
       pWrite( pHead(cpTemp->p2) );
@@ -487,6 +489,7 @@ void criticalPairInit (
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     cpTemp->p2        = strat->S[strat->sl];
+    cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
 #if F5EDEBUG1
     Print("2nd gen: ");
     pWrite( pHead(cpTemp->p2) );
@@ -598,6 +601,7 @@ void criticalPairPrev (
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       cpTemp->p2        = strat->S[i];
+      cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
       // now we really need the memory for the exp label
       cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
                                 sizeof(unsigned long));
@@ -670,6 +674,7 @@ void criticalPairPrev (
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     cpTemp->p2        = strat->S[strat->sl];
+    cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
     // now we really need the memory for the exp label
     cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
                               sizeof(unsigned long));
@@ -746,6 +751,7 @@ void criticalPairCurr (
   while(gCurrIter->next)
   {
     cpTemp->p2        = gCurrIter->p;
+    cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
 #if F5EDEBUG1
     Print("2nd generator of pair: ");
     pWrite( pHead(cpTemp->p2) );
@@ -789,6 +795,17 @@ void criticalPairCurr (
       cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
       
       // testing the F5 & Rewritten Criterion
+      
+      // check for equality on labels including the coefficients!!!
+      int labelEqual = expCmp( cpTemp->mLabelExp, checkExp );
+      if( ! ( labelEqual == 0 && 
+              n_Equal ( rewRules.coeff[cpTemp->rewRule1],   
+                        nMult(rewRules.coeff[cpTemp->rewRule2],cpTemp->coeff2), 
+                        currRing
+                      )
+            )   
+        )
+      {
       
       // no criteria tests in the basic algorithm!
       /*
@@ -859,6 +876,7 @@ void criticalPairCurr (
       /*
       }
       */
+      }
     }
     pairNeeded  = FALSE;
     gCurrIter   = gCurrIter->next;
@@ -867,6 +885,7 @@ void criticalPairCurr (
   // This is outside of the loop to keep memory low, since we know that after
   // this element no new memory for a critical pair must be allocated.
   cpTemp->p2  = gCurrIter->p;
+  cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
 #if F5EDEBUG1
   Print("2nd generator of pair: ");
   pWrite( pHead(cpTemp->p2) );
@@ -1302,6 +1321,7 @@ void computeSpols (
             _i++;
           }
           (*rewRules)->slabel[(*rewRules)->size]  = ~temp->smLabel1;
+          (*rewRules)->coeff[(*rewRules)->size]   = (*rewRules)->coeff[temp->rewRule1];
           (*rewRules)->size++;
         }
         else
@@ -1353,6 +1373,7 @@ void computeSpols (
             _i++;
           }
           (*rewRules)->slabel[(*rewRules)->size]  = ~temp->smLabel1;
+          (*rewRules)->coeff[(*rewRules)->size]   = (*rewRules)->coeff[temp->rewRule1];
           (*rewRules)->size++;
 
         } 
@@ -1563,6 +1584,7 @@ void currReduction  (
   int i;
   unsigned long multLabelShortExp;
   static int tempLength           = 0;
+  number multCoeff1, multCoeff2;
   unsigned short int canonicalize = 0; 
   Spoly* spTemp                   = spolysFirst;
   Lpoly* temp;
@@ -1641,7 +1663,9 @@ void currReduction  (
           }
           multLabelTemp[0]    = rewRules->label[temp->rewRule][0];
           multLabelShortExp   = ~getShortExpVecFromArray( multLabelTemp );
-          
+          multCoeff1          = pGetCoeff( kBucketGetLm(bucket) );
+          multCoeff2          = pGetCoeff( temp->p );
+          multCoeff2          = n_Div( multCoeff1, multCoeff2, currRing );
           // test the multiplied label by both criteria 
       
           // no criteria tests for the basic algorithm
@@ -2003,7 +2027,7 @@ void currReduction  (
                                   );
                 // throw away the leading monomials of reducer and bucket
                 pSetm( multiplier );
-                p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+                //p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
                 kBucketExtractLm(bucket);
                 // build the multiplied reducer (note that we do not need the leading
                 // term at all!
@@ -2012,6 +2036,7 @@ void currReduction  (
                 pWrite( multiplier );
 #endif
                 multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
+                p_SetCoeff( multReducer, multCoeff2, currRing );
 #if F5EDEBUG2
                 Print("MULTRED BEFORE: %p\n", *multReducer );
                 pWrite( pHead(multReducer) );
@@ -2054,14 +2079,16 @@ void currReduction  (
         // criterion again => go on with reduction steps
         else
         {
-          number coeff  = pGetCoeff(kBucketGetLm(bucket));
+          multCoeff1          = pGetCoeff( kBucketGetLm(bucket) );
+          multCoeff2          = pGetCoeff( temp->p );
+          multCoeff2          = n_Div( multCoeff1, multCoeff2, currRing );
           static poly tempNeg  = pInit();
           // throw away the leading monomials of reducer and bucket
           tempNeg       = pCopy( temp->p );
           tempLength    = pLength( tempNeg->next );
-          p_Mult_nn( tempNeg, coeff, currRing );
+          p_SetCoeff( tempNeg, multCoeff2, currRing );
           pSetm( tempNeg );
-          kBucketExtractLm(bucket);
+          kBucketExtractLm( bucket );
 #if F5EDEBUG2
           Print("REDUCTION WITH: ");
           pWrite( temp->p );
@@ -2208,11 +2235,13 @@ void currReduction  (
           // criterion again => go on with reduction steps
           else
           {
-            number coeff  = pGetCoeff(kBucketGetLm(bucket));
+            multCoeff1    = pGetCoeff( kBucketGetLm(bucket) );
+            multCoeff2    = pGetCoeff( temp->p );
+            multCoeff2    = n_Div( multCoeff1, multCoeff2, currRing );
             poly tempNeg  = pInit();
             // throw away the leading monomials of reducer and bucket
             tempNeg       = pCopy( temp->p );
-            p_Mult_nn( tempNeg, coeff, currRing );
+            p_Mult_nn( tempNeg, multCoeff2, currRing );
             pSetm( tempNeg );
             tempLength    = pLength( tempNeg->next );
             kBucketExtractLm(bucket);
@@ -2254,7 +2283,7 @@ void currReduction  (
       // the "right" leading monomial
       //  => now we have to reduce w.r.t. redGB again!
       spTemp->p = reduceByRedGBPoly( spTemp->p, strat );
-      pNorm( spTemp->p ); 
+      //pNorm( spTemp->p ); 
       // add sp together with rewRulesLast to gCurr!!!
       Lpoly* newElement     = (Lpoly*) omAlloc( sizeof(Lpoly) );
       newElement->next      = *gCurrFirst;
@@ -2414,7 +2443,7 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   LObject Pair( currRing );
   Pair.p1  = cp->p1;
   Pair.p2  = cp->p2;
-#if F5EDEBUG2
+#if F5EDEBUG1
   Print( "P1: %p\n", cp->p1 );
   pWrite(cp->p1);
   Print( "P2: &p\n", cp->p2 );
@@ -2448,7 +2477,16 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   assume(tailRing != NULL);
 
   poly a1 = pNext(p1), a2 = pNext(p2);
-  number lc1 = pGetCoeff(p1), lc2 = pGetCoeff(p2);
+  number lc1 = pGetCoeff(p1);
+  number lc2 = pGetCoeff(p2);
+  lc2 = n_Div( lc2, lc1, currRing );
+  n_Normalize( lc1, currRing );
+#if F5EDEBUG1
+  Print("COEFF1: ");
+  Print( "%d\n",lc1 );
+  Print("COEFF2: ");
+  Print( "%d\n",lc2 );
+#endif
   int co=0, ct = 3; // as lc1 = lc2 = 1 => 3=ksCheckCoeff(&lc1, &lc2); !!!
 
   int l1=0, l2=0;
