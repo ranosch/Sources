@@ -45,7 +45,7 @@
 
 #ifdef NDEBUG
 #undef NDEBUG
-#define NDEBUG 1
+#define NDEBUG 0
 #endif
 #ifdef PDEBUG
 #undef PDEBUG
@@ -644,7 +644,7 @@ void criticalPairPrev (
   for(j=1; j<=currRing->N; j++)
   {
     temp  = expVecNewElement[j] - f5Rules.label[strat->sl][j];
-    if(temp<0)
+    if( temp<0 )
     {
       cpTemp->mult1[j]    =   -temp;  
       cpTemp->mult2[j]    =   0; 
@@ -792,15 +792,31 @@ void criticalPairCurr (
     // otherwise we can go on with the next element, since the 
     // 2nd generator is a past reducer of p1 which was not allowed
     // to reduce!
+    Print("testing stuff: ");
+    for(j=0; j<currRing->N+1; j++)
+    {
+      Print("%d  ",rewRules.label[cpTemp->rewRule2][j]);
+    }
     if( pairNeeded )
     {
       cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
+      Print("OK\n");
       cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
+      Print("OK\n");
       
       // testing the F5 & Rewritten Criterion
       
       // check for equality on labels including the coefficients!!!
+      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+                                sizeof(unsigned long));
+      getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
+                          numVariables, shift, negBitmaskShifted, offsets
+                        );
+      getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
+                          shift, negBitmaskShifted, offsets
+                        );
       int labelEqual = expCmp( cpTemp->mLabelExp, checkExp );
+      Print("LABELCHECK %d\n", labelEqual );
       if( ! ( labelEqual == 0 && 
               n_Equal ( rewRules.coeff[cpTemp->rewRule1],   
                         nMult(rewRules.coeff[cpTemp->rewRule2],cpTemp->coeff2), 
@@ -823,14 +839,6 @@ void criticalPairCurr (
         // completing the construction of the new critical pair and inserting it
         // to the list of critical pairs 
         // now we really need the memory for the exp label
-        cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                                  sizeof(unsigned long));
-        getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
-                            numVariables, shift, negBitmaskShifted, offsets
-                          );
-        getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
-                            shift, negBitmaskShifted, offsets
-                          );
         // compare which label is greater and possibly switch the 1st and 2nd 
         // generator in cpTemp
         // exchange generator 1 and 2 in cpTemp
@@ -950,6 +958,16 @@ void criticalPairCurr (
       getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
                           shift, negBitmaskShifted, offsets
                         );
+      int labelEqual = expCmp( cpTemp->mLabelExp, checkExp );
+      Print("LABELCHECK %d\n", labelEqual );
+      if( ! ( labelEqual == 0 && 
+              n_Equal ( rewRules.coeff[cpTemp->rewRule1],   
+                        nMult(rewRules.coeff[cpTemp->rewRule2],cpTemp->coeff2), 
+                        currRing
+                      )
+            )   
+        )
+      {
       // compare which label is greater and possibly switch the 1st and 2nd 
       // generator in cpTemp
       // exchange generator 1 and 2 in cpTemp
@@ -977,7 +995,6 @@ void criticalPairCurr (
       }
       
       insertCritPair(cpTemp, critPairDeg, cpBounds);
-    /*
     } 
     else 
     {
@@ -988,7 +1005,6 @@ void criticalPairCurr (
       omFree( cpTemp->mLabel2 );
       omFree( cpTemp );
     }
-    */
   }
   omFree(checkExp);
   omFree(expVecTemp);
