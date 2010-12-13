@@ -292,7 +292,7 @@ void insertCritPair (
 inline BOOLEAN criterion1 (
   const int*          mLabel,  ///<[in]  multiplied labeled to be checked
   const unsigned long smLabel, ///<[in]  corresponding short exponent vector
-  const F5Rules*      f5Rules, ///<[in]  rules (integer vectors) for F5 Criterion checks
+  const F5Rules*      f5Rules  ///<[in]  rules (integer vectors) for F5 Criterion checks
                           );
 
 

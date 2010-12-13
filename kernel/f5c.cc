@@ -421,11 +421,9 @@ void criticalPairInit (
     
     // testing the F5 Criterion
 
-    // no criteria test in basic algorithm!
-    /*
-    if(!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat)) 
+    // this is the ggv criterion!
+    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
     {
-    */
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       cpTemp->p2        = strat->S[i];
@@ -457,9 +455,7 @@ void criticalPairInit (
       cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
       cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
-    /*
     }
-    */
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -493,11 +489,9 @@ void criticalPairInit (
   cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
   // testing the F5 Criterion
   
-  // no criteria test in the basic algorithm
-  /*
-  if(!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat)) 
+  // this is the ggv criterion
+  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
   {
-  */
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     cpTemp->p2        = strat->S[strat->sl];
@@ -513,7 +507,6 @@ void criticalPairInit (
                         numVariables, shift, negBitmaskShifted, offsets
                       );
     insertCritPair( cpTemp, critPairDeg, cpBounds );
-  /*
   }
   else 
   {
@@ -523,7 +516,6 @@ void criticalPairInit (
     omFree( cpTemp->mLabel1 );
     omFree( cpTemp );
   }
-  */
   omFree(expVecNewElement);
 #if F5EDEBUG1
   Print("CRITPAIRINIT-END\n");
@@ -597,19 +589,14 @@ void criticalPairPrev (
     }
     cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
     
-    // testing the F5 Criterion
 #if F5EDEBUG1
     Print("2nd generator of pair: ");
     pWrite( pHead(strat->S[i]) );
 #endif
     
-    // no criteria tests in basic algorithm!
-    /*
-    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) &&
-        !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
-      )
+    // this is the ggv criterion!
+    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
     {
-    */
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       cpTemp->p2        = strat->S[i];
@@ -637,9 +624,7 @@ void criticalPairPrev (
       cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
       cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
       cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
-    /*
     }
-    */
   }
   // same critical pair processing for the last element in redGB
   // This is outside of the loop to keep memory low, since we know that after
@@ -676,13 +661,9 @@ void criticalPairPrev (
 #endif
   // testing the F5 Criterion
   
-  // no criteria tests in the basic algorithm!
-  /*
-  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) &&
-      !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
-    )
+  // this is the ggv criterion!
+  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
   {
-  */
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     cpTemp->p2        = strat->S[strat->sl];
@@ -694,7 +675,6 @@ void criticalPairPrev (
                         numVariables, shift, negBitmaskShifted, offsets
                       );
     insertCritPair(cpTemp, critPairDeg, cpBounds);
-  /*
   }
   else 
   {
@@ -704,7 +684,6 @@ void criticalPairPrev (
     omFree( cpTemp->mLabel1 );
     omFree( cpTemp );
   }
-  */
   omFree(expVecNewElement);
 #if F5EDEBUG1
   Print("CRITPAIRPREV-END\n");
@@ -724,7 +703,9 @@ void criticalPairCurr (
 #endif
   int i, j;
   unsigned long* mLabelExp;
-  bool pairNeeded       = FALSE;
+  // all pairs should be computed if possible as ggv does not do
+  // higher label reductions, but computes the pairs again afterwards
+  bool pairNeeded       = TRUE;
   int* expVecNewElement = (int*) omAlloc((currRing->N+1)*sizeof(int));
   int* expVecTemp       = (int*) omAlloc((currRing->N+1)*sizeof(int));
   pGetExpV(gCurr->p, expVecNewElement); 
@@ -781,7 +762,6 @@ void criticalPairCurr (
       temp  = expVecNewElement[j] - expVecTemp[j];
       if(temp<0)
       {
-        pairNeeded          =   TRUE;
         cpTemp->mult1[j]    =   -temp;  
         cpTemp->mult2[j]    =   0; 
         cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
@@ -834,20 +814,136 @@ void criticalPairCurr (
             )   
         )
       {
-      
-      // no criteria tests in the basic algorithm!
-      /*
-      if( 
-          !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) 
-          && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules, strat) 
-          && !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
-          && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, &rewRules, cpTemp->rewRule2)
-        ) 
+
+        // this is the ggv criterion!
+        if( 
+           !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+           && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
+          ) 
+        {
+          // completing the construction of the new critical pair and inserting it
+          // to the list of critical pairs 
+          // now we really need the memory for the exp label
+          // compare which label is greater and possibly switch the 1st and 2nd 
+          // generator in cpTemp
+          // exchange generator 1 and 2 in cpTemp
+          if( expCmp(cpTemp->mLabelExp, checkExp) == -1 )
+          {
+            poly pTempHolder                = cpTemp->p1;
+            int* mLabelTempHolder           = cpTemp->mLabel1;
+            int* multTempHolder             = cpTemp->mult1;
+            unsigned long smLabelTempHolder = cpTemp->smLabel1;  
+            unsigned long rewRuleTempHolder = cpTemp->rewRule1;
+            unsigned long* expTempHolder    = cpTemp->mLabelExp;
+
+            cpTemp->p1                      = cpTemp->p2;
+            cpTemp->p2                      = pTempHolder;
+            cpTemp->mLabel1                 = cpTemp->mLabel2;
+            cpTemp->mLabel2                 = mLabelTempHolder;
+            cpTemp->mult1                   = cpTemp->mult2;
+            cpTemp->mult2                   = multTempHolder;
+            cpTemp->smLabel1                = cpTemp->smLabel2;
+            cpTemp->smLabel2                = smLabelTempHolder;
+            cpTemp->rewRule1                = cpTemp->rewRule2;
+            cpTemp->rewRule2                = rewRuleTempHolder;
+            cpTemp->mLabelExp               = checkExp;
+            checkExp                        = expTempHolder;
+          }
+
+          insertCritPair(cpTemp, critPairDeg, cpBounds);
+
+          Cpair* cp         = (Cpair*) omAlloc( sizeof(Cpair) );
+          cpTemp            = cp;
+          cpTemp->next      = NULL;
+          cpTemp->mLabelExp = NULL;
+          cpTemp->mLabel1   = NULL;
+          cpTemp->smLabel1  = 0;
+          cpTemp->mult1     = NULL;
+          cpTemp->p1        = gCurr->p;
+          cpTemp->rewRule1  = gCurr->rewRule;
+          cpTemp->mLabel2   = NULL;
+          cpTemp->smLabel2  = 0;
+          cpTemp->mult2     = NULL;
+          cpTemp->rewRule2  = (gCurrIter->next)->rewRule;
+          cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+          cpTemp->mLabel2   = (int*) omAlloc((currRing->N+1)*sizeof(int));
+          cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
+          cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
+        }
+      }
+    }
+    gCurrIter   = gCurrIter->next;
+  }
+  // same critical pair processing for the last element in gCurr
+  // This is outside of the loop to keep memory low, since we know that after
+  // this element no new memory for a critical pair must be allocated.
+  cpTemp->p2  = gCurrIter->p;
+  cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
+#if F5EDEBUG1
+  Print("2nd generator of pair: ");
+  pWrite( pHead(cpTemp->p2) );
+#endif
+  pGetExpV(gCurrIter->p, expVecTemp); 
+  // computation of the lcm and the corresponding multipliers for the critical
+  // pair generated by the new element and elements of the previous iteration
+  // steps, i.e. elements already in redGB
+  cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
+  cpTemp->rewRule2    = gCurrIter->rewRule;
+  cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetExp(gCurrIter->p, 0); 
+  critPairDeg         = 0;
+  for(j=1; j<=currRing->N; j++)
+  {
+    temp  = expVecNewElement[j] - expVecTemp[j];
+    if(temp<0)
+    {
+      cpTemp->mult1[j]    =   -temp;  
+      cpTemp->mult2[j]    =   0; 
+      cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
+      cpTemp->mLabel2[j]  =   rewRules.label[cpTemp->rewRule2][j];
+      critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
+    }
+    else
+    {
+      cpTemp->mult1[j]    =   0;  
+      cpTemp->mult2[j]    =   temp;  
+      cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j];
+      cpTemp->mLabel2[j]  =   rewRules.label[cpTemp->rewRule2][j] + temp;
+      critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j]; 
+    }
+  }
+  if( pairNeeded )
+  {
+    cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
+    cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
+    
+  
+    // this is the ggv criterion!
+    if( 
+        !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+        && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
+      ) 
+    {
+      // completing the construction of the new critical pair and inserting it
+      // to the list of critical pairs 
+      // now we really need the memory for the exp label
+      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+                                sizeof(unsigned long));
+      getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
+                          numVariables, shift, negBitmaskShifted, offsets
+                        );
+      getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
+                          shift, negBitmaskShifted, offsets
+                        );
+      int labelEqual = expCmp( cpTemp->mLabelExp, checkExp );
+      Print("LABELCHECK %d\n", labelEqual );
+      if( ! ( labelEqual == 0 && 
+              n_Equal ( rewRules.coeff[cpTemp->rewRule1],   
+                        nMult(rewRules.coeff[cpTemp->rewRule2],cpTemp->coeff2), 
+                        currRing
+                      )
+            )   
+        )
       {
-      */
-        // completing the construction of the new critical pair and inserting it
-        // to the list of critical pairs 
-        // now we really need the memory for the exp label
         // compare which label is greater and possibly switch the 1st and 2nd 
         // generator in cpTemp
         // exchange generator 1 and 2 in cpTemp
@@ -873,137 +969,9 @@ void criticalPairCurr (
           cpTemp->mLabelExp               = checkExp;
           checkExp                        = expTempHolder;
         }
-        
-        insertCritPair(cpTemp, critPairDeg, cpBounds);
-        
-        Cpair* cp         = (Cpair*) omAlloc( sizeof(Cpair) );
-        cpTemp            = cp;
-        cpTemp->next      = NULL;
-        cpTemp->mLabelExp = NULL;
-        cpTemp->mLabel1   = NULL;
-        cpTemp->smLabel1  = 0;
-        cpTemp->mult1     = NULL;
-        cpTemp->p1        = gCurr->p;
-        cpTemp->rewRule1  = gCurr->rewRule;
-        cpTemp->mLabel2   = NULL;
-        cpTemp->smLabel2  = 0;
-        cpTemp->mult2     = NULL;
-        cpTemp->rewRule2  = (gCurrIter->next)->rewRule;
-        cpTemp->mLabel1   = (int*) omAlloc((currRing->N+1)*sizeof(int));
-        cpTemp->mLabel2   = (int*) omAlloc((currRing->N+1)*sizeof(int));
-        cpTemp->mult1     = (int*) omAlloc((currRing->N+1)*sizeof(int));
-        cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
-      /*
-      }
-      */
-      }
-    }
-    pairNeeded  = FALSE;
-    gCurrIter   = gCurrIter->next;
-  }
-  // same critical pair processing for the last element in gCurr
-  // This is outside of the loop to keep memory low, since we know that after
-  // this element no new memory for a critical pair must be allocated.
-  cpTemp->p2  = gCurrIter->p;
-  cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
-#if F5EDEBUG1
-  Print("2nd generator of pair: ");
-  pWrite( pHead(cpTemp->p2) );
-#endif
-  pGetExpV(gCurrIter->p, expVecTemp); 
-  // computation of the lcm and the corresponding multipliers for the critical
-  // pair generated by the new element and elements of the previous iteration
-  // steps, i.e. elements already in redGB
-  cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
-  cpTemp->rewRule2    = gCurrIter->rewRule;
-  cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetExp(gCurrIter->p, 0); 
-  critPairDeg         = 0;
-  for(j=1; j<=currRing->N; j++)
-  {
-    temp  = expVecNewElement[j] - expVecTemp[j];
-    if(temp<0)
-    {
-      pairNeeded          =   TRUE;
-      cpTemp->mult1[j]    =   -temp;  
-      cpTemp->mult2[j]    =   0; 
-      cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
-      cpTemp->mLabel2[j]  =   rewRules.label[cpTemp->rewRule2][j];
-      critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
-    }
-    else
-    {
-      cpTemp->mult1[j]    =   0;  
-      cpTemp->mult2[j]    =   temp;  
-      cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j];
-      cpTemp->mLabel2[j]  =   rewRules.label[cpTemp->rewRule2][j] + temp;
-      critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j]; 
-    }
-  }
-  if( pairNeeded )
-  {
-    cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
-    cpTemp->smLabel2 = ~getShortExpVecFromArray(cpTemp->mLabel2);
-    
-    // testing the F5 Criterion
-  
-    // no criteria tests for basic algorithm!
-    /*
-    if( 
-        !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) 
-        && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules, strat) 
-        && !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
-        && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, &rewRules, cpTemp->rewRule2)
-      ) 
-    {
-    */
-      // completing the construction of the new critical pair and inserting it
-      // to the list of critical pairs 
-      // now we really need the memory for the exp label
-      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                                sizeof(unsigned long));
-      getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
-                          numVariables, shift, negBitmaskShifted, offsets
-                        );
-      getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
-                          shift, negBitmaskShifted, offsets
-                        );
-      int labelEqual = expCmp( cpTemp->mLabelExp, checkExp );
-      Print("LABELCHECK %d\n", labelEqual );
-      if( ! ( labelEqual == 0 && 
-              n_Equal ( rewRules.coeff[cpTemp->rewRule1],   
-                        nMult(rewRules.coeff[cpTemp->rewRule2],cpTemp->coeff2), 
-                        currRing
-                      )
-            )   
-        )
-      {
-      // compare which label is greater and possibly switch the 1st and 2nd 
-      // generator in cpTemp
-      // exchange generator 1 and 2 in cpTemp
-      if( expCmp(cpTemp->mLabelExp, checkExp) == -1 )
-      {
-        poly pTempHolder                = cpTemp->p1;
-        int* mLabelTempHolder           = cpTemp->mLabel1;
-        int* multTempHolder             = cpTemp->mult1;
-        unsigned long smLabelTempHolder = cpTemp->smLabel1;  
-        unsigned long rewRuleTempHolder = cpTemp->rewRule1;
-        unsigned long* expTempHolder    = cpTemp->mLabelExp;
-
-        cpTemp->p1                      = cpTemp->p2;
-        cpTemp->p2                      = pTempHolder;
-        cpTemp->mLabel1                 = cpTemp->mLabel2;
-        cpTemp->mLabel2                 = mLabelTempHolder;
-        cpTemp->mult1                   = cpTemp->mult2;
-        cpTemp->mult2                   = multTempHolder;
-        cpTemp->smLabel1                = cpTemp->smLabel2;
-        cpTemp->smLabel2                = smLabelTempHolder;
-        cpTemp->rewRule1                = cpTemp->rewRule2;
-        cpTemp->rewRule2                = rewRuleTempHolder;
-        cpTemp->mLabelExp               = checkExp;
-        checkExp                        = expTempHolder;
-      }
       
-      insertCritPair(cpTemp, critPairDeg, cpBounds);
+        insertCritPair(cpTemp, critPairDeg, cpBounds);
+      }
     } 
     else 
     {
@@ -1027,6 +995,10 @@ void criticalPairCurr (
 
 void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
 {
+  // pointer for deleting critical pairs of the same signature:
+  // ggv says: one pair per signature!
+  // NOTE that this is not possible in F5 due to the Rewritten Criterion!
+  Cpair* tempForDel       = NULL;
 #if F5EDEBUG1
   Print("INSERTCRITPAIR-BEGINNING deg bound %p\n",*bound);
 #endif
@@ -1073,6 +1045,26 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
         cp->next          = (temp)->next->cp;
         (temp)->next->cp  = cp;
         (temp)->next->length++;
+        // if there exist other elements in the list with the very same label
+        // then delete them as they will be detected by the Rewritten Criterion
+        // of F5 nevertheless
+        tempForDel  = cp;
+        while( tempForDel->next )
+        {
+          if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
+          {
+            Cpair* tempDel    = tempForDel->next;
+            tempForDel->next  = (tempForDel->next)->next;
+            omFree( tempDel );
+            (temp)->next->length--;
+          }
+          // tempForDel->next could be NULL as we have deleted one element
+          // inbetween
+          if( tempForDel->next )
+          {
+            tempForDel  = tempForDel->next;
+          }
+        }
       }
       else
       {
@@ -1091,6 +1083,26 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
         cp->next      = (*bound)->cp;
         (*bound)->cp  = cp;
         (*bound)->length++;
+        // if there exist other elements in the list with the very same label
+        // then delete them as they will be detected by the Rewritten Criterion
+        // of F5 nevertheless
+        tempForDel    = cp;
+        while( tempForDel->next )
+        {
+          if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
+          {
+            Cpair* tempDel    = tempForDel->next;
+            tempForDel->next  = (tempForDel->next)->next;
+            omFree( tempDel );
+            (*bound)->length--;
+          }
+          // tempForDel->next could be NULL as we have deleted one element
+          // inbetween
+          if( tempForDel->next )
+          {
+            tempForDel  = tempForDel->next;
+          }
+        }
       }
       else
         {
@@ -2017,98 +2029,102 @@ void currReduction  (
               // the element to be reduced as well as the multiplied reducer have
               // (a) the same leading monomial
               // (b) the same label
-              if( expCmp( multLabelTempExp, spTemp->labelExp ) == 0 &&
-                  n_Equal ( multCoeff1, multCoeff2, currRing )   
-                )
-              {
-                temp = *gCurrFirst;
-                kBucketDeleteAndDestroy( &bucket );
-                rewRulesCurr  = rewRulesCurr++;
-                Spoly* spDel  = spTemp;
-                spTemp        = spTemp->next;
-                // free memory of spTemp stuff
-                omFree( spDel->labelExp );
-                omFree( spDel );
-                Print("here4\n");
-                goto startComplete;
-                /*
-                if( spTemp->next )
+              if( expCmp( multLabelTempExp, spTemp->labelExp ) == 0 )
+              { 
+                if( n_Equal ( rewRules->coeff[rewRulesCurr], rewRules->coeff[temp->rewRule], currRing ) )
                 {
-                  spTemp  = spTemp->next;
-                  pDelete( &spTemp->p );
-                  omFreeSize( spDel, sizeof(Spoly) );
+                  temp = *gCurrFirst;
+                  kBucketDeleteAndDestroy( &bucket );
+                  rewRulesCurr  = rewRulesCurr++;
+                  Spoly* spDel  = spTemp;
+                  spTemp        = spTemp->next;
+                  // free memory of spTemp stuff
+                  omFree( spDel->labelExp );
+                  omFree( spDel );
                   Print("here4\n");
                   goto startComplete;
+                  /*
+                     if( spTemp->next )
+                     {
+                     spTemp  = spTemp->next;
+                     pDelete( &spTemp->p );
+                     omFreeSize( spDel, sizeof(Spoly) );
+                     Print("here4\n");
+                     goto startComplete;
+                     }
+                     else
+                     {
+                     pDelete( &spDel->p );
+                     omFreeSize( spDel, sizeof(Spoly) );
+                     }
+                     */
                 }
+                // leading monomials of signatures are equal, but leading 
+                // coefficients are different!
                 else
                 {
-                  pDelete( &spDel->p );
-                  omFreeSize( spDel, sizeof(Spoly) );
-                }
-                */
-              }
-              // only in this case reduction is allowed!
-              else
-              {
-                // else we can go on and reduce sp
-                // The multiplied reducer will be reduced w.r.t. strat before the 
-                // bucket reduction starts!
-                static poly multiplier = pOne();
-                static poly multReducer;
-                getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
-                                    negBitmaskShifted, offsets
-                                  );
-                // throw away the leading monomials of reducer and bucket
-                p_SetCoeff( multiplier, multCoeff2, currRing );
-                pSetm( multiplier );
-                //p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
-                kBucketExtractLm(bucket);
-                // build the multiplied reducer (note that we do not need the leading
-                // term at all!
+                  // else we can go on and reduce sp
+                  // The multiplied reducer will be reduced w.r.t. strat before the 
+                  // bucket reduction starts!
+                  static poly multiplier = pOne();
+                  static poly multReducer;
+                  getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                                      negBitmaskShifted, offsets
+                                    );
+                  // throw away the leading monomials of reducer and bucket
+                  p_SetCoeff( multiplier, multCoeff2, currRing );
+                  pSetm( multiplier );
+                  //p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+                  kBucketExtractLm(bucket);
+                  // build the multiplied reducer (note that we do not need the leading
+                  // term at all!
 #if F5EDEBUG2
-                Print("MULT: %p\n", multiplier );
-                pWrite( multiplier );
+                  Print("MULT: %p\n", multiplier );
+                  pWrite( multiplier );
 #endif
-                multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
-                Print("TEMPNEXT: ");
-                pWrite( temp->p->next );
-                Print("COEFF2: %ld\n", multCoeff2);
-                //p_SetCoeff( multReducer, multCoeff2, currRing );
+                  multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
+                  Print("TEMPNEXT: ");
+                  pWrite( temp->p->next );
+                  Print("COEFF2: %ld\n", multCoeff2);
+                  //p_SetCoeff( multReducer, multCoeff2, currRing );
 #if F5EDEBUG2
-                Print("MULTRED BEFORE: \n" );
-                pWrite( pHead(multReducer) );
+                  Print("MULTRED BEFORE: \n" );
+                  pWrite( pHead(multReducer) );
 #endif
-                multReducer = reduceByRedGBPoly( multReducer, strat );
+                  multReducer = reduceByRedGBPoly( multReducer, strat );
 #if F5EDEBUG2
-                Print("MULTRED AFTER: \n" );
-                pWrite( pHead(multReducer) );
+                  Print("MULTRED AFTER: \n" );
+                  pWrite( pHead(multReducer) );
 #endif
-                //  length must be computed after the reduction with 
-                //  redGB!
-                tempLength = pLength( multReducer );
-                
-                kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+                  //  length must be computed after the reduction with 
+                  //  redGB!
+                  tempLength = pLength( multReducer );
+                  // reduce polynomial
+                  kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+                  // adjust the coefficient of the signature
+                  rewRules->coeff[rewRulesCurr] -= rewRules 
 #if F5EDEBUG2
-                Print("AFTER REDUCTION STEP: ");
-                pWrite( kBucketGetLm(bucket) );
+                  Print("AFTER REDUCTION STEP: ");
+                  pWrite( kBucketGetLm(bucket) );
 #endif
-                if( canonicalize++ % 40 )
-                {
-                  kBucketCanonicalize( bucket );
-                  canonicalize = 0;
+                  if( canonicalize++ % 40 )
+                  {
+                    kBucketCanonicalize( bucket );
+                    canonicalize = 0;
+                  }
+                  isMult    = FALSE;
+                  redundant = FALSE;
+                  if( kBucketGetLm( bucket ) )
+                  {
+                    temp  = *gCurrFirst;
+                  }
+                  else
+                  {
+                    break;
+                  }
+                  goto startagainTop;
+
                 }
-                isMult    = FALSE;
-                redundant = FALSE;
-                if( kBucketGetLm( bucket ) )
-                {
-                  temp  = *gCurrFirst;
-                }
-                else
-                {
-                  break;
-                }
-                goto startagainTop;
-          
               }
             }
         }
@@ -2353,6 +2369,7 @@ void currReduction  (
     }
     else // spTemp->p == 0
     {
+      
       pDelete( &spTemp->p );
     }
     rewRulesCurr  = rewRulesCurr++;
