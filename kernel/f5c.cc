@@ -2031,7 +2031,11 @@ void currReduction  (
               // (b) the same label
               if( expCmp( multLabelTempExp, spTemp->labelExp ) == 0 )
               { 
-                if( n_Equal ( rewRules->coeff[rewRulesCurr], rewRules->coeff[temp->rewRule], currRing ) )
+                if( 
+                   n_Equal ( rewRules->coeff[rewRulesCurr], 
+                             n_Mult(rewRules->coeff[temp->rewRule], multCoeff2, currRing), 
+                             currRing ) 
+                  )
                 {
                   temp = *gCurrFirst;
                   kBucketDeleteAndDestroy( &bucket );
