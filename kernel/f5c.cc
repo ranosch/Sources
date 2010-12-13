@@ -2009,7 +2009,11 @@ void currReduction  (
               // (a) the same leading monomial
               // (b) the same label
               if( expCmp( multLabelTempExp, spTemp->labelExp ) == 0 &&
-                  n_Equal ( multCoeff1, multCoeff2, currRing )   
+                  n_Equal ( 
+                           rewRules->coeff[rewRulesCurr], 
+                           n_Mult(rewRules->coeff[temp->rewRule], multCoeff2, currRing), 
+                           currRing 
+                          )   
                 )
               {
                 temp = *gCurrFirst;
