@@ -41,7 +41,10 @@
 /// exponent vector.
 struct F5Rules 
 {
-  int**           label;  ///<  pointer to an array of exponent vectors for checks
+  unsigned long   size;   ///< current number of rules in the list
+  number*         coeff;  ///< coefficients of the labels
+  int**           label;  ///< array of exponent vectors of the rules
+  unsigned long*  slabel; ///< array of short exponent vecotrs of the rules
                           ///   of the F5 Criterion
 };
 
@@ -290,7 +293,6 @@ inline BOOLEAN criterion1 (
   const int*          mLabel,  ///<[in]  multiplied labeled to be checked
   const unsigned long smLabel, ///<[in]  corresponding short exponent vector
   const F5Rules*      f5Rules, ///<[in]  rules (integer vectors) for F5 Criterion checks
-  const kStrategy     strat    ///<[in]  rules (short exp) for F5 Criterion checks
                           );
 
 

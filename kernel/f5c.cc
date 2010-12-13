@@ -61,6 +61,7 @@ int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 // size for strat & rewRules in the corresponding iteration steps
 // this is needed for the lengths of the rules arrays in the following
 unsigned long rewRulesSize  = 0;
+unsigned long f5RulesSize  = 0;
 unsigned long stratSize     = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
@@ -213,10 +214,10 @@ ideal f5cIter (
   F5Rules* f5Rules    = (F5Rules*) omAlloc(sizeof(struct F5Rules));
   RewRules* rewRules  = (RewRules*) omAlloc(sizeof(struct RewRules));
   // malloc memory for all rules
-  f5Rules->label    = (int**) omAlloc((strat->sl+1)*sizeof(int*));
+  f5Rules->label    = (int**) omAlloc(2*(strat->sl+1)*sizeof(int*));
   
   // set global variables for the sizes of F5 & Rewritten Rules available
-  rewRulesSize  = 2*(strat->sl+1);
+  rewRulesSize  = f5RulesSize = 2*(strat->sl+1);
   stratSize     = strat->sl+1;
 
   // malloc two times the size of the previous Groebner basis
@@ -242,13 +243,21 @@ ideal f5cIter (
   // use the strategy strat to get the F5 Rules:
   // When preparing strat we have already computed & stored the short exonent
   // vectors there => do not recompute them again 
-  for(i=0; i<=strat->sl; i++) 
+  for(i=0; i<stratSize; i++) 
   {
-    f5Rules->label[i]  =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+    f5Rules->coeff[i]   = n_Init( 1, currRing );
+    f5Rules->label[i]   =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
     pGetExpV( strat->S[i], f5Rules->label[i] );
+    f5Rules->slabel[i]  = strat->sevS[i];
+  } 
+  // alloc memory for the rest of the labels
+  for( ; i<f5RulesSize; i++) 
+  {
+    f5Rules->label[i]   =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
   } 
 
   rewRules->size  = 1;
+  f5Rules->size   = stratSize;
   // reduce and initialize the list of Lpolys with the current ideal generator p
 #if F5EDEBUG3
   Print("Before reduction\n");
@@ -1126,7 +1135,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
 
 
 inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel, 
-                            const F5Rules* f5Rules, const kStrategy strat
+                            const F5Rules* f5Rules
                           )
 {
   int i = 0;
@@ -1146,7 +1155,7 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 #endif
   nextElement:
   
-  for( ; i < stratSize; i++)
+  for( ; i < f5Rules->size; i++)
   {
 #if F5EDEBUG2
     Print("F5 Rule: ");
@@ -1156,9 +1165,9 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
       j--;
     }
     j = currRing->N;
-    Print("\n %ld\n", strat->sevS[i]);
+    Print("\n %ld\n", f5Rules->slabel[i]);
 #endif
-    if(!(smLabel & strat->sevS[i]))
+    if(!(smLabel & f5Rules->slabel[i]))
     {
       while(j)
       {
