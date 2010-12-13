@@ -1340,7 +1340,7 @@ void computeSpols (
             _i++;
           }
           (*rewRules)->slabel[(*rewRules)->size]  = ~temp->smLabel1;
-        Print("TEST %ld -- %ld\n", temp->rewRule1, (*rewRules)->coeff[temp->rewRule1]);
+          Print("TEST %ld -- %ld\n", temp->rewRule1, (*rewRules)->coeff[temp->rewRule1]);
           (*rewRules)->coeff[(*rewRules)->size]   = (*rewRules)->coeff[temp->rewRule1];
           (*rewRules)->size++;
         }
@@ -1352,6 +1352,7 @@ void computeSpols (
           unsigned int old                = rewRulesSize;
           rewRulesSize                    = 3*rewRulesSize;
           RewRules* newRules              = (RewRules*) omAlloc( sizeof(RewRules) );
+          newRules->coeff                 = (number*) omAlloc( rewRulesSize*sizeof(number) );
           newRules->label                 = (int**) omAlloc( rewRulesSize*sizeof(int*) );
           newRules->slabel                = (unsigned long*)omAlloc( rewRulesSize*sizeof(unsigned long) );
           newRules->size                  = (*rewRules)->size;
@@ -1359,7 +1360,8 @@ void computeSpols (
           register unsigned long ctr      = 0;
           for( ; ctr<old; ctr++ )
           {
-            newRules->label[ctr]      =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+            newRules->coeff[ctr]      = (*rewRules)->coeff[ctr];
+            newRules->label[ctr]      = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
             register unsigned long _i = 0;
             register int* _d          = newRules->label[ctr];
             register int* _s          = (*rewRules)->label[ctr];
@@ -2006,7 +2008,9 @@ void currReduction  (
               // the element to be reduced as well as the multiplied reducer have
               // (a) the same leading monomial
               // (b) the same label
-              if( expCmp( multLabelTempExp, spTemp->labelExp ) == 0 )
+              if( expCmp( multLabelTempExp, spTemp->labelExp ) == 0 &&
+                  n_Equal ( multCoeff1, multCoeff2, currRing )   
+                )
               {
                 temp = *gCurrFirst;
                 kBucketDeleteAndDestroy( &bucket );
@@ -2056,6 +2060,7 @@ void currReduction  (
                 pWrite( multiplier );
 #endif
                 multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
+                Print("COEFF2: %ld\n", multCoeff2);
                 p_SetCoeff( multReducer, multCoeff2, currRing );
 #if F5EDEBUG2
                 Print("MULTRED BEFORE: %p\n", *multReducer );
@@ -2155,14 +2160,14 @@ void currReduction  (
         startagainTail:
         bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
 #if F5EDEBUG3
-              Print("HERE TAILREDUCTION AGAIN %p -- %p\n",temp, temp->next);
-              Print("SPOLY RIGHT NOW: ");
-              pWrite( spTemp->p );
-              Print("POSSIBLE REDUCER: ");
-              pWrite( temp->p );
-              Print("BUCKET LM: ");
-              pWrite( kBucketGetLm(bucket) );
-              pTest( spTemp->p );
+        Print("HERE TAILREDUCTION AGAIN %p -- %p\n",temp, temp->next);
+        Print("SPOLY RIGHT NOW: ");
+        pWrite( spTemp->p );
+        Print("POSSIBLE REDUCER: ");
+        pWrite( temp->p );
+        Print("BUCKET LM: ");
+        pWrite( kBucketGetLm(bucket) );
+        pTest( spTemp->p );
 #endif
         if( isDivisibleGetMult( 
                                 temp->p, temp->sExp, kBucketGetLm( bucket ), 
