@@ -52,8 +52,8 @@
 #define PDEBUG 0 
 #endif
 #define F5EDEBUG0 1 
-#define F5EDEBUG1 1 
-#define F5EDEBUG2 1 
+#define F5EDEBUG1 0 
+#define F5EDEBUG2 0 
 #define F5EDEBUG3 0 
 #define setMaxIdeal 64
 #define NUMVARS currRing->ExpL_Size
@@ -2050,6 +2050,7 @@ void currReduction  (
                                     negBitmaskShifted, offsets
                                   );
                 // throw away the leading monomials of reducer and bucket
+                p_SetCoeff( multiplier, multCoeff2, currRing );
                 pSetm( multiplier );
                 //p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
                 kBucketExtractLm(bucket);
@@ -2060,15 +2061,17 @@ void currReduction  (
                 pWrite( multiplier );
 #endif
                 multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
+                Print("TEMPNEXT: ");
+                pWrite( temp->p->next );
                 Print("COEFF2: %ld\n", multCoeff2);
-                p_SetCoeff( multReducer, multCoeff2, currRing );
+                //p_SetCoeff( multReducer, multCoeff2, currRing );
 #if F5EDEBUG2
-                Print("MULTRED BEFORE: %p\n", *multReducer );
+                Print("MULTRED BEFORE: \n" );
                 pWrite( pHead(multReducer) );
 #endif
                 multReducer = reduceByRedGBPoly( multReducer, strat );
 #if F5EDEBUG2
-                Print("MULTRED AFTER: %p\n", *multReducer );
+                Print("MULTRED AFTER: \n" );
                 pWrite( pHead(multReducer) );
 #endif
                 //  length must be computed after the reduction with 
@@ -2111,7 +2114,7 @@ void currReduction  (
           // throw away the leading monomials of reducer and bucket
           tempNeg       = pCopy( temp->p );
           tempLength    = pLength( tempNeg->next );
-          p_SetCoeff( tempNeg, multCoeff2, currRing );
+          p_Mult_nn( tempNeg, multCoeff2, currRing );
           pSetm( tempNeg );
           kBucketExtractLm( bucket );
 #if F5EDEBUG2
