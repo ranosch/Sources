@@ -2406,7 +2406,10 @@ void currReduction  (
     }
  // no tail reduction
 #else
-    spTemp->p = p_Merge_q( spTemp->p, kBucketClear(bucket), currRing );  
+    while( kBucketGetLm(bucket) )
+    {
+      spTemp->p = p_Merge_q( spTemp->p, kBucketExtractLm(bucket), currRing );  
+    }
 #endif // Tail reduction yes/no   
     kBucketLmZero: 
     // otherwise sp is reduced to zero and we do not need to add it to gCurr
