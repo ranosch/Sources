@@ -51,7 +51,7 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
-#define F5ETAILREDUCTION  0 
+#define F5ETAILREDUCTION  1 
 #define F5EDEBUG0         1 
 #define F5EDEBUG1         0 
 #define F5EDEBUG2         0 
@@ -62,7 +62,7 @@ int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 // size for strat & rewRules in the corresponding iteration steps
 // this is needed for the lengths of the rules arrays in the following
 unsigned long rewRulesSize  = 0;
-unsigned long f5RulesSize  = 0;
+unsigned long f5RulesSize   = 0;
 unsigned long stratSize     = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
@@ -211,11 +211,16 @@ ideal f5cIter (
   // store #elements in redGB for freeing the memory of F5Rules in the end of this
   // iteration step
   unsigned long oldLength;
+  f5RulesSize         = 2*(strat->sl+1);
   // create array of leading monomials of previously computed elements in redGB
   F5Rules* f5Rules    = (F5Rules*) omAlloc(sizeof(struct F5Rules));
   RewRules* rewRules  = (RewRules*) omAlloc(sizeof(struct RewRules));
   // malloc memory for all rules
-  f5Rules->label    = (int**) omAlloc(2*(strat->sl+1)*sizeof(int*));
+  f5Rules->coeff      = (number*) omAlloc(f5RulesSize*
+                        sizeof(number)); 
+  f5Rules->label      = (int**) omAlloc(f5RulesSize*sizeof(int*));
+  f5Rules->slabel     = (unsigned long*) omAlloc(f5RulesSize*
+                        sizeof(unsigned long)); 
   
   // set global variables for the sizes of F5 & Rewritten Rules available
   rewRulesSize  = f5RulesSize = 2*(strat->sl+1);
@@ -247,8 +252,11 @@ ideal f5cIter (
   for(i=0; i<stratSize; i++) 
   {
     f5Rules->coeff[i]   = n_Init( 1, currRing );
+    Print("HERE - %d\n", i);
     f5Rules->label[i]   =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+    Print("HERE - %d\n", i);
     pGetExpV( strat->S[i], f5Rules->label[i] );
+    Print("HERE - %d\n", i);
     f5Rules->slabel[i]  = strat->sevS[i];
   } 
   // alloc memory for the rest of the labels
