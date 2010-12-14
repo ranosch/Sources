@@ -297,7 +297,7 @@ ideal f5cIter (
     if( cpBounds )
     {
       computeSpols( 
-                    strat, cpBounds, redGB, &gCurr, f5Rules, &rewRules, 
+                    strat, cpBounds, redGB, &gCurr, &f5Rules, &rewRules, 
                     numVariables, shift, negBitmaskShifted, offsets
                   );
     }
@@ -343,7 +343,10 @@ ideal f5cIter (
   {
     omFreeSize( f5Rules->label[i], (currRing->N+1)*sizeof(int) );
   }
-  omFreeSize( f5Rules->label, oldLength*sizeof(int*) );
+  omFreeSize( f5Rules->label, f5RulesSize*sizeof(int*) );
+  omFreeSize( f5Rules->slabel, f5RulesSize*sizeof(unsigned long) );
+  omFreeSize( f5Rules->coeff, f5RulesSize*sizeof(number) );
+  
   omFreeSize( f5Rules, sizeof(F5Rules) );
   
   for( i=0; i<rewRulesSize; i++ )
@@ -1291,7 +1294,7 @@ inline BOOLEAN criterion2 (
 
 void computeSpols ( 
                     kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCurr, 
-                    const F5Rules* f5Rules, RewRules** rewRules, int numVariables, 
+                    F5Rules** f5Rules, RewRules** rewRules, int numVariables, 
                     int* shift, unsigned long* negBitmaskShifted, int* offsets
                   )
 {
@@ -1618,7 +1621,7 @@ void currReduction  (
                       kStrategy strat, Spoly* spolysFirst, Spoly* spolysLast,
                       RewRules** rewRulesP, unsigned long rewRulesCurr,
                       ideal redGB, CpairDegBound** cp, Lpoly** gCurrFirst, 
-                      const F5Rules* f5Rules, int* multTemp, 
+                      F5Rules** f5RulesP, int* multTemp, 
                       int* multLabelTemp, int numVariables, int* shift, 
                       unsigned long* negBitmaskShifted, int* offsets
                     )
@@ -1627,8 +1630,9 @@ void currReduction  (
 #if F5EDEBUG1
     Print("CURRREDUCTION-BEGINNING: GCURR %p -- %p\n",*gCurrFirst, (*gCurrFirst)->next);
 #endif
-  RewRules* rewRules = *rewRulesP;
-  BOOLEAN isMult    = FALSE;
+  RewRules* rewRules  = *rewRulesP;
+  F5Rules* f5Rules    = *f5RulesP;
+  BOOLEAN isMult      = FALSE;
   // check needed to ensure termination of F5 (see F5+)
   // this will be added to all new labeled polynomials to check
   // when to terminate the algorithm
@@ -2465,6 +2469,88 @@ void currReduction  (
     }
     else // spTemp->p == 0
     {
+      // if spTemp->p = 0 we have to add the corresponding rewRule to the array
+      // of f5Rules
+#if F5EDEBUG2
+      Print("SIZES BEFORE: %ld < %ld ?\n",f5Rules->size, f5RulesSize);
+      Print("ADDRESS: %p\n", f5Rules->label[0]);
+#endif
+      // get the corresponding offsets for the insertion of the element in the two lists:
+      Spoly* tempSpoly            = spTemp;
+      if( f5Rules->size<f5RulesSize )
+      {
+        // copy data from critical pair rule to rewRule
+        register unsigned long _length  = currRing->N+1;
+        register unsigned long _i       = 0;
+        register int* _d                = f5Rules->label[f5Rules->size];
+        register int* _s                = rewRules->label[rewRulesCurr];
+        while( _i<_length )
+        {
+          _d[_i]  = _s[_i];
+          _i++;
+        }
+        f5Rules->slabel[f5Rules->size]  = rewRules->slabel[rewRulesCurr];
+        f5Rules->coeff[f5Rules->size]   = rewRules->coeff[rewRulesCurr];
+        f5Rules->size++;
+        tempSpoly = spolysLast;
+      }
+      else
+      {
+#if F5EDEBUG1
+        Print("ALLOC MORE MEMORYi -- %p\n", f5Rules->label[0]);
+#endif
+        unsigned int old    = f5RulesSize;
+        f5RulesSize         = 3*f5RulesSize;
+        F5Rules* newRules   = (F5Rules*) omAlloc( sizeof(F5Rules) );
+        newRules->label     = (int**) omAlloc( f5RulesSize*sizeof(int*) );
+        newRules->slabel    = (unsigned long*)omAlloc( f5RulesSize*sizeof(unsigned long) );
+        newRules->size      = f5Rules->size;
+
+        // add element at the end 
+        register unsigned long _length  = currRing->N+1;
+        register unsigned long _ctr     = 0;
+        for( ; _ctr<old; _ctr++ )
+        {
+          newRules->label[_ctr]     =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+          register unsigned long _i = 0;
+          register int* _d          = newRules->label[_ctr];
+          register int* _s          = f5Rules->label[_ctr];
+          while( _i<_length )
+          {
+            _d[_i]  = _s[_i];
+            _i++;
+          }
+          omFreeSize( f5Rules->label[_ctr], (currRing->N+1)*sizeof(int) );
+          newRules->slabel[_ctr]  = f5Rules->slabel[_ctr];
+          newRules->coeff[_ctr]   = f5Rules->coeff[_ctr];
+        }
+        omFreeSize( f5Rules->slabel, old*sizeof(unsigned long) );
+        omFreeSize( f5Rules->coeff, old*sizeof(unsigned long) );
+        for( ; _ctr<f5RulesSize; _ctr++ )
+        {
+          newRules->label[_ctr] =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+        }
+        omFreeSize( f5Rules, sizeof(RewRules) );
+        *f5RulesP  = f5Rules  = newRules;
+        tempSpoly   = spolysLast;
+        // now we can go on adding the new rule to f5Rules
+
+        // copy data from rule corresponding to new s-polynomial to rewRule
+        register unsigned long _i = 0;
+        register int* _d          = f5Rules->label[f5Rules->size];
+        register int* _s          = rewRules->label[rewRulesCurr];
+        while( _i<_length )
+        {
+          _d[_i]  = _s[_i];
+          _i++;
+        }
+        f5Rules->slabel[f5Rules->size]  = rewRules->slabel[rewRulesCurr];
+        f5Rules->coeff[f5Rules->size]   = rewRules->coeff[rewRulesCurr];
+        f5Rules->size++;
+#if F5EDEBUG2
+        Print("MEMORY ALLOCATED -- %p\n", f5Rules->label[0]);
+#endif
+      } 
       
       pDelete( &spTemp->p );
     }

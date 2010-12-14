@@ -323,7 +323,7 @@ void computeSpols (
   ideal           redGB,      ///<[in]  reducers of earlier iteration steps
   Lpoly**         gCurr,      ///<[in,out]  pointer to the list of reducers of the 
                               ///           current iteration step
-  const F5Rules*  f5Rules,    ///<[in]  rules for F5 Criterion checks
+  F5Rules**  f5Rules,         ///<[in]  rules for F5 Criterion checks
   RewRules** rewRules,        ///<[in]  rules for Rewritten Criterion checks
   int numVariables,           ///<[in]  global stuff for faster exponent computations
   int* shift,                 ///<[in]  global stuff for faster exponent computations
@@ -370,7 +370,7 @@ void currReduction  (
                           ///           Note this has to be a pointer of a pointer
                           ///           as the corresponding value is changed when
                           ///           new elements are added to gCurr.
-  const F5Rules* f5Rules, ///<[in]      rules for F5 Criterion checks
+  F5Rules** f5Rules,      ///<[in]      rules for F5 Criterion checks
   int*  multTemp,         ///<[in]      integer exponent vector for the mulitples
                           ///           of the reducers
   int*  multLabelTemp,    ///<[in]      integer exponent vector for the mulitples
