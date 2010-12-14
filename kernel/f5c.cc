@@ -51,12 +51,13 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
-#define F5EDEBUG0 1 
-#define F5EDEBUG1 0 
-#define F5EDEBUG2 0 
-#define F5EDEBUG3 0 
-#define setMaxIdeal 64
-#define NUMVARS currRing->ExpL_Size
+#define F5ETAILREDUCTION  0 
+#define F5EDEBUG0         1 
+#define F5EDEBUG1         0 
+#define F5EDEBUG2         0 
+#define F5EDEBUG3         0 
+#define setMaxIdeal       64
+#define NUMVARS           currRing->ExpL_Size
 int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 // size for strat & rewRules in the corresponding iteration steps
 // this is needed for the lengths of the rules arrays in the following
@@ -2158,6 +2159,8 @@ void currReduction  (
 #if F5EDEBUG3
     pTest( spTemp->p );
 #endif
+// tail reduction
+#if F5ETAILREDUCTION
     while ( kBucketGetLm( bucket ) )
     {
       // search for reducers in the list gCurr
@@ -2304,6 +2307,13 @@ void currReduction  (
       pWrite( spTemp->p );
 #endif
     }
+ // no tail reduction
+#else
+    while( kBucketGetLm(bucket) )
+    {
+      spTemp->p = p_Merge_q( spTemp->p, kBucketExtractLm(bucket), currRing );  
+    }
+#endif // Tail reduction yes/no   
     
     kBucketLmZero: 
     // otherwise sp is reduced to zero and we do not need to add it to gCurr
