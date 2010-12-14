@@ -51,12 +51,13 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
-#define F5EDEBUG0 1 
-#define F5EDEBUG1 0 
-#define F5EDEBUG2 0 
-#define F5EDEBUG3 0 
-#define setMaxIdeal 64
-#define NUMVARS currRing->ExpL_Size
+#define F5ETAILREDUCTION  0 
+#define F5EDEBUG0         1 
+#define F5EDEBUG1         0 
+#define F5EDEBUG2         0 
+#define F5EDEBUG3         0 
+#define setMaxIdeal       64
+#define NUMVARS           currRing->ExpL_Size
 int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 // size for strat & rewRules in the corresponding iteration steps
 // this is needed for the lengths of the rules arrays in the following
@@ -253,7 +254,7 @@ ideal f5cIter (
   // alloc memory for the rest of the labels
   for( ; i<f5RulesSize; i++) 
   {
-    f5Rules->label[i]   =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+    f5Rules->label[i]   = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
   } 
 
   rewRules->size  = 1;
@@ -2025,12 +2026,14 @@ void currReduction  (
             }
             else
             {
-              // this is the basic criterion:
+              // this is the ggv criterion:
               // the element to be reduced as well as the multiplied reducer have
-              // (a) the same leading monomial
-              // (b) the same label
+              // the same leading monomial as polynomials & the same leading 
+              // monomial as labels
+              // => check the coefficients of the labels! 
               if( expCmp( multLabelTempExp, spTemp->labelExp ) == 0 )
               { 
+                // SUPER TOP REDUCTION IN GGV
                 if( 
                    n_Equal ( rewRules->coeff[rewRulesCurr], 
                              n_Mult(rewRules->coeff[temp->rewRule], multCoeff2, currRing), 
@@ -2070,6 +2073,9 @@ void currReduction  (
                   // else we can go on and reduce sp
                   // The multiplied reducer will be reduced w.r.t. strat before the 
                   // bucket reduction starts!
+                  
+                  // NOTE that we have to adjust the coefficient of the corresponding rule
+                  // due to ggv rules!
                   static poly multiplier = pOne();
                   static poly multReducer;
                   getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
@@ -2106,9 +2112,14 @@ void currReduction  (
                   // reduce polynomial
                   kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
                   // adjust the coefficient of the signature
-                  rewRules->coeff[rewRulesCurr] -= rewRules 
+                  rewRules->coeff[rewRulesCurr] = 
+                    n_Sub ( 
+                            rewRules->coeff[rewRulesCurr], 
+                            n_Mult(rewRules->coeff[temp->rewRule], multCoeff2, currRing), 
+                            currRing 
+  );                                                                                                               
 #if F5EDEBUG2
-                  Print("AFTER REDUCTION STEP: ");
+                    Print("AFTER REDUCTION STEP: ");
                   pWrite( kBucketGetLm(bucket) );
 #endif
                   if( canonicalize++ % 40 )
@@ -2129,6 +2140,68 @@ void currReduction  (
                   goto startagainTop;
 
                 }
+              }
+              else
+              {
+                // else we can go on and reduce sp
+                // The multiplied reducer will be reduced w.r.t. strat before the 
+                // bucket reduction starts!
+                static poly multiplier = pOne();
+                static poly multReducer;
+                getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                                    negBitmaskShifted, offsets
+                                  );
+                // throw away the leading monomials of reducer and bucket
+                p_SetCoeff( multiplier, multCoeff2, currRing );
+                pSetm( multiplier );
+                //p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+                kBucketExtractLm(bucket);
+                // build the multiplied reducer (note that we do not need the leading
+                // term at all!
+#if F5EDEBUG2
+                Print("MULT: %p\n", multiplier );
+                pWrite( multiplier );
+#endif
+                multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
+                Print("TEMPNEXT: ");
+                pWrite( temp->p->next );
+                Print("COEFF2: %ld\n", multCoeff2);
+                //p_SetCoeff( multReducer, multCoeff2, currRing );
+#if F5EDEBUG2
+                Print("MULTRED BEFORE: \n" );
+                pWrite( pHead(multReducer) );
+#endif
+                multReducer = reduceByRedGBPoly( multReducer, strat );
+#if F5EDEBUG2
+                Print("MULTRED AFTER: \n" );
+                pWrite( pHead(multReducer) );
+#endif
+                //  length must be computed after the reduction with 
+                //  redGB!
+                tempLength = pLength( multReducer );
+                // reduce polynomial
+                kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+#if F5EDEBUG2
+                  Print("AFTER REDUCTION STEP: ");
+                pWrite( kBucketGetLm(bucket) );
+#endif
+                if( canonicalize++ % 40 )
+                {
+                  kBucketCanonicalize( bucket );
+                  canonicalize = 0;
+                }
+                isMult    = FALSE;
+                redundant = FALSE;
+                if( kBucketGetLm( bucket ) )
+                {
+                  temp  = *gCurrFirst;
+                }
+                else
+                {
+                  break;
+                }
+                goto startagainTop;
+
               }
             }
         }
@@ -2183,6 +2256,8 @@ void currReduction  (
 #if F5EDEBUG3
     pTest( spTemp->p );
 #endif
+// tail reduction
+#if F5ETAILREDUCTION
     while ( kBucketGetLm( bucket ) )
     {
       // search for reducers in the list gCurr
@@ -2329,7 +2404,10 @@ void currReduction  (
       pWrite( spTemp->p );
 #endif
     }
-    
+ // no tail reduction
+#else
+    spTemp->p = p_Merge_q( spTemp->p, kBucketClear(bucket), currRing );  
+#endif // Tail reduction yes/no   
     kBucketLmZero: 
     // otherwise sp is reduced to zero and we do not need to add it to gCurr
     // Note that even in this case the corresponding rule is already added to
