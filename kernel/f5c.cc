@@ -2336,12 +2336,15 @@ void currReduction  (
                   break;
                 }
               }
+              multCoeff1    = pGetCoeff( kBucketGetLm(bucket) );
+              multCoeff2    = pGetCoeff( temp->p );
+              multCoeff2    = n_Div( multCoeff1, multCoeff2, currRing );
               poly multiplier = pOne();
               getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
                                   negBitmaskShifted, offsets
                                 );
               // throw away the leading monomials of reducer and bucket
-              p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+              p_SetCoeff( multiplier, multCoeff2, currRing );
               pSetm( multiplier );
 #if F5EDEBUG3
               pTest( multiplier );
