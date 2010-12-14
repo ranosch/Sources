@@ -434,7 +434,7 @@ void criticalPairInit (
     // testing the F5 Criterion
 
     // this is the ggv criterion!
-    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
+    if( 1)//!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
     {
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
@@ -502,7 +502,7 @@ void criticalPairInit (
   // testing the F5 Criterion
   
   // this is the ggv criterion
-  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
+  if( 1)//!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
@@ -607,7 +607,7 @@ void criticalPairPrev (
 #endif
     
     // this is the ggv criterion!
-    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
+    if( 1)//!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
     {
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
@@ -674,7 +674,7 @@ void criticalPairPrev (
   // testing the F5 Criterion
   
   // this is the ggv criterion!
-  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
+  if( 1)//!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
@@ -828,9 +828,9 @@ void criticalPairCurr (
       {
 
         // this is the ggv criterion!
-        if( 
-           !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
-           && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
+        if( 1 
+           //!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+           //&& !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
           ) 
         {
           // completing the construction of the new critical pair and inserting it
@@ -930,9 +930,9 @@ void criticalPairCurr (
     
   
     // this is the ggv criterion!
-    if( 
-        !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
-        && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
+    if( 1 
+        //!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+        //&& !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
       ) 
     {
       // completing the construction of the new critical pair and inserting it
@@ -2060,7 +2060,7 @@ void currReduction  (
                   // free memory of spTemp stuff
                   omFree( spDel->labelExp );
                   omFree( spDel );
-                  Print("here4\n");
+                  Print("SUPER TOP REDUCTION!!!\n");
                   goto startComplete;
                   /*
                      if( spTemp->next )
@@ -2471,6 +2471,9 @@ void currReduction  (
     {
       // if spTemp->p = 0 we have to add the corresponding rewRule to the array
       // of f5Rules
+#if F5DEGBUG1
+      Print("ZERO REDUCTION!\n");
+#endif
 #if F5EDEBUG2
       Print("SIZES BEFORE: %ld < %ld ?\n",f5Rules->size, f5RulesSize);
       Print("ADDRESS: %p\n", f5Rules->label[0]);
@@ -2502,10 +2505,10 @@ void currReduction  (
         unsigned int old    = f5RulesSize;
         f5RulesSize         = 3*f5RulesSize;
         F5Rules* newRules   = (F5Rules*) omAlloc( sizeof(F5Rules) );
+        newRules->coeff     = (number*)omAlloc( f5RulesSize*sizeof(number) );
         newRules->label     = (int**) omAlloc( f5RulesSize*sizeof(int*) );
         newRules->slabel    = (unsigned long*)omAlloc( f5RulesSize*sizeof(unsigned long) );
         newRules->size      = f5Rules->size;
-
         // add element at the end 
         register unsigned long _length  = currRing->N+1;
         register unsigned long _ctr     = 0;
@@ -2521,8 +2524,11 @@ void currReduction  (
             _i++;
           }
           omFreeSize( f5Rules->label[_ctr], (currRing->N+1)*sizeof(int) );
+       Print("HERE %ld\n", _ctr);
           newRules->slabel[_ctr]  = f5Rules->slabel[_ctr];
+       Print("HERE %ld\n", _ctr);
           newRules->coeff[_ctr]   = f5Rules->coeff[_ctr];
+       Print("HERE %ld\n", _ctr);
         }
         omFreeSize( f5Rules->slabel, old*sizeof(unsigned long) );
         omFreeSize( f5Rules->coeff, old*sizeof(unsigned long) );
