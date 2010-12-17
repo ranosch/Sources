@@ -51,19 +51,21 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
-#define F5ETAILREDUCTION  1 
+#define F5ETAILREDUCTION  0 
 #define F5EDEBUG0         1 
-#define F5EDEBUG1         0 
-#define F5EDEBUG2         0 
+#define F5EDEBUG1         1 
+#define F5EDEBUG2         1 
 #define F5EDEBUG3         0 
 #define setMaxIdeal       64
 #define NUMVARS           currRing->ExpL_Size
 int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 // size for strat & rewRules in the corresponding iteration steps
 // this is needed for the lengths of the rules arrays in the following
-unsigned long rewRulesSize  = 0;
-unsigned long f5RulesSize   = 0;
-unsigned long stratSize     = 0;
+unsigned long rewRulesSize        = 0;
+unsigned long f5RulesSize         = 0;
+unsigned long stratSize           = 0;
+unsigned long superTopReductions  = 0;
+unsigned long zeroReductions      = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -141,8 +143,18 @@ ideal f5cMain(ideal F, ideal Q)
   omFree(shift);
   omFree(negBitmaskShifted);
   omFree(offsets);
-  create_count_f5 = 0;
-  stratSize       = 0;
+#if F5EDEBUG0
+  Print("-------------------------------------------\n");
+  Print("# Super Top Reductions:  %ld\n", superTopReductions);
+  Print("# Zero Reductions:       %ld\n", zeroReductions);
+  Print("-------------------------------------------\n");
+#endif
+  create_count_f5     = 0;
+  stratSize           = 0;
+  f5RulesSize         = 0;
+  rewRulesSize        = 0;
+  superTopReductions  = 0;
+  zeroReductions      = 0;
   return r;
 }
 
@@ -434,7 +446,7 @@ void criticalPairInit (
     // testing the F5 Criterion
 
     // this is the ggv criterion!
-    if( 1)//!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
+    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
     {
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
@@ -502,7 +514,7 @@ void criticalPairInit (
   // testing the F5 Criterion
   
   // this is the ggv criterion
-  if( 1)//!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
+  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) ) 
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
@@ -607,7 +619,7 @@ void criticalPairPrev (
 #endif
     
     // this is the ggv criterion!
-    if( 1)//!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
+    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
     {
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
@@ -674,7 +686,7 @@ void criticalPairPrev (
   // testing the F5 Criterion
   
   // this is the ggv criterion!
-  if( 1)//!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
+  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) )
   {
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
@@ -828,9 +840,9 @@ void criticalPairCurr (
       {
 
         // this is the ggv criterion!
-        if( 1 
-           //!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
-           //&& !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
+        if(  
+           !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+           && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
           ) 
         {
           // completing the construction of the new critical pair and inserting it
@@ -930,9 +942,9 @@ void criticalPairCurr (
     
   
     // this is the ggv criterion!
-    if( 1 
-        //!criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
-        //&& !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
+    if(  
+        !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules) 
+        && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules) 
       ) 
     {
       // completing the construction of the new critical pair and inserting it
@@ -1490,7 +1502,7 @@ void computeSpols (
         {
           // store the s-polynomial in the linked list for further
           // reductions in currReduction()
-          pNorm( sp ); 
+          //pNorm( sp ); 
           Spoly* newSpoly     = (Spoly*) omAlloc( sizeof(struct Spoly) );
           newSpoly->p         = sp;
           newSpoly->labelExp  = temp->mLabelExp;
@@ -1633,6 +1645,7 @@ void currReduction  (
   RewRules* rewRules  = *rewRulesP;
   F5Rules* f5Rules    = *f5RulesP;
   BOOLEAN isMult      = FALSE;
+  BOOLEAN superTop    = FALSE;
   // check needed to ensure termination of F5 (see F5+)
   // this will be added to all new labeled polynomials to check
   // when to terminate the algorithm
@@ -2047,21 +2060,14 @@ void currReduction  (
               { 
                 // SUPER TOP REDUCTION IN GGV
                 if( 
-                   n_Equal ( rewRules->coeff[rewRulesCurr], 
-                             n_Mult(rewRules->coeff[temp->rewRule], multCoeff2, currRing), 
+                   n_Equal ( pGetCoeff(spTemp->p), 
+                             pGetCoeff(temp->p), 
                              currRing ) 
                   )
                 {
-                  temp = *gCurrFirst;
-                  kBucketDeleteAndDestroy( &bucket );
-                  rewRulesCurr  = rewRulesCurr++;
-                  Spoly* spDel  = spTemp;
-                  spTemp        = spTemp->next;
-                  // free memory of spTemp stuff
-                  omFree( spDel->labelExp );
-                  omFree( spDel );
-                  Print("SUPER TOP REDUCTION!!!\n");
-                  goto startComplete;
+                  superTop  = TRUE;
+                  temp      = temp->next;
+                  goto startagainTop;
                   /*
                      if( spTemp->next )
                      {
@@ -2124,14 +2130,16 @@ void currReduction  (
                   // reduce polynomial
                   kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
                   // adjust the coefficient of the signature
-                  rewRules->coeff[rewRulesCurr] = 
-                    n_Sub ( 
-                            rewRules->coeff[rewRulesCurr], 
-                            n_Mult(rewRules->coeff[temp->rewRule], multCoeff2, currRing), 
-                            currRing 
-  );                                                                                                               
+                  // compute 1 / (1-multCoeff2)
+                  number shifter =  n_Sub ( 
+                        nInit(1), 
+                        multCoeff2, 
+                        currRing);                
+                  shifter = n_Invers( shifter, currRing );
+                  // multiply spTemp->p with shifter
+                  spTemp->p = p_Mult_nn( spTemp->p, shifter, currRing);
 #if F5EDEBUG2
-                    Print("AFTER REDUCTION STEP: ");
+                  Print("AFTER REDUCTION STEP: ");
                   pWrite( kBucketGetLm(bucket) );
 #endif
                   if( canonicalize++ % 40 )
@@ -2139,6 +2147,7 @@ void currReduction  (
                     kBucketCanonicalize( bucket );
                     canonicalize = 0;
                   }
+                  superTop  = FALSE;
                   isMult    = FALSE;
                   redundant = FALSE;
                   if( kBucketGetLm( bucket ) )
@@ -2202,6 +2211,7 @@ void currReduction  (
                   kBucketCanonicalize( bucket );
                   canonicalize = 0;
                 }
+                superTop  = FALSE;
                 isMult    = FALSE;
                 redundant = FALSE;
                 if( kBucketGetLm( bucket ) )
@@ -2245,6 +2255,7 @@ void currReduction  (
             kBucketCanonicalize( bucket );
             canonicalize = 0;
           }
+          superTop  = FALSE;
           redundant = FALSE;
           if( kBucketGetLm( bucket ) )
           {
@@ -2430,25 +2441,73 @@ void currReduction  (
     // otherwise sp is reduced to zero and we do not need to add it to gCurr
     // Note that even in this case the corresponding rule is already added to
     // rewRules list!
+    Print("POLY AT THE END OF THE REDUCTION STEP: ");
+    pWrite( pHead(spTemp->p) );
     if( spTemp->p )
     {
-      // we have not reduced the tail w.r.t. redGB as in this case it is not really necessary to have
-      // the "right" leading monomial
-      //  => now we have to reduce w.r.t. redGB again!
-      spTemp->p = reduceByRedGBPoly( spTemp->p, strat );
-      //pNorm( spTemp->p ); 
-      // add sp together with rewRulesLast to gCurr!!!
-      Lpoly* newElement     = (Lpoly*) omAlloc( sizeof(Lpoly) );
-      newElement->next      = *gCurrFirst;
-      newElement->p         = spTemp->p; 
-      newElement->sExp      = pGetShortExpVector(spTemp->p); 
-      newElement->rewRule   = rewRulesCurr; 
-      newElement->redundant = redundant;
-      // update pointer to last element in gCurr list
-      *gCurrFirst           = newElement;
+      if( !superTop )
+      {
+        // we have not reduced the tail w.r.t. redGB as in this case it is not really necessary to have
+        // the "right" leading monomial
+        //  => now we have to reduce w.r.t. redGB again!
+        spTemp->p = reduceByRedGBPoly( spTemp->p, strat );
+        //pNorm( spTemp->p ); 
+        // add sp together with rewRulesLast to gCurr!!!
+        Lpoly* newElement     = (Lpoly*) omAlloc( sizeof(Lpoly) );
+        newElement->next      = *gCurrFirst;
+        newElement->p         = spTemp->p; 
+        newElement->sExp      = pGetShortExpVector(spTemp->p); 
+        newElement->rewRule   = rewRulesCurr; 
+        newElement->redundant = redundant;
+        // update pointer to last element in gCurr list
+        *gCurrFirst           = newElement;
 #if F5EDEBUG0
-      Print("ELEMENT ADDED TO GCURR: ");
-      pWrite( pHead((*gCurrFirst)->p) );
+        Print("ADDED TO BASIS: ");
+        pWrite( (*gCurrFirst)->p );
+        poly pSig = pOne(); 
+        for( int lale = 1; lale < (currRing->N+1); lale++ )
+        {
+          pSetExp( pSig, lale, rewRules->label[rewRulesCurr][lale] );
+        }
+        pWrite( pSig );
+        pTest( (*gCurrFirst)->p );
+        pDelete( &pSig );
+#endif
+        criticalPairPrev( 
+            *gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
+            shift, negBitmaskShifted, offsets 
+            );
+        criticalPairCurr( 
+            *gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
+            shift, negBitmaskShifted, offsets 
+            );
+      }
+      else
+      {
+        // we have done a super top reduction!
+        // => delete poly and its label completely
+#if F5EDEBUG0
+        Print("SUPER TOP REDUCTION!\n");
+        pWrite( pHead(spTemp->p) );
+        poly pSig = pOne(); 
+        for( int lale = 1; lale < (currRing->N+1); lale++ )
+        {
+          pSetExp( pSig, lale, rewRules->label[rewRulesCurr][lale] );
+        }
+        pWrite( pSig );
+        pTest( (*gCurrFirst)->p );
+        pDelete( &pSig );
+#endif
+        superTopReductions++;
+
+      }    
+    }
+    else // spTemp->p == 0
+    {
+      // if spTemp->p = 0 we have to add the corresponding rewRule to the array
+      // of f5Rules
+#if F5EDEBUG0
+      Print("ZERO REDUCTION!\n");
       poly pSig = pOne(); 
       for( int lale = 1; lale < (currRing->N+1); lale++ )
       {
@@ -2458,22 +2517,7 @@ void currReduction  (
       pTest( (*gCurrFirst)->p );
       pDelete( &pSig );
 #endif
-      criticalPairPrev( 
-                        *gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
-                        shift, negBitmaskShifted, offsets 
-                      );
-      criticalPairCurr( 
-                        *gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
-                        shift, negBitmaskShifted, offsets 
-                      );
-    }
-    else // spTemp->p == 0
-    {
-      // if spTemp->p = 0 we have to add the corresponding rewRule to the array
-      // of f5Rules
-#if F5DEGBUG1
-      Print("ZERO REDUCTION!\n");
-#endif
+      zeroReductions++;
 #if F5EDEBUG2
       Print("SIZES BEFORE: %ld < %ld ?\n",f5Rules->size, f5RulesSize);
       Print("ADDRESS: %p\n", f5Rules->label[0]);
@@ -3027,6 +3071,10 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
   //  for (i=strat->sl;i>=0;i--)
   //    pNorm(strat->S[i]);
   //}
+#if F5EDEBUG2
+  Print("CREATED SPOLY BEFORE REDUCTION WITH REDGB:  ");
+  pWrite( q );
+#endif
   kTest(strat);
   if (TEST_OPT_PROT) { PrintS("r"); mflush(); }
   int max_ind;
