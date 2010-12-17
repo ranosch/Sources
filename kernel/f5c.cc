@@ -280,12 +280,12 @@ ideal f5cIter (
   rewRules->size  = 1;
   f5Rules->size   = stratSize;
   // reduce and initialize the list of Lpolys with the current ideal generator p
-#if F5EDEBUG3
+#if F5EDEBUG2
   Print("Before reduction\n");
   pTest( p );
 #endif
   p = reduceByRedGBPoly( p, strat );
-#if F5EDEBUG3
+#if F5EDEBUG2
   Print("After reduction: ");
   pTest( p );
   pWrite( pHead(p) );
@@ -2723,6 +2723,7 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
                   TObject** R
                 )
 {
+  
 #if F5EDEBUG1
   Print("CREATESPOLY - BEGINNING %p\n", cp );
 #endif
@@ -2763,15 +2764,25 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   assume(tailRing != NULL);
 
   poly a1 = pNext(p1), a2 = pNext(p2);
-  number lc1 = nInit(1);
-  number lc2 = cp->coeff2;
+  /// this is a little hack for GGV:
+  /// We want m1*p1 - c*m2*p2 when computing the s-polynomial.
+  /// In the following, m1*p1 will be multiplied by lc2(=1)
+  /// and m2*p2 will be multiplied by lc1(=already precomputed coeff
+  /// for s-polynomial computation.
+  number lc1 = cp->coeff2;
+  number lc2 = pGetCoeff(p1);
 #if F5EDEBUG1
   Print("COEFF1: ");
   Print( "%d\n",lc1 );
   Print("COEFF2: ");
   Print( "%d\n",lc2 );
 #endif
-  int co=0, ct = 3; // as lc1 = lc2 = 1 => 3=ksCheckCoeff(&lc1, &lc2); !!!
+  pSetCoeff0(m1, lc2);
+  pSetCoeff0(m2, lc1);  // and now, m1 * LT(p1) == m2 * LT(p2)
+  poly res = p_Minus_mm_Mult_qq( pp_Mult_mm(cp->p1, m1, currRing), m2, cp->p2, currRing );
+  return res;
+
+  int co=0, ct = ksCheckCoeff( &lc1, &lc2 ); // as lc1 = lc2 = 1 => 3=ksCheckCoeff(&lc1, &lc2); !!!
 
   int l1=0, l2=0;
 
@@ -2794,6 +2805,13 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
 
   pSetCoeff0(m1, lc2);
   pSetCoeff0(m2, lc1);  // and now, m1 * LT(p1) == m2 * LT(p2)
+#if F5EDEBUG2
+  Print("Setting lead coeffs of multipliers while generating s-polynomial:\n");
+  Print("M1: ");
+  pWrite( m1 );
+  Print("M2: ");
+  pWrite( m2 );
+#endif
   if (R != NULL)
   {
     if (Pair.i_r1 == -1)

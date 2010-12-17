@@ -887,7 +887,7 @@ poly redNF (poly h,int &max_ind,int nonorm,kStrategy strat)
 #ifdef HAVE_RINGS
       }
 #endif
-      nNormalize(pGetCoeff(P.p));
+      //nNormalize(pGetCoeff(P.p));
 #ifdef KDEBUG
       if (TEST_OPT_DEBUG)
       {
