@@ -833,10 +833,9 @@ void criticalPairCurr (
       int labelEqual = expCmp( cpTemp->mLabelExp, checkExp );
       Print("LABELCHECK %d\n", labelEqual );
       if( ! ( labelEqual == 0 && 
-              n_Equal ( rewRules.coeff[cpTemp->rewRule1],   
-                        nMult(rewRules.coeff[cpTemp->rewRule2],cpTemp->coeff2), 
-                        currRing
-                      )
+              n_Equal ( pGetCoeff(cpTemp->p1), 
+                        pGetCoeff(cpTemp->p2), 
+                        currRing ) 
             )   
         )
       {
@@ -862,6 +861,7 @@ void criticalPairCurr (
             unsigned long rewRuleTempHolder = cpTemp->rewRule1;
             unsigned long* expTempHolder    = cpTemp->mLabelExp;
 
+            cpTemp->coeff2                  = n_Invers( cpTemp->coeff2, currRing);
             cpTemp->p1                      = cpTemp->p2;
             cpTemp->p2                      = pTempHolder;
             cpTemp->mLabel1                 = cpTemp->mLabel2;
@@ -963,10 +963,9 @@ void criticalPairCurr (
       int labelEqual = expCmp( cpTemp->mLabelExp, checkExp );
       Print("LABELCHECK %d\n", labelEqual );
       if( ! ( labelEqual == 0 && 
-              n_Equal ( rewRules.coeff[cpTemp->rewRule1],   
-                        nMult(rewRules.coeff[cpTemp->rewRule2],cpTemp->coeff2), 
-                        currRing
-                      )
+              n_Equal ( pGetCoeff(cpTemp->p1), 
+                        pGetCoeff(cpTemp->p2), 
+                        currRing ) 
             )   
         )
       {
@@ -982,6 +981,7 @@ void criticalPairCurr (
           unsigned long rewRuleTempHolder = cpTemp->rewRule1;
           unsigned long* expTempHolder    = cpTemp->mLabelExp;
 
+          cpTemp->coeff2                  = n_Invers( cpTemp->coeff2, currRing);
           cpTemp->p1                      = cpTemp->p2;
           cpTemp->p2                      = pTempHolder;
           cpTemp->mLabel1                 = cpTemp->mLabel2;
