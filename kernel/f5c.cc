@@ -77,9 +77,9 @@ ideal f5cMain(ideal F, ideal Q)
   }
   // interreduction of the input ideal F
   ideal FRed      = idCopy( F );
-  ideal FRedTemp  = kInterRed( FRed );
-  idDelete( &FRed );
-  FRed            = FRedTemp;
+  //ideal FRedTemp  = kInterRed( FRed );
+  //idDelete( &FRed );
+  //FRed            = FRedTemp;
 
 #if F5EDEBUG3
   int j = 0;
@@ -168,7 +168,7 @@ ideal f5cIter (
 #if F5EDEBUG1
   Print("F5CITER-BEGIN\n");
   Print("NEXT ITERATION ELEMENT: ");
-  pWrite( pHead(p) );
+  pWrite( p );
 #endif
 #if F5EDEBUG3
   Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
@@ -282,17 +282,19 @@ ideal f5cIter (
   // reduce and initialize the list of Lpolys with the current ideal generator p
 #if F5EDEBUG2
   Print("Before reduction\n");
+  pWrite( p );
   pTest( p );
 #endif
-  p = reduceByRedGBPoly( p, strat );
+  p = kNF( redGB, NULL, p );
+  //p = reduceByRedGBPoly( p, strat );
 #if F5EDEBUG2
   Print("After reduction: ");
   pTest( p );
-  pWrite( pHead(p) );
+  pWrite( p );
 #endif
   if( p )
   {
-    pNorm( p );  
+    //pNorm( p );  
     Lpoly* gCurr      = (Lpoly*) omAlloc( sizeof(Lpoly) );
     gCurr->next       = NULL;
     gCurr->sExp       = pGetShortExpVector(p);
@@ -2728,18 +2730,18 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   Print("CREATESPOLY - BEGINNING %p\n", cp );
 #endif
   LObject Pair( currRing );
-  Pair.p1  = cp->p1;
-  Pair.p2  = cp->p2;
+  Pair.p1  = cp->p2;
+  Pair.p2  = cp->p1;
 #if F5EDEBUG1
   Print( "P1: %p\n", cp->p1 );
   pWrite(cp->p1);
   Print( "P2: &p\n", cp->p2 );
   pWrite(cp->p2);
 #endif
-  poly m1 = multInit( cp->mult1, numVariables, shift, 
+  poly m1 = multInit( cp->mult2, numVariables, shift, 
                       negBitmaskShifted, offsets 
                     );
-  poly m2 = multInit( cp->mult2, numVariables, shift, 
+  poly m2 = multInit( cp->mult1, numVariables, shift, 
                       negBitmaskShifted, offsets 
                     );
 #if F5EDEBUG2
@@ -2769,19 +2771,20 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   /// In the following, m1*p1 will be multiplied by lc2(=1)
   /// and m2*p2 will be multiplied by lc1(=already precomputed coeff
   /// for s-polynomial computation.
-  number lc1 = cp->coeff2;
-  number lc2 = pGetCoeff(p1);
+  number lc2 = cp->coeff2;
+  number lc1 = nInit(1);
 #if F5EDEBUG1
   Print("COEFF1: ");
   Print( "%d\n",lc1 );
   Print("COEFF2: ");
   Print( "%d\n",lc2 );
 #endif
+  /*
   pSetCoeff0(m1, lc2);
   pSetCoeff0(m2, lc1);  // and now, m1 * LT(p1) == m2 * LT(p2)
   poly res = p_Minus_mm_Mult_qq( pp_Mult_mm(cp->p1, m1, currRing), m2, cp->p2, currRing );
   return res;
-
+  */
   int co=0, ct = ksCheckCoeff( &lc1, &lc2 ); // as lc1 = lc2 = 1 => 3=ksCheckCoeff(&lc1, &lc2); !!!
 
   int l1=0, l2=0;
@@ -2839,10 +2842,14 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
     a2 = tailRing->p_Procs->pp_Mult_mm_Noether( a2, m2, spNoether, l2, 
                                                 tailRing,last
                                               );
+    Print("A2: ");
+    pWrite(a2);
     assume(l2 == pLength(a2));
   }
   else
     a2 = tailRing->p_Procs->pp_Mult_mm(a2, m2, tailRing,last);
+    Print("A2i: ");
+    pWrite(a2);
 #ifdef HAVE_RINGS
   if (!(rField_is_Domain(currRing))) l2 = pLength(a2);
 #endif
