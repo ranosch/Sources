@@ -77,7 +77,7 @@ ideal f5cMain(ideal F, ideal Q)
   }
   // interreduction of the input ideal F
   ideal FRed      = idCopy( F );
-  //ideal FRedTemp  = kInterRed( FRed );
+  //ideal FRedTemp  = FRed;
   //idDelete( &FRed );
   //FRed            = FRedTemp;
 
@@ -131,8 +131,8 @@ ideal f5cMain(ideal F, ideal Q)
     ideal rTemp = kInterRed(r);
     idDelete( &r );
     r = rTemp;
-#if F5EDEBUG3
-    for( k=0; k<IDELEMS(r); k++ )
+#if F5EDEBUG2
+    for( int k=0; k<IDELEMS(r); k++ )
     {
       pTest( r->m[k] );
       Print("TESTS after interred: %p ",r->m[k]);
@@ -302,6 +302,7 @@ ideal f5cIter (
     gCurr->rewRule    = 0;
     gCurr->redundant  = FALSE;
      
+    Lpoly* gCurrFirst = gCurr;
     // initializing the list of critical pairs for this iteration step 
     CpairDegBound* cpBounds = NULL;
     criticalPairInit( 
@@ -320,25 +321,25 @@ ideal f5cIter (
 #if F5EDEBUG2
     int counter = 1;
 #endif
-    while( gCurr )
+    while( gCurrFirst )
     {
 #if F5EDEBUG3
-      if( p_GetOrder( gCurr->p, currRing ) == pWTotaldegree( gCurr->p, currRing ) )
+      if( p_GetOrder( gCurrFirst->p, currRing ) == pWTotaldegree( gCurrFirst->p, currRing ) )
       {
         Print(" ALLES OK\n");
       }
       else 
       {
-        Print("BEI POLY "); gCurr->p; //Print(" stimmt etwas nicht!\n");
+        Print("BEI POLY "); gCurrFirst->p; //Print(" stimmt etwas nicht!\n");
       }
 #endif
 #if F5EDEBUG2
       Print("%d INSERT TO REDGB: ",counter);
-      pWrite(gCurr->p);
+      pWrite(gCurrFirst->p);
 #endif
-      idInsertPoly( redGB, gCurr->p );
-      temp  = gCurr;
-      gCurr = gCurr->next;
+      idInsertPoly( redGB, gCurrFirst->p );
+      temp        = gCurrFirst;
+      gCurrFirst  = gCurrFirst->next;
       omFree(temp);
 #if F5EDEBUG2
       counter++;
@@ -551,7 +552,7 @@ void criticalPairInit (
 
 
 void criticalPairPrev ( 
-  Lpoly* gCurr, const kStrategy strat, const F5Rules& f5Rules, 
+  Lpoly* gCurrNew, Lpoly* gCurr, const kStrategy strat, const F5Rules& f5Rules, 
   const RewRules& rewRules, CpairDegBound** cpBounds, 
   int numVariables, int* shift, unsigned long* negBitmaskShifted, 
   int* offsets
@@ -562,7 +563,7 @@ void criticalPairPrev (
 #endif
   int i, j;
   int* expVecNewElement = (int*) omAlloc((currRing->N+1)*sizeof(int));
-  pGetExpV(gCurr->p, expVecNewElement); 
+  pGetExpV(gCurrNew->p, expVecNewElement); 
   // this must be changed for parallelizing the generation process of critical
   // pairs
   Cpair* cpTemp;
@@ -573,8 +574,8 @@ void criticalPairPrev (
   cpTemp->mLabel1   = NULL;
   cpTemp->smLabel1  = 0;
   cpTemp->mult1     = NULL;
-  cpTemp->p1        = gCurr->p;
-  cpTemp->rewRule1  = gCurr->rewRule;
+  cpTemp->p1        = gCurrNew->p;
+  cpTemp->rewRule1  = gCurrNew->rewRule;
   cpTemp->mLabel2   = NULL;
   cpTemp->smLabel2  = 0;
   cpTemp->mult2     = NULL;
@@ -640,8 +641,8 @@ void criticalPairPrev (
       cpTemp->mLabel1   = NULL;
       cpTemp->smLabel1  = 0;
       cpTemp->mult1     = NULL;
-      cpTemp->p1        = gCurr->p;
-      cpTemp->rewRule1  = gCurr->rewRule;
+      cpTemp->p1        = gCurrNew->p;
+      cpTemp->rewRule1  = gCurrNew->rewRule;
       cpTemp->mLabel2   = NULL;
       cpTemp->smLabel2  = 0;
       cpTemp->mult2     = NULL;
@@ -719,7 +720,7 @@ void criticalPairPrev (
 
 
 void criticalPairCurr ( 
-  Lpoly* gCurr, const kStrategy strat, const F5Rules& f5Rules, 
+  Lpoly* gCurrNew, Lpoly* gCurr, const kStrategy strat, const F5Rules& f5Rules, 
   const RewRules& rewRules, CpairDegBound** cpBounds, int numVariables, 
   int* shift, unsigned long* negBitmaskShifted, int* offsets
                       )
@@ -734,8 +735,8 @@ void criticalPairCurr (
   bool pairNeeded       = TRUE;
   int* expVecNewElement = (int*) omAlloc((currRing->N+1)*sizeof(int));
   int* expVecTemp       = (int*) omAlloc((currRing->N+1)*sizeof(int));
-  pGetExpV(gCurr->p, expVecNewElement); 
-  Lpoly* gCurrIter  = gCurr->next;
+  pGetExpV(gCurrNew->p, expVecNewElement); 
+  Lpoly* gCurrIter  = gCurr;
   // this must be changed for parallelizing the generation process of critical
   // pairs
   Cpair* cpTemp;
@@ -746,8 +747,8 @@ void criticalPairCurr (
   cpTemp->mLabel1   = NULL;
   cpTemp->smLabel1  = 0;
   cpTemp->mult1     = NULL;
-  cpTemp->p1        = gCurr->p;
-  cpTemp->rewRule1  = gCurr->rewRule;
+  cpTemp->p1        = gCurrNew->p;
+  cpTemp->rewRule1  = gCurrNew->rewRule;
   cpTemp->mLabel2   = NULL;
   cpTemp->smLabel2  = 0;
   cpTemp->mult2     = NULL;
@@ -767,7 +768,7 @@ void criticalPairCurr (
   unsigned long* checkExp = (unsigned long*) omAlloc0(NUMVARS*sizeof(unsigned long));
   int temp;
   long critPairDeg; // degree of the label of the pair in the following
-  while(gCurrIter->next)
+  while(gCurrIter->next != gCurrNew)
   {
     cpTemp->p2        = gCurrIter->p;
     cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
@@ -885,8 +886,8 @@ void criticalPairCurr (
           cpTemp->mLabel1   = NULL;
           cpTemp->smLabel1  = 0;
           cpTemp->mult1     = NULL;
-          cpTemp->p1        = gCurr->p;
-          cpTemp->rewRule1  = gCurr->rewRule;
+          cpTemp->p1        = gCurrNew->p;
+          cpTemp->rewRule1  = gCurrNew->rewRule;
           cpTemp->mLabel2   = NULL;
           cpTemp->smLabel2  = 0;
           cpTemp->mult2     = NULL;
@@ -1321,6 +1322,8 @@ void computeSpols (
   BOOLEAN newStep             = TRUE; 
   Cpair* temp                 = NULL;
   Cpair* tempDel              = NULL;
+  Lpoly** gCurrLast           = (Lpoly**) omAlloc( sizeof(Lpoly*) );
+  *gCurrLast                  = *gCurr;
   // rewRulesCurr stores the index of the first rule of the current degree step
   // Note that if there are higher label reductions taking place in currReduction() 
   // one has access to the last actual rewrite rule via rewRules->size.
@@ -1497,7 +1500,7 @@ void computeSpols (
         }
 #if F5EDEBUG2
         Print("AFTER REDUCTION W.R.T. REDGB -- %p\n", sp);
-        pWrite( pHead(sp) );
+        pWrite( sp );
         pTest(sp);
 #endif
         if( sp )
@@ -1555,7 +1558,7 @@ void computeSpols (
     // prepared for further reductions in currReduction()
     currReduction ( 
                     strat, spolysFirst, spolysLast, rewRules, rewRulesCurr, 
-                    redGB, &cp, gCurr, f5Rules, multTemp, multLabelTemp, 
+                    redGB, &cp, *gCurr, gCurrLast, f5Rules, multTemp, multLabelTemp, 
                     numVariables, shift, negBitmaskShifted, offsets
                   );
     // elements are added to linked list gCurr => start next degree step
@@ -1634,7 +1637,8 @@ inline void kBucketCopyToPoly(kBucket_pt bucket, poly *p, int *length)
 void currReduction  ( 
                       kStrategy strat, Spoly* spolysFirst, Spoly* spolysLast,
                       RewRules** rewRulesP, unsigned long rewRulesCurr,
-                      ideal redGB, CpairDegBound** cp, Lpoly** gCurrFirst, 
+                      ideal redGB, CpairDegBound** cp, Lpoly* gCurrFirst, 
+                      Lpoly** gCurrLast,
                       F5Rules** f5RulesP, int* multTemp, 
                       int* multLabelTemp, int numVariables, int* shift, 
                       unsigned long* negBitmaskShifted, int* offsets
@@ -1642,7 +1646,7 @@ void currReduction  (
 
 {
 #if F5EDEBUG1
-    Print("CURRREDUCTION-BEGINNING: GCURR %p -- %p\n",*gCurrFirst, (*gCurrFirst)->next);
+    Print("CURRREDUCTION-BEGINNING: GCURR %p -- %p\n",gCurrFirst, (gCurrFirst)->next);
 #endif
   RewRules* rewRules  = *rewRulesP;
   F5Rules* f5Rules    = *f5RulesP;
@@ -1695,7 +1699,7 @@ void currReduction  (
 #endif
     kBucket* bucket                 = kBucketCreate();
     kBucketInit( bucket, spTemp->p, pLength(spTemp->p) );
-    temp  = *gCurrFirst;
+    temp  = gCurrFirst;
     //----------------------------------------
     // reduction of the leading monomial of sp
     //----------------------------------------
@@ -2062,14 +2066,22 @@ void currReduction  (
               { 
                 // SUPER TOP REDUCTION IN GGV
                 if( 
-                   n_Equal ( pGetCoeff(spTemp->p), 
+                   n_Equal ( pGetCoeff(kBucketGetLm(bucket)), 
                              pGetCoeff(temp->p), 
                              currRing ) 
                   )
                 {
                   superTop  = TRUE;
                   temp      = temp->next;
-                  goto startagainTop;
+                  Print("SUPER TOP SET! NEXT POLY: ");
+                  if( temp )
+                  {
+                    goto startagainTop;
+                  }
+                  else
+                  {
+                    break;
+                  }
                   /*
                      if( spTemp->next )
                      {
@@ -2154,7 +2166,7 @@ void currReduction  (
                   redundant = FALSE;
                   if( kBucketGetLm( bucket ) )
                   {
-                    temp  = *gCurrFirst;
+                    temp  = gCurrFirst;
                   }
                   else
                   {
@@ -2218,7 +2230,7 @@ void currReduction  (
                 redundant = FALSE;
                 if( kBucketGetLm( bucket ) )
                 {
-                  temp  = *gCurrFirst;
+                  temp  = gCurrFirst;
                 }
                 else
                 {
@@ -2261,7 +2273,7 @@ void currReduction  (
           redundant = FALSE;
           if( kBucketGetLm( bucket ) )
           {
-            temp  = *gCurrFirst;
+            temp  = gCurrFirst;
           }
           else
           {
@@ -2286,7 +2298,7 @@ void currReduction  (
     while ( kBucketGetLm( bucket ) )
     {
       // search for reducers in the list gCurr
-      temp = *gCurrFirst;
+      temp = gCurrFirst;
       while ( temp )
       {
         startagainTail:
@@ -2380,7 +2392,7 @@ void currReduction  (
               isMult  = FALSE;
               if( kBucketGetLm( bucket ) )
               {
-                temp  = *gCurrFirst;
+                temp  = gCurrFirst;
               }
               else
               {
@@ -2413,7 +2425,7 @@ void currReduction  (
             }
             if( kBucketGetLm( bucket ) )
             {
-              temp  = *gCurrFirst;
+              temp  = gCurrFirst;
             }
             else
             {
@@ -2456,31 +2468,32 @@ void currReduction  (
         //pNorm( spTemp->p ); 
         // add sp together with rewRulesLast to gCurr!!!
         Lpoly* newElement     = (Lpoly*) omAlloc( sizeof(Lpoly) );
-        newElement->next      = *gCurrFirst;
+        newElement->next      = NULL;
         newElement->p         = spTemp->p; 
         newElement->sExp      = pGetShortExpVector(spTemp->p); 
         newElement->rewRule   = rewRulesCurr; 
         newElement->redundant = redundant;
         // update pointer to last element in gCurr list
-        *gCurrFirst           = newElement;
+        (*gCurrLast)->next    = newElement;
+        *gCurrLast            = newElement;
 #if F5EDEBUG0
         Print("ADDED TO BASIS: ");
-        pWrite( (*gCurrFirst)->p );
+        pWrite( (*gCurrLast)->p );
         poly pSig = pOne(); 
         for( int lale = 1; lale < (currRing->N+1); lale++ )
         {
           pSetExp( pSig, lale, rewRules->label[rewRulesCurr][lale] );
         }
         pWrite( pSig );
-        pTest( (*gCurrFirst)->p );
+        pTest( (*gCurrLast)->p );
         pDelete( &pSig );
 #endif
         criticalPairPrev( 
-            *gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
+            *gCurrLast, gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
             shift, negBitmaskShifted, offsets 
             );
         criticalPairCurr( 
-            *gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
+            *gCurrLast, gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
             shift, negBitmaskShifted, offsets 
             );
       }
@@ -2497,7 +2510,7 @@ void currReduction  (
           pSetExp( pSig, lale, rewRules->label[rewRulesCurr][lale] );
         }
         pWrite( pSig );
-        pTest( (*gCurrFirst)->p );
+        pTest( (gCurrFirst)->p );
         pDelete( &pSig );
 #endif
         superTopReductions++;
@@ -2516,7 +2529,7 @@ void currReduction  (
         pSetExp( pSig, lale, rewRules->label[rewRulesCurr][lale] );
       }
       pWrite( pSig );
-      pTest( (*gCurrFirst)->p );
+      pTest( (gCurrFirst)->p );
       pDelete( &pSig );
 #endif
       zeroReductions++;
@@ -2757,7 +2770,10 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   poly p1 = Pair.p1;
   poly p2 = Pair.p2;
 
+  p2  = pp_Mult_mm( p2, m2, currRing );
+  return p2;
 
+  // #####################################################
   poly last;
   Pair.tailRing = tailRing;
 

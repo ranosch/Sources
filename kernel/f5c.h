@@ -230,6 +230,8 @@ void criticalPairInit (
 /// point no rewrite rule exists, thus we do not need \c RewRules .
 /// @sa insertCritPair, criticalPairCurr, criticalPairInit
 void criticalPairPrev ( 
+  Lpoly* gCurrNew,                  ///<[in]  essentially this is the labeled 
+                                    ///       polynomial of p at this point
   Lpoly* gCurr,                     ///<[in]  essentially this is the labeled 
                                     ///       polynomial of p at this point
   const kStrategy strat,            ///<[in]  reduced Groebner basis computed in 
@@ -255,6 +257,8 @@ void criticalPairPrev (
 /// point no rewrite rule exists, thus we do not need \c RewRules .
 /// @sa insertCritPair, criticalPairPrev, criticalPairInit
 void criticalPairCurr ( 
+  Lpoly* gCurrNew,          ///<[in]  essentially this is the labeled 
+                            ///       polynomial of p at this point
   Lpoly* gCurr,             ///<[in]  essentially this is the labeled 
                             ///       polynomial of p at this point
   const kStrategy  strat,   ///<[in]  reduced Groebner basis computed in 
@@ -366,7 +370,11 @@ void currReduction  (
   CpairDegBound** cp,     ///<[in,out]  pointer of the deg bound critical pair list,
                           ///           needed for sorting of newly computed critical
                           ///           pairs
-  Lpoly** gCurrFirst,     ///<[in,out]  reducers of the current iteration step.
+  Lpoly* gCurrFirst,      ///<[in,out]  reducers of the current iteration step.
+                          ///           Note this has to be a pointer of a pointer
+                          ///           as the corresponding value is changed when
+                          ///           new elements are added to gCurr.
+  Lpoly** gCurrLast,      ///<[in,out]  reducers of the current iteration step.
                           ///           Note this has to be a pointer of a pointer
                           ///           as the corresponding value is changed when
                           ///           new elements are added to gCurr.
