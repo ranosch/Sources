@@ -103,7 +103,7 @@ struct Lpoly
 struct Spoly 
 {
   Spoly*          next;     ///<  pointer to the next element in the linked list
-  unsigned long*  labelExp; ///<  exponent vector of the corresponding critical pair
+  poly            labelExp; ///<  exponent vector of the corresponding critical pair
                             ///   Note that this has to be stored, although we have 
                             ///   already computed the corresponding rewriting rule 
                             ///   as this rule does not include Singular's internal 
@@ -120,7 +120,7 @@ struct Spoly
 struct Cpair 
 {
   Cpair*          next;       ///<  next critical pair sorted by label
-  unsigned long*  mLabelExp;  ///<  exponent vector of the label of 
+  poly            mLabelExp;  ///<  exponent vector of the label of 
                               ///   the critical pair: this element is needed
                               ///   for sorting the critical pairs in 
                               ///   \c computeSpols() by the given ordering
@@ -537,7 +537,7 @@ unsigned long getShortExpVecFromArray (
 /// integer vector.
 inline void getExpFromIntArray (
   const int*      exp,    ///<[in] integer exponent vector
-  unsigned long*  r,      ///<[in,out] corresponding exponent vector of \c exp
+  poly  r,                ///<[in,out] corresponding exponent vector of \c exp
   int numVariables,       ///<[in] global stuff for faster exponent computations
   int* shift,             ///<[in] global stuff for faster exponent computations
   unsigned long* negBit,  ///<[in] global stuff for faster exponent computations

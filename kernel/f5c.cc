@@ -460,8 +460,9 @@ void criticalPairInit (
       pWrite( pHead(cpTemp->p2) );
 #endif
       // now we really need the memory for the exp label
-      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                                sizeof(unsigned long));
+      //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+      //                          sizeof(unsigned long));
+      cpTemp->mLabelExp   = pOne();
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets );
       insertCritPair(cpTemp, critPairDeg, cpBounds);
@@ -528,8 +529,9 @@ void criticalPairInit (
     pWrite( pHead(cpTemp->p2) );
 #endif
     // now we really need the memory for the exp label
-    cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                              sizeof(unsigned long));
+    //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+    //                          sizeof(unsigned long));
+    cpTemp->mLabelExp   = pOne();
     getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                         numVariables, shift, negBitmaskShifted, offsets
                       );
@@ -629,8 +631,9 @@ void criticalPairPrev (
       cpTemp->p2        = strat->S[i];
       cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
       // now we really need the memory for the exp label
-      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                                sizeof(unsigned long));
+      //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+      //                          sizeof(unsigned long));
+      cpTemp->mLabelExp   = pOne();
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets );
       insertCritPair(cpTemp, critPairDeg, cpBounds);
@@ -696,8 +699,9 @@ void criticalPairPrev (
     cpTemp->p2        = strat->S[strat->sl];
     cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
     // now we really need the memory for the exp label
-    cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                              sizeof(unsigned long));
+    //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+    //                          sizeof(unsigned long));
+    cpTemp->mLabelExp   = pOne();
     getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                         numVariables, shift, negBitmaskShifted, offsets
                       );
@@ -729,7 +733,7 @@ void criticalPairCurr (
   Print("CRITPAIRCURR-BEGINNING\n");
 #endif
   int i, j;
-  unsigned long* mLabelExp;
+  poly mLabelExp;
   // all pairs should be computed if possible as ggv does not do
   // higher label reductions, but computes the pairs again afterwards
   bool pairNeeded       = TRUE;
@@ -765,7 +769,7 @@ void criticalPairCurr (
   // Note: As we do not need the smaller exponent vector we do NOT store both in
   // the critical pair structure, but only the greater one. Thus the following
   // memory is freed before the end of criticalPairCurr()
-  unsigned long* checkExp = (unsigned long*) omAlloc0(NUMVARS*sizeof(unsigned long));
+  poly checkExp = pOne();
   int temp;
   long critPairDeg; // degree of the label of the pair in the following
   while(gCurrIter->next != gCurrNew)
@@ -823,15 +827,16 @@ void criticalPairCurr (
       // testing the F5 & Rewritten Criterion
       
       // check for equality on labels including the coefficients!!!
-      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                                sizeof(unsigned long));
+      //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+      //                          sizeof(unsigned long));
+      cpTemp->mLabelExp   = pOne();
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets
                         );
       getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
                           shift, negBitmaskShifted, offsets
                         );
-      int labelEqual = expCmp( cpTemp->mLabelExp, checkExp );
+      int labelEqual = pLmCmp( cpTemp->mLabelExp, checkExp );
       Print("LABELCHECK %d\n", labelEqual );
       if( ! ( labelEqual == 0 && 
               n_Equal ( pGetCoeff(cpTemp->p1), 
@@ -853,14 +858,14 @@ void criticalPairCurr (
           // compare which label is greater and possibly switch the 1st and 2nd 
           // generator in cpTemp
           // exchange generator 1 and 2 in cpTemp
-          if( expCmp(cpTemp->mLabelExp, checkExp) == -1 )
+          if( pLmCmp(cpTemp->mLabelExp, checkExp) == -1 )
           {
             poly pTempHolder                = cpTemp->p1;
             int* mLabelTempHolder           = cpTemp->mLabel1;
             int* multTempHolder             = cpTemp->mult1;
             unsigned long smLabelTempHolder = cpTemp->smLabel1;  
             unsigned long rewRuleTempHolder = cpTemp->rewRule1;
-            unsigned long* expTempHolder    = cpTemp->mLabelExp;
+            poly expTempHolder              = cpTemp->mLabelExp;
 
             cpTemp->coeff2                  = n_Invers( cpTemp->coeff2, currRing);
             cpTemp->p1                      = cpTemp->p2;
@@ -953,15 +958,16 @@ void criticalPairCurr (
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       // now we really need the memory for the exp label
-      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                                sizeof(unsigned long));
+      //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+      //                          sizeof(unsigned long));
+      cpTemp->mLabelExp = pOne();
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets
                         );
       getExpFromIntArray( cpTemp->mLabel2, checkExp, numVariables,
                           shift, negBitmaskShifted, offsets
                         );
-      int labelEqual = expCmp( cpTemp->mLabelExp, checkExp );
+      int labelEqual = pLmCmp( cpTemp->mLabelExp, checkExp );
       Print("LABELCHECK %d\n", labelEqual );
       if( ! ( labelEqual == 0 && 
               n_Equal ( pGetCoeff(cpTemp->p1), 
@@ -973,14 +979,14 @@ void criticalPairCurr (
         // compare which label is greater and possibly switch the 1st and 2nd 
         // generator in cpTemp
         // exchange generator 1 and 2 in cpTemp
-        if( expCmp(cpTemp->mLabelExp, checkExp) == -1 )
+        if( pLmCmp(cpTemp->mLabelExp, checkExp) == -1 )
         {
           poly pTempHolder                = cpTemp->p1;
           int* mLabelTempHolder           = cpTemp->mLabel1;
           int* multTempHolder             = cpTemp->mult1;
           unsigned long smLabelTempHolder = cpTemp->smLabel1;  
           unsigned long rewRuleTempHolder = cpTemp->rewRule1;
-          unsigned long* expTempHolder    = cpTemp->mLabelExp;
+          poly expTempHolder              = cpTemp->mLabelExp;
 
           cpTemp->coeff2                  = n_Invers( cpTemp->coeff2, currRing);
           cpTemp->p1                      = cpTemp->p2;
@@ -1060,89 +1066,52 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
   }
   else
   {
-    if((*bound)->deg < deg) 
+    tempForDel    = (*bound)->cp;
+// first element in list has higher label
+    Print("HERE -- %d\n",pLmCmp(cp->mLabelExp, tempForDel->mLabelExp));
+    if( pLmCmp(cp->mLabelExp, tempForDel->mLabelExp) == -1 )
     {
-      CpairDegBound* temp = *bound;
-      while((temp)->next && ((temp)->next->deg < deg))
-      {
-        temp = (temp)->next;
-      }
-      if( (temp)->next && (temp)->next->deg == deg )
-      {
-        cp->next          = (temp)->next->cp;
-        (temp)->next->cp  = cp;
-        (temp)->next->length++;
-        // if there exist other elements in the list with the very same label
-        // then delete them as they will be detected by the Rewritten Criterion
-        // of F5 nevertheless
-        tempForDel  = cp;
-        while( tempForDel->next )
-        {
-          if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
-          {
-            Cpair* tempDel    = tempForDel->next;
-            tempForDel->next  = (tempForDel->next)->next;
-            omFree( tempDel );
-            (temp)->next->length--;
-          }
-          // tempForDel->next could be NULL as we have deleted one element
-          // inbetween
-          if( tempForDel->next )
-          {
-            tempForDel  = tempForDel->next;
-          }
-        }
-      }
-      else
-      {
-        CpairDegBound* boundNew = (CpairDegBound*) omAlloc(sizeof(CpairDegBound));
-        boundNew->next          = (temp)->next;
-        boundNew->deg           = deg;
-        boundNew->cp            = cp;
-        boundNew->length        = 1;
-        (temp)->next           = boundNew;
-      }
+      cp->next      = (*bound)->cp;
+      (*bound)->cp  = cp;
+      (*bound)->length++;
     }
     else
     {
-      if((*bound)->deg == deg) 
+      // first element in last has equal label
+      if( pLmCmp(cp->mLabelExp, tempForDel->mLabelExp) == 0 )
       {
-        cp->next      = (*bound)->cp;
-        (*bound)->cp  = cp;
-        (*bound)->length++;
-        // if there exist other elements in the list with the very same label
-        // then delete them as they will be detected by the Rewritten Criterion
-        // of F5 nevertheless
-        tempForDel    = cp;
-        while( tempForDel->next )
-        {
-          if( expCmp(cp->mLabelExp,(tempForDel->next)->mLabelExp) == 0 )
-          {
-            Cpair* tempDel    = tempForDel->next;
-            tempForDel->next  = (tempForDel->next)->next;
-            omFree( tempDel );
-            (*bound)->length--;
-          }
-          // tempForDel->next could be NULL as we have deleted one element
-          // inbetween
-          if( tempForDel->next )
-          {
-            tempForDel  = tempForDel->next;
-          }
-        }
+        (*bound)->cp->p1  = cp->p1;
+        (*bound)->cp->p2  = cp->p2;
       }
       else
+      {
+        // first element in list has smaller label
+        while( NULL!=tempForDel->next && pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == 1 )
         {
-        CpairDegBound* boundNew = (CpairDegBound*) omAlloc(sizeof(CpairDegBound));
-        boundNew->next          = *bound;
-        boundNew->deg           = deg;
-        boundNew->cp            = cp;
-        boundNew->length        = 1;
-        *bound                  = boundNew;
+          tempForDel  = tempForDel->next;
+        }
+        if( !tempForDel->next )
+        {
+          cp->next          = NULL;
+          tempForDel->next  = cp;
+        }
+        else
+        {
+          if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == -1 )
+          {
+            cp->next          = tempForDel->next;
+            tempForDel->next  = cp;
+          }
+          if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == 0 )
+          {
+            (tempForDel->next)->p1  = cp->p1;
+            (tempForDel->next)->p2  = cp->p2;
+          }        
+        } 
       }
     }
   }
-#if F5EDEBUG3
+#if F5EDEBUG2
   CpairDegBound* test = *bound;
   Print("-------------------------------------\n");
   while( test )
@@ -1344,7 +1313,8 @@ void computeSpols (
     Print("START OF NEW DEG ROUND: CP %ld | %p -- %p: # %d\n",cp->deg,cp->cp,cp,cp->length);
     Print("NEW CPDEG? %p\n",cp->next);
 #endif
-    temp  = sort(cp->cp, cp->length); 
+    //temp  = sort(cp->cp, cp->length); 
+    temp                  = cp->cp;
     CpairDegBound* cpDel  = cp;
     cp                    = cp->next;
     omFree( cpDel );
@@ -1752,8 +1722,7 @@ void currReduction  (
           */
             static unsigned long* multTempExp = (unsigned long*) 
                             omAlloc0( NUMVARS*sizeof(unsigned long) );
-            unsigned long* multLabelTempExp = (unsigned long*) 
-                            omAlloc0( NUMVARS*sizeof(unsigned long) );
+            poly multLabelTempExp = pOne();
             getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
                                 shift, negBitmaskShifted, offsets
                               );   
@@ -1762,7 +1731,7 @@ void currReduction  (
             // linked list for later reductions
 
             // in the basic algorithm we do not execute higher label reductions at all!
-            if( expCmp( multLabelTempExp, spTemp->labelExp ) == 1 )
+            if( pLmCmp( multLabelTempExp, spTemp->labelExp ) == 1 )
             {            
             /*
 #if F5EDEBUG1
@@ -2062,7 +2031,7 @@ void currReduction  (
               // the same leading monomial as polynomials & the same leading 
               // monomial as labels
               // => check the coefficients of the labels! 
-              if( expCmp( multLabelTempExp, spTemp->labelExp ) == 0 )
+              if( pLmCmp( multLabelTempExp, spTemp->labelExp ) == 0 )
               { 
                 // SUPER TOP REDUCTION IN GGV
                 if( 
@@ -2110,7 +2079,7 @@ void currReduction  (
                   // due to ggv rules!
                   static poly multiplier = pOne();
                   static poly multReducer;
-                  getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                  getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
                                       negBitmaskShifted, offsets
                                     );
                   // throw away the leading monomials of reducer and bucket
@@ -2183,7 +2152,7 @@ void currReduction  (
                 // bucket reduction starts!
                 static poly multiplier = pOne();
                 static poly multReducer;
-                getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+                getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
                                     negBitmaskShifted, offsets
                                   );
                 // throw away the leading monomials of reducer and bucket
@@ -2351,7 +2320,7 @@ void currReduction  (
 
               // if a higher label reduction should be done we do NOT reduce at all
               // we want to be fast in the tail reduction part
-              if( expCmp( multLabelTempExp, spTemp->labelExp ) == 1 )
+              if( pLmCmp( multLabelTempExp, spTemp->labelExp ) == 1 )
               {            
                 isMult    = FALSE;
                 redundant = TRUE;
@@ -2623,7 +2592,7 @@ void currReduction  (
     Spoly* spDel  = spTemp;
     spTemp        = spTemp->next;
     // free memory of spTemp stuff
-    omFree( spDel->labelExp );
+    pDelete( &spDel->labelExp );
     omFree( spDel );
     // free memory of bucket
     kBucketDeleteAndDestroy( &bucket );
@@ -2670,7 +2639,7 @@ Cpair* merge(Cpair* cp, Cpair* cp2)
 {
   // initialize new, sorted list of critical pairs
   Cpair* cpNew = NULL;
-  if( expCmp(cp->mLabelExp, cp2->mLabelExp) == -1 )
+  if( pLmCmp(cp->mLabelExp, cp2->mLabelExp) == -1 )
   {
     cpNew = cp;
     cp    = cp->next;
@@ -2683,7 +2652,7 @@ Cpair* merge(Cpair* cp, Cpair* cp2)
   Cpair* temp = cpNew;
   while(cp!=NULL && cp2!=NULL)
   {
-    if( expCmp(cp->mLabelExp, cp2->mLabelExp) == -1 )
+    if( pLmCmp(cp->mLabelExp, cp2->mLabelExp) == -1 )
     {
       temp->next  = cp;
       temp        = cp;
@@ -2717,13 +2686,12 @@ inline poly multInit( const int* exp, int numVariables, int* shift,
   poly np;
   omTypeAllocBin( poly, np, currRing->PolyBin );
   p_SetRingOfLm( np, currRing );
-  unsigned long* expTemp  =   (unsigned long*) omAlloc0(NUMVARS*
-                              sizeof(unsigned long));
+  poly expTemp  =  pOne();
   getExpFromIntArray( exp, expTemp, numVariables, shift, negBitmaskShifted, 
                       offsets 
                     );
   static number n  = nInit(1);
-  p_MemCopy_LengthGeneral( np->exp, expTemp, NUMVARS );
+  p_MemCopy_LengthGeneral( np->exp, expTemp->exp, NUMVARS );
   pNext(np) = NULL;
   pSetCoeff0(np, n);
   p_Setm( np, currRing );
@@ -3270,7 +3238,7 @@ unsigned long getShortExpVecFromArray(int* a, ring r)
 }
 
 
-inline void getExpFromIntArray( const int* exp, unsigned long* r, 
+inline void getExpFromIntArray( const int* exp, poly r, 
                                 int numVariables, int* shift, unsigned long* 
                                 negBitmaskShifted, int* offsets
                               )
@@ -3285,10 +3253,11 @@ inline void getExpFromIntArray( const int* exp, unsigned long* r,
     unsigned long ee      =   exp[i];
     ee                    =   ee << shiftL;
     register int offsetL  =   offsets[i];
-    r[offsetL]            &=  negBitmaskShifted[i];
-    r[offsetL]            |=  ee;
+    r->exp[offsetL]       &=  negBitmaskShifted[i];
+    r->exp[offsetL]       |=  ee;
   }
-  r[currRing->pCompIndex] = exp[0];
+  r->exp[currRing->pCompIndex] = exp[0];
+  pSetm( r );
 }
 
 
