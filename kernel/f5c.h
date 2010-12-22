@@ -360,8 +360,8 @@ void currReduction  (
                           ///           needed for possible reduction of newly
                           ///           generated polys during higher label
                           ///           reductions  
-  Spoly* spolyFirst,      ///<[in]  first s-polynomial in the list to be reduced
-  Spoly* spolyLast,       ///<[in]  last s-polynomial in the list to be reduced
+  poly sp,                ///<[in]  first s-polynomial in the list to be reduced
+  poly spLabelExp,        ///<[in]  last s-polynomial in the list to be reduced
   RewRules** rewRules,    ///<[in,out]  rewrite rules 
   unsigned long currPos,  ///<[in,out]  position in the rewRules array of the first
                           ///           rewrite rule of this degree step
