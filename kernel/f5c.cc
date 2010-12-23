@@ -1069,13 +1069,27 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
       // first element in last has equal label
       if( pLmCmp(cp->mLabelExp, tempForDel->mLabelExp) == 0 )
       {
-        Cpair* tempDel  = tempForDel;
-        cp->next =  tempForDel->next;
-        tempForDel  = cp;
-        omFreeSize( tempDel->mLabel1, ((currRing->N)+1)*sizeof(int) );
-        omFreeSize( tempDel->mult1, ((currRing->N)+1)*sizeof(int) );
-        omFreeSize( tempDel->mult2, ((currRing->N)+1)*sizeof(int) );
-        omFreeSize( tempDel, sizeof(Cpair) );
+        // need to check which generating element was generated later
+        if( cp->rewRule1 > tempForDel->rewRule1 )
+        {
+          Cpair* tempDel  = tempForDel;
+          cp->next =  tempForDel->next;
+          tempForDel  = cp;
+          omFreeSize( tempDel->mLabel1, ((currRing->N)+1)*sizeof(int) );
+          omFreeSize( tempDel->mult1, ((currRing->N)+1)*sizeof(int) );
+          omFreeSize( tempDel->mult2, ((currRing->N)+1)*sizeof(int) );
+          omFreeSize( tempDel, sizeof(Cpair) );
+        }
+        else
+        {
+          // throw away the new critical pair
+          // Note that this situation can only happen when a higher label reduction
+          // has led to cp and the 2nd generator becomes the new 1st generator!!!
+          omFreeSize( cp->mLabel1, ((currRing->N)+1)*sizeof(int) );
+          omFreeSize( cp->mult1, ((currRing->N)+1)*sizeof(int) );
+          omFreeSize( cp->mult2, ((currRing->N)+1)*sizeof(int) );
+          omFreeSize( cp, sizeof(Cpair) );
+        }
       }
       else
       {
@@ -1093,14 +1107,28 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
         {
           if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == 0 )
           {
-            Cpair* tempDel  = tempForDel->next;
-            cp->next =  (tempForDel->next)->next;
-            tempForDel->next  = cp;
-            omFreeSize( tempDel->mLabel1, ((currRing->N)+1)*sizeof(int) );
-            omFreeSize( tempDel->mult1, ((currRing->N)+1)*sizeof(int) );
-            omFreeSize( tempDel->mult2, ((currRing->N)+1)*sizeof(int) );
-            omFreeSize( tempDel, sizeof(Cpair) );
-          }        
+            // need to check which generating element was generated later
+            if( cp->rewRule1 > (tempForDel->next)->rewRule1 )
+            {
+              Cpair* tempDel  = tempForDel->next;
+              cp->next =  (tempForDel->next)->next;
+              tempForDel->next  = cp;
+              omFreeSize( tempDel->mLabel1, ((currRing->N)+1)*sizeof(int) );
+              omFreeSize( tempDel->mult1, ((currRing->N)+1)*sizeof(int) );
+              omFreeSize( tempDel->mult2, ((currRing->N)+1)*sizeof(int) );
+              omFreeSize( tempDel, sizeof(Cpair) );
+            }
+            else
+            {
+              // throw away the new critical pair
+              // Note that this situation can only happen when a higher label reduction
+              // has led to cp and the 2nd generator becomes the new 1st generator!!!
+              omFreeSize( cp->mLabel1, ((currRing->N)+1)*sizeof(int) );
+              omFreeSize( cp->mult1, ((currRing->N)+1)*sizeof(int) );
+              omFreeSize( cp->mult2, ((currRing->N)+1)*sizeof(int) );
+              //omFreeSize( cp, sizeof(Cpair) );
+            }
+          }
           if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == -1 )
           {
             cp->next          = tempForDel->next;
