@@ -51,9 +51,9 @@
 #define PDEBUG 0 
 #endif
 #define F5ETAILREDUCTION  1 
-#define F5EDEBUG0         1 
-#define F5EDEBUG1         1 
-#define F5EDEBUG2         1 
+#define F5EDEBUG0         0 
+#define F5EDEBUG1         0 
+#define F5EDEBUG2         0 
 #define F5EDEBUG3         0 
 #define setMaxIdeal       64
 #define NUMVARS           currRing->ExpL_Size
@@ -73,9 +73,9 @@ ideal f5cMain(ideal F, ideal Q)
   }
   // interreduction of the input ideal F
   ideal FRed      = idCopy( F );
-  ideal FRedTemp  = kInterRed( FRed );
-  idDelete( &FRed );
-  FRed            = FRedTemp;
+  //ideal FRedTemp  = kInterRed( FRed );
+  //idDelete( &FRed );
+  //FRed            = FRedTemp;
 
 #if F5EDEBUG3
   int j = 0;
@@ -689,7 +689,7 @@ void criticalPairCurr (
 #endif
   int i, j;
   unsigned long* mLabelExp;
-  bool pairNeeded       = FALSE;
+  bool pairNeeded       = TRUE;
   int* expVecNewElement = (int*) omAlloc((currRing->N+1)*sizeof(int));
   int* expVecTemp       = (int*) omAlloc((currRing->N+1)*sizeof(int));
   pGetExpV(gCurrNew->p, expVecNewElement); 
@@ -835,7 +835,7 @@ void criticalPairCurr (
         cpTemp->mult2     = (int*) omAlloc((currRing->N+1)*sizeof(int));
       }
     }
-    pairNeeded  = FALSE;
+    pairNeeded  = TRUE;
     gCurrIter   = gCurrIter->next;
   }
   // same critical pair processing for the last element in gCurr
