@@ -367,6 +367,8 @@ ideal f5cIter (
   }
   omFreeSize( rewRules->slabel, rewRulesSize*sizeof(unsigned long) );
   omFreeSize( rewRules->label, rewRulesSize*sizeof(int*) );
+  omFreeSize( rewRules->coeff, rewRulesSize*sizeof(number) );
+  
   omFreeSize( rewRules, sizeof(RewRules) );
   clearStrat( strat, redGB );
   
