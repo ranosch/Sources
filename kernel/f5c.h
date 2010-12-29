@@ -42,7 +42,6 @@
 struct F5Rules 
 {
   unsigned long   size;   ///< current number of rules in the list
-  number*         coeff;  ///< coefficients of the labels
   int**           label;  ///< array of exponent vectors of the rules
   unsigned long*  slabel; ///< array of short exponent vecotrs of the rules
                           ///   of the F5 Criterion
@@ -57,7 +56,6 @@ struct F5Rules
 struct RewRules 
 {
   unsigned long   size;   ///< current number of rules in the list
-  number*         coeff;  ///< coefficients of the labels
   int**           label;  ///< array of exponent vectors of the rules
   unsigned long*  slabel; ///< array of short exponent vecotrs of the rules
 };
@@ -130,7 +128,6 @@ struct Cpair
   int*            mult1;      ///<  multiplier of the 1st poly
   poly            p1;         ///<  1st labeled poly
   unsigned long   rewRule1;   ///<  index of rule for criterion2 checks
-  number          coeff2;     ///<  coefficient the 2nd generator has to be multiplied with
   int*            mLabel2;    ///<  exponent vector of the 2nd multiplier * label 
                               ///   of p2
   unsigned long   smLabel2;   ///<  short exponent vector of \c mLabel2

@@ -228,8 +228,6 @@ ideal f5cIter (
   F5Rules* f5Rules    = (F5Rules*) omAlloc(sizeof(struct F5Rules));
   RewRules* rewRules  = (RewRules*) omAlloc(sizeof(struct RewRules));
   // malloc memory for all rules
-  f5Rules->coeff      = (number*) omAlloc(f5RulesSize*
-                        sizeof(number)); 
   f5Rules->label      = (int**) omAlloc(f5RulesSize*sizeof(int*));
   f5Rules->slabel     = (unsigned long*) omAlloc(f5RulesSize*
                         sizeof(unsigned long)); 
@@ -240,8 +238,6 @@ ideal f5cIter (
 
   // malloc two times the size of the previous Groebner basis
   // Note that we possibly need more memory in this iteration step!
-  rewRules->coeff   = (number*) omAlloc((rewRulesSize)*
-                      sizeof(number)); 
   rewRules->label   = (int**) omAlloc((rewRulesSize)*sizeof(int*));
   rewRules->slabel  = (unsigned long*) omAlloc((rewRulesSize)*
                       sizeof(unsigned long)); 
@@ -250,7 +246,6 @@ ideal f5cIter (
   // (a) Note that we are allocating & setting all entries to zero for this first 
   //     rewrite rule.
   // (b) Note also that the size of strat is >=1.
-  rewRules->coeff[0]  = n_Init( 1, currRing );
   rewRules->label[0]  = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
   rewRules->slabel[0] = 0;
   for(i=1; i<rewRulesSize; i++) 
@@ -263,7 +258,6 @@ ideal f5cIter (
   // vectors there => do not recompute them again 
   for(i=0; i<stratSize; i++) 
   {
-    f5Rules->coeff[i]   = n_Init( 1, currRing );
     f5Rules->label[i]   =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
     pGetExpV( strat->S[i], f5Rules->label[i] );
     f5Rules->slabel[i]  = strat->sevS[i];
@@ -357,7 +351,6 @@ ideal f5cIter (
   }
   omFreeSize( f5Rules->label, f5RulesSize*sizeof(int*) );
   omFreeSize( f5Rules->slabel, f5RulesSize*sizeof(unsigned long) );
-  omFreeSize( f5Rules->coeff, f5RulesSize*sizeof(number) );
   
   omFreeSize( f5Rules, sizeof(F5Rules) );
   
@@ -451,7 +444,6 @@ void criticalPairInit (
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       cpTemp->p2        = strat->S[i];
-      cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
 #if F5EDEBUG1
       Print("2nd gen: ");
       pWrite( pHead(cpTemp->p2) );
@@ -520,7 +512,6 @@ void criticalPairInit (
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     cpTemp->p2        = strat->S[strat->sl];
-    cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
 #if F5EDEBUG1
     Print("2nd gen: ");
     pWrite( pHead(cpTemp->p2) );
@@ -626,7 +617,6 @@ void criticalPairPrev (
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       cpTemp->p2        = strat->S[i];
-      cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
       // now we really need the memory for the exp label
       //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
       //                          sizeof(unsigned long));
@@ -694,7 +684,6 @@ void criticalPairPrev (
     // completing the construction of the new critical pair and inserting it
     // to the list of critical pairs 
     cpTemp->p2        = strat->S[strat->sl];
-    cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
     // now we really need the memory for the exp label
     //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
     //                          sizeof(unsigned long));
@@ -772,7 +761,6 @@ void criticalPairCurr (
   while(gCurrIter->next != gCurrNew)
   {
     cpTemp->p2        = gCurrIter->p;
-    cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
 #if F5EDEBUG1
     Print("2nd generator of pair: ");
     pWrite( pHead(cpTemp->p2) );
@@ -827,10 +815,7 @@ void criticalPairCurr (
                           shift, negBitmaskShifted, offsets
                         );
       int labelEqual = pLmCmp( cpTemp->mLabelExp, checkExp );
-      if( ! ( labelEqual == 0 && 
-              n_Equal ( pGetCoeff(cpTemp->p1), 
-                        pGetCoeff(cpTemp->p2), 
-                        currRing ) 
+      if( ! ( labelEqual == 0  
             )   
         )
       {
@@ -856,7 +841,6 @@ void criticalPairCurr (
             unsigned long rewRuleTempHolder = cpTemp->rewRule1;
             poly expTempHolder              = cpTemp->mLabelExp;
 
-            cpTemp->coeff2                  = n_Invers( cpTemp->coeff2, currRing);
             cpTemp->p1                      = cpTemp->p2;
             cpTemp->p2                      = pTempHolder;
             cpTemp->mLabel1                 = cpTemp->mLabel2;
@@ -899,7 +883,6 @@ void criticalPairCurr (
   // This is outside of the loop to keep memory low, since we know that after
   // this element no new memory for a critical pair must be allocated.
   cpTemp->p2  = gCurrIter->p;
-  cpTemp->coeff2    = n_Div( pGetCoeff(cpTemp->p1), pGetCoeff(cpTemp->p2), currRing );
 #if F5EDEBUG1
   Print("2nd generator of pair: ");
   pWrite( pHead(cpTemp->p2) );
@@ -957,10 +940,7 @@ void criticalPairCurr (
                           shift, negBitmaskShifted, offsets
                         );
       int labelEqual = pLmCmp( cpTemp->mLabelExp, checkExp );
-      if( ! ( labelEqual == 0 && 
-              n_Equal ( pGetCoeff(cpTemp->p1), 
-                        pGetCoeff(cpTemp->p2), 
-                        currRing ) 
+      if( ! ( labelEqual == 0 
             )   
         )
       {
@@ -976,7 +956,6 @@ void criticalPairCurr (
           unsigned long rewRuleTempHolder = cpTemp->rewRule1;
           poly expTempHolder              = cpTemp->mLabelExp;
 
-          cpTemp->coeff2                  = n_Invers( cpTemp->coeff2, currRing);
           cpTemp->p1                      = cpTemp->p2;
           cpTemp->p2                      = pTempHolder;
           cpTemp->mLabel1                 = cpTemp->mLabel2;
@@ -1382,7 +1361,6 @@ void computeSpols (
             _i++;
           }
           (*rewRules)->slabel[(*rewRules)->size]  = ~temp->smLabel1;
-          (*rewRules)->coeff[(*rewRules)->size]   = (*rewRules)->coeff[temp->rewRule1];
           (*rewRules)->size++;
         }
         else
@@ -1393,7 +1371,6 @@ void computeSpols (
           unsigned int old                = rewRulesSize;
           rewRulesSize                    = 3*rewRulesSize;
           RewRules* newRules              = (RewRules*) omAlloc( sizeof(RewRules) );
-          newRules->coeff                 = (number*) omAlloc( rewRulesSize*sizeof(number) );
           newRules->label                 = (int**) omAlloc( rewRulesSize*sizeof(int*) );
           newRules->slabel                = (unsigned long*)omAlloc( rewRulesSize*sizeof(unsigned long) );
           newRules->size                  = (*rewRules)->size;
@@ -1401,7 +1378,6 @@ void computeSpols (
           register unsigned long ctr      = 0;
           for( ; ctr<old; ctr++ )
           {
-            newRules->coeff[ctr]      = (*rewRules)->coeff[ctr];
             newRules->label[ctr]      = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
             register unsigned long _i = 0;
             register int* _d          = newRules->label[ctr];
@@ -1436,7 +1412,6 @@ void computeSpols (
             _i++;
           }
           (*rewRules)->slabel[(*rewRules)->size]  = ~temp->smLabel1;
-          (*rewRules)->coeff[(*rewRules)->size]   = (*rewRules)->coeff[temp->rewRule1];
           (*rewRules)->size++;
 
         } 
@@ -2034,112 +2009,33 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
             // => check the coefficients of the labels! 
             if( pLmCmp( multLabelTempExp, spLabelExp ) == 0 )
             { 
-              // SUPER TOP REDUCTION IN GGV
-              if( 
-                  n_Equal ( pGetCoeff(kBucketGetLm(bucket)), 
-                    pGetCoeff(temp->p), 
-                    currRing ) 
-                )
+              // SUPER TOP REDUCTION IN ARRI
+              superTop  = TRUE;
+              temp      = temp->next;
+              if( temp )
               {
-                superTop  = TRUE;
-                temp      = temp->next;
-                if( temp )
-                {
-                  goto startagainTop;
-                }
-                else
-                {
-                  break;
-                }
-                /*
-                   if( spTemp->next )
-                   {
-                   spTemp  = spTemp->next;
-                   pDelete( &spTemp->p );
-                   omFreeSize( spDel, sizeof(Spoly) );
-                   Print("here4\n");
-                   goto startComplete;
-                   }
-                   else
-                   {
-                   pDelete( &spDel->p );
-                   omFreeSize( spDel, sizeof(Spoly) );
-                   }
-                   */
+                goto startagainTop;
               }
-              // leading monomials of signatures are equal, but leading 
-              // coefficients are different!
               else
               {
-                // else we can go on and reduce sp
-                // The multiplied reducer will be reduced w.r.t. strat before the 
-                // bucket reduction starts!
-
-                // NOTE that we have to adjust the coefficient of the corresponding rule
-                // due to ggv rules!
-                static poly multiplier = pOne();
-                static poly multReducer;
-                getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
-                    negBitmaskShifted, offsets
-                    );
-                // throw away the leading monomials of reducer and bucket
-                p_SetCoeff( multiplier, multCoeff2, currRing );
-                pSetm( multiplier );
-                //p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
-                kBucketExtractLm(bucket);
-                // build the multiplied reducer (note that we do not need the leading
-                // term at all!
-#if F5EDEBUG2
-                Print("MULT: %p\n", multiplier );
-                pWrite( multiplier );
-#endif
-                multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
-#if F5EDEBUG2
-                Print("MULTRED BEFORE: \n" );
-                pWrite( pHead(multReducer) );
-#endif
-                multReducer = reduceByRedGBPoly( multReducer, strat );
-#if F5EDEBUG2
-                Print("MULTRED AFTER: \n" );
-                pWrite( pHead(multReducer) );
-#endif
-                //  length must be computed after the reduction with 
-                //  redGB!
-                tempLength = pLength( multReducer );
-                // reduce polynomial
-                kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
-                // adjust the coefficient of the signature
-                // compute 1 / (1-multCoeff2)
-                number shifter =  n_Sub ( 
-                    nInit(1), 
-                    multCoeff2, 
-                    currRing);                
-                shifter = n_Invers( shifter, currRing );
-                // multiply spTemp->p with shifter
-                kBucket_Mult_n( bucket, shifter);
-#if F5EDEBUG2
-                Print("AFTER REDUCTION STEP: ");
-                pWrite( kBucketGetLm(bucket) );
-#endif
-                if( canonicalize++ % 40 )
-                {
-                  kBucketCanonicalize( bucket );
-                  canonicalize = 0;
-                }
-                superTop  = FALSE;
-                isMult    = FALSE;
-                redundant = FALSE;
-                if( kBucketGetLm( bucket ) )
-                {
-                  temp  = gCurrFirst;
-                }
-                else
-                {
-                  break;
-                }
-                goto startagainTop;
-
+                break;
               }
+              /*
+                 if( spTemp->next )
+                 {
+                 spTemp  = spTemp->next;
+                 pDelete( &spTemp->p );
+                 omFreeSize( spDel, sizeof(Spoly) );
+                 Print("here4\n");
+                 goto startComplete;
+                 }
+                 else
+                 {
+                 pDelete( &spDel->p );
+                 omFreeSize( spDel, sizeof(Spoly) );
+                 }
+                 */
+
             }
             else
             {
@@ -2508,7 +2404,6 @@ kBucketLmZero:
             _i++;
           }
           f5Rules->slabel[f5Rules->size]  = rewRules->slabel[rewRulesCurr];
-          f5Rules->coeff[f5Rules->size]   = rewRules->coeff[rewRulesCurr];
           f5Rules->size++;
         }
         else
@@ -2519,7 +2414,6 @@ kBucketLmZero:
           unsigned int old    = f5RulesSize;
           f5RulesSize         = 3*f5RulesSize;
           F5Rules* newRules   = (F5Rules*) omAlloc( sizeof(F5Rules) );
-          newRules->coeff     = (number*)omAlloc( f5RulesSize*sizeof(number) );
           newRules->label     = (int**) omAlloc( f5RulesSize*sizeof(int*) );
           newRules->slabel    = (unsigned long*)omAlloc( f5RulesSize*sizeof(unsigned long) );
           newRules->size      = f5Rules->size;
@@ -2539,10 +2433,8 @@ kBucketLmZero:
             }
             omFreeSize( f5Rules->label[_ctr], (currRing->N+1)*sizeof(int) );
             newRules->slabel[_ctr]  = f5Rules->slabel[_ctr];
-            newRules->coeff[_ctr]   = f5Rules->coeff[_ctr];
           }
           omFreeSize( f5Rules->slabel, old*sizeof(unsigned long) );
-          omFreeSize( f5Rules->coeff, old*sizeof(unsigned long) );
           for( ; _ctr<f5RulesSize; _ctr++ )
           {
             newRules->label[_ctr] =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
@@ -2561,7 +2453,6 @@ kBucketLmZero:
             _i++;
           }
           f5Rules->slabel[f5Rules->size]  = rewRules->slabel[rewRulesCurr];
-          f5Rules->coeff[f5Rules->size]   = rewRules->coeff[rewRulesCurr];
           f5Rules->size++;
 #if F5EDEBUG2
           Print("MEMORY ALLOCATED -- %p\n", f5Rules->label[0]);
@@ -2729,7 +2620,7 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   /// In the following, m1*p1 will be multiplied by lc2(=1)
   /// and m2*p2 will be multiplied by lc1(=already precomputed coeff
   /// for s-polynomial computation.
-  number lc2 = cp->coeff2;
+  number lc2 = nInit(1);
   number lc1 = nInit(1);
 #if F5EDEBUG1
   Print("COEFF1: ");
