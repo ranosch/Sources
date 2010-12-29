@@ -1049,7 +1049,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
       if( pLmCmp(cp->mLabelExp, tempForDel->mLabelExp) == 0 )
       {
         // need to check which generating element was generated later
-        if( cp->rewRule1 > tempForDel->rewRule1 )
+        if( pLength(cp->p1) < pLength(tempForDel->p1) )
         {
           Cpair* tempDel  = tempForDel;
           cp->next =  tempForDel->next;
@@ -1087,7 +1087,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
           if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == 0 )
           {
             // need to check which generating element was generated later
-            if( cp->rewRule1 > (tempForDel->next)->rewRule1 )
+            if( pLength(cp->p1) < pLength((tempForDel->next)->p1) )
             {
               Cpair* tempDel  = tempForDel->next;
               cp->next =  (tempForDel->next)->next;
