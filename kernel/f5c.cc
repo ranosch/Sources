@@ -50,7 +50,7 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
-#define F5ETAILREDUCTION  0 
+#define F5ETAILREDUCTION  1 
 #define F5EDEBUG0         1 
 #define F5EDEBUG1         1 
 #define F5EDEBUG2         1 
@@ -2073,7 +2073,7 @@ void currReduction  (
                 }
               }
               poly multiplier = pOne();
-              getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+              getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
                                   negBitmaskShifted, offsets
                                 );
               // throw away the leading monomials of reducer and bucket
@@ -2125,7 +2125,7 @@ void currReduction  (
             }
             if( kBucketGetLm( bucket ) )
             {
-              temp  = *gCurrFirst;
+              temp  = gCurrFirst;
             }
             else
             {
