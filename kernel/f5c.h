@@ -99,7 +99,7 @@ struct Lpoly
 struct Spoly 
 {
   Spoly*          next;     ///<  pointer to the next element in the linked list
-  unsigned long*  labelExp; ///<  exponent vector of the corresponding critical pair
+  poly            labelExp; ///<  exponent vector of the corresponding critical pair
                             ///   Note that this has to be stored, although we have 
                             ///   already computed the corresponding rewriting rule 
                             ///   as this rule does not include Singular's internal 
@@ -116,7 +116,7 @@ struct Spoly
 struct Cpair 
 {
   Cpair*          next;       ///<  next critical pair sorted by label
-  unsigned long*  mLabelExp;  ///<  exponent vector of the label of 
+  poly            mLabelExp;  ///<  exponent vector of the label of 
                               ///   the critical pair: this element is needed
                               ///   for sorting the critical pairs in 
                               ///   \c computeSpols() by the given ordering
@@ -225,6 +225,8 @@ void criticalPairInit (
 /// point no rewrite rule exists, thus we do not need \c RewRules .
 /// @sa insertCritPair, criticalPairCurr, criticalPairInit
 void criticalPairPrev ( 
+  Lpoly* gCurrNew,                  ///<[in]  essentially this is the labeled 
+                                    ///       polynomial of p at this point
   Lpoly* gCurr,                     ///<[in]  essentially this is the labeled 
                                     ///       polynomial of p at this point
   const kStrategy strat,            ///<[in]  reduced Groebner basis computed in 
@@ -250,6 +252,8 @@ void criticalPairPrev (
 /// point no rewrite rule exists, thus we do not need \c RewRules .
 /// @sa insertCritPair, criticalPairPrev, criticalPairInit
 void criticalPairCurr ( 
+  Lpoly* gCurrNew,          ///<[in]  essentially this is the labeled 
+                            ///       polynomial of p at this point
   Lpoly* gCurr,             ///<[in]  essentially this is the labeled 
                             ///       polynomial of p at this point
   const kStrategy  strat,   ///<[in]  reduced Groebner basis computed in 
@@ -352,8 +356,8 @@ void currReduction  (
                           ///           needed for possible reduction of newly
                           ///           generated polys during higher label
                           ///           reductions  
-  Spoly* spolyFirst,      ///<[in]  first s-polynomial in the list to be reduced
-  Spoly* spolyLast,       ///<[in]  last s-polynomial in the list to be reduced
+  poly sp,                ///<[in]  first s-polynomial in the list to be reduced
+  poly spLabelExp,        ///<[in]  last s-polynomial in the list to be reduced
   RewRules** rewRules,    ///<[in,out]  rewrite rules 
   unsigned long currPos,  ///<[in,out]  position in the rewRules array of the first
                           ///           rewrite rule of this degree step
@@ -362,7 +366,11 @@ void currReduction  (
   CpairDegBound** cp,     ///<[in,out]  pointer of the deg bound critical pair list,
                           ///           needed for sorting of newly computed critical
                           ///           pairs
-  Lpoly** gCurrFirst,     ///<[in,out]  reducers of the current iteration step.
+  Lpoly* gCurrFirst,      ///<[in,out]  reducers of the current iteration step.
+                          ///           Note this has to be a pointer of a pointer
+                          ///           as the corresponding value is changed when
+                          ///           new elements are added to gCurr.
+  Lpoly** gCurrLast,      ///<[in,out]  reducers of the current iteration step.
                           ///           Note this has to be a pointer of a pointer
                           ///           as the corresponding value is changed when
                           ///           new elements are added to gCurr.
@@ -525,7 +533,7 @@ unsigned long getShortExpVecFromArray (
 /// integer vector.
 inline void getExpFromIntArray (
   const int*      exp,    ///<[in] integer exponent vector
-  unsigned long*  r,      ///<[in,out] corresponding exponent vector of \c exp
+  poly  r,                ///<[in,out] corresponding exponent vector of \c exp
   int numVariables,       ///<[in] global stuff for faster exponent computations
   int* shift,             ///<[in] global stuff for faster exponent computations
   unsigned long* negBit,  ///<[in] global stuff for faster exponent computations

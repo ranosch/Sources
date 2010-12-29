@@ -52,8 +52,8 @@
 #endif
 #define F5ETAILREDUCTION  0 
 #define F5EDEBUG0         1 
-#define F5EDEBUG1         0 
-#define F5EDEBUG2         0 
+#define F5EDEBUG1         1 
+#define F5EDEBUG2         1 
 #define F5EDEBUG3         0 
 #define setMaxIdeal       64
 #define NUMVARS           currRing->ExpL_Size
@@ -267,6 +267,7 @@ ideal f5cIter (
     gCurr->rewRule    = 0;
     gCurr->redundant  = FALSE;
      
+    Lpoly* gCurrFirst = gCurr;
     // initializing the list of critical pairs for this iteration step 
     CpairDegBound* cpBounds = NULL;
     criticalPairInit( 
@@ -285,25 +286,25 @@ ideal f5cIter (
 #if F5EDEBUG2
     int counter = 1;
 #endif
-    while( gCurr )
+    while( gCurrFirst )
     {
 #if F5EDEBUG3
-      if( p_GetOrder( gCurr->p, currRing ) == pWTotaldegree( gCurr->p, currRing ) )
+      if( p_GetOrder( gCurrFirst->p, currRing ) == pWTotaldegree( gCurrFirst->p, currRing ) )
       {
         Print(" ALLES OK\n");
       }
       else 
       {
-        Print("BEI POLY "); gCurr->p; //Print(" stimmt etwas nicht!\n");
+        Print("BEI POLY "); gCurrFirst->p; //Print(" stimmt etwas nicht!\n");
       }
 #endif
 #if F5EDEBUG2
       Print("%d INSERT TO REDGB: ",counter);
-      pWrite(gCurr->p);
+      pWrite(gCurrFirst->p);
 #endif
-      idInsertPoly( redGB, gCurr->p );
-      temp  = gCurr;
-      gCurr = gCurr->next;
+      idInsertPoly( redGB, gCurrFirst->p );
+      temp        = gCurrFirst;
+      gCurrFirst  = gCurrFirst->next;
       omFree(temp);
 #if F5EDEBUG2
       counter++;
@@ -418,8 +419,9 @@ void criticalPairInit (
       pWrite( pHead(cpTemp->p2) );
 #endif
       // now we really need the memory for the exp label
-      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                                sizeof(unsigned long));
+      //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+      //                          sizeof(unsigned long));
+      cpTemp->mLabelExp   = pOne();
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets );
       insertCritPair(cpTemp, critPairDeg, cpBounds);
@@ -483,8 +485,9 @@ void criticalPairInit (
     pWrite( pHead(cpTemp->p2) );
 #endif
     // now we really need the memory for the exp label
-    cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                              sizeof(unsigned long));
+    //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+    //                          sizeof(unsigned long));
+    cpTemp->mLabelExp   = pOne();
     getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                         numVariables, shift, negBitmaskShifted, offsets
                       );
@@ -507,7 +510,7 @@ void criticalPairInit (
 
 
 void criticalPairPrev ( 
-  Lpoly* gCurr, const kStrategy strat, const F5Rules& f5Rules, 
+  Lpoly* gCurrNew, Lpoly* gCurr, const kStrategy strat, const F5Rules& f5Rules, 
   const RewRules& rewRules, CpairDegBound** cpBounds, 
   int numVariables, int* shift, unsigned long* negBitmaskShifted, 
   int* offsets
@@ -518,7 +521,7 @@ void criticalPairPrev (
 #endif
   int i, j;
   int* expVecNewElement = (int*) omAlloc((currRing->N+1)*sizeof(int));
-  pGetExpV(gCurr->p, expVecNewElement); 
+  pGetExpV(gCurrNew->p, expVecNewElement); 
   // this must be changed for parallelizing the generation process of critical
   // pairs
   Cpair* cpTemp;
@@ -529,8 +532,8 @@ void criticalPairPrev (
   cpTemp->mLabel1   = NULL;
   cpTemp->smLabel1  = 0;
   cpTemp->mult1     = NULL;
-  cpTemp->p1        = gCurr->p;
-  cpTemp->rewRule1  = gCurr->rewRule;
+  cpTemp->p1        = gCurrNew->p;
+  cpTemp->rewRule1  = gCurrNew->rewRule;
   cpTemp->mLabel2   = NULL;
   cpTemp->smLabel2  = 0;
   cpTemp->mult2     = NULL;
@@ -584,8 +587,9 @@ void criticalPairPrev (
       // to the list of critical pairs 
       cpTemp->p2        = strat->S[i];
       // now we really need the memory for the exp label
-      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                                sizeof(unsigned long));
+      //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+      //                          sizeof(unsigned long));
+      cpTemp->mLabelExp   = pOne();
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets );
       insertCritPair(cpTemp, critPairDeg, cpBounds);
@@ -596,8 +600,8 @@ void criticalPairPrev (
       cpTemp->mLabel1   = NULL;
       cpTemp->smLabel1  = 0;
       cpTemp->mult1     = NULL;
-      cpTemp->p1        = gCurr->p;
-      cpTemp->rewRule1  = gCurr->rewRule;
+      cpTemp->p1        = gCurrNew->p;
+      cpTemp->rewRule1  = gCurrNew->rewRule;
       cpTemp->mLabel2   = NULL;
       cpTemp->smLabel2  = 0;
       cpTemp->mult2     = NULL;
@@ -650,8 +654,9 @@ void criticalPairPrev (
     // to the list of critical pairs 
     cpTemp->p2        = strat->S[strat->sl];
     // now we really need the memory for the exp label
-    cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                              sizeof(unsigned long));
+    //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+    //                          sizeof(unsigned long));
+    cpTemp->mLabelExp   = pOne();
     getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                         numVariables, shift, negBitmaskShifted, offsets
                       );
@@ -674,7 +679,7 @@ void criticalPairPrev (
 
 
 void criticalPairCurr ( 
-  Lpoly* gCurr, const kStrategy strat, const F5Rules& f5Rules, 
+  Lpoly* gCurrNew, Lpoly* gCurr, const kStrategy strat, const F5Rules& f5Rules, 
   const RewRules& rewRules, CpairDegBound** cpBounds, int numVariables, 
   int* shift, unsigned long* negBitmaskShifted, int* offsets
                       )
@@ -687,8 +692,8 @@ void criticalPairCurr (
   bool pairNeeded       = FALSE;
   int* expVecNewElement = (int*) omAlloc((currRing->N+1)*sizeof(int));
   int* expVecTemp       = (int*) omAlloc((currRing->N+1)*sizeof(int));
-  pGetExpV(gCurr->p, expVecNewElement); 
-  Lpoly* gCurrIter  = gCurr->next;
+  pGetExpV(gCurrNew->p, expVecNewElement); 
+  Lpoly* gCurrIter  = gCurr;
   // this must be changed for parallelizing the generation process of critical
   // pairs
   Cpair* cpTemp;
@@ -699,8 +704,8 @@ void criticalPairCurr (
   cpTemp->mLabel1   = NULL;
   cpTemp->smLabel1  = 0;
   cpTemp->mult1     = NULL;
-  cpTemp->p1        = gCurr->p;
-  cpTemp->rewRule1  = gCurr->rewRule;
+  cpTemp->p1        = gCurrNew->p;
+  cpTemp->rewRule1  = gCurrNew->rewRule;
   cpTemp->mLabel2   = NULL;
   cpTemp->smLabel2  = 0;
   cpTemp->mult2     = NULL;
@@ -717,10 +722,10 @@ void criticalPairCurr (
   // Note: As we do not need the smaller exponent vector we do NOT store both in
   // the critical pair structure, but only the greater one. Thus the following
   // memory is freed before the end of criticalPairCurr()
-  unsigned long* checkExp = (unsigned long*) omAlloc0(NUMVARS*sizeof(unsigned long));
+  poly checkExp = pOne();
   int temp;
   long critPairDeg; // degree of the label of the pair in the following
-  while(gCurrIter->next)
+  while(gCurrIter->next != gCurrNew)
   {
     cpTemp->p2        = gCurrIter->p;
 #if F5EDEBUG1
@@ -776,8 +781,7 @@ void criticalPairCurr (
         // completing the construction of the new critical pair and inserting it
         // to the list of critical pairs 
         // now we really need the memory for the exp label
-        cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                                  sizeof(unsigned long));
+        cpTemp->mLabelExp   = pOne();
         getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                             numVariables, shift, negBitmaskShifted, offsets
                           );
@@ -787,14 +791,14 @@ void criticalPairCurr (
         // compare which label is greater and possibly switch the 1st and 2nd 
         // generator in cpTemp
         // exchange generator 1 and 2 in cpTemp
-        if( expCmp(cpTemp->mLabelExp, checkExp) == -1 )
+        if( pLmCmp(cpTemp->mLabelExp, checkExp) == -1 )
         {
           poly pTempHolder                = cpTemp->p1;
           int* mLabelTempHolder           = cpTemp->mLabel1;
           int* multTempHolder             = cpTemp->mult1;
           unsigned long smLabelTempHolder = cpTemp->smLabel1;  
           unsigned long rewRuleTempHolder = cpTemp->rewRule1;
-          unsigned long* expTempHolder    = cpTemp->mLabelExp;
+          poly expTempHolder              = cpTemp->mLabelExp;
 
           cpTemp->p1                      = cpTemp->p2;
           cpTemp->p2                      = pTempHolder;
@@ -819,8 +823,8 @@ void criticalPairCurr (
         cpTemp->mLabel1   = NULL;
         cpTemp->smLabel1  = 0;
         cpTemp->mult1     = NULL;
-        cpTemp->p1        = gCurr->p;
-        cpTemp->rewRule1  = gCurr->rewRule;
+        cpTemp->p1        = gCurrNew->p;
+        cpTemp->rewRule1  = gCurrNew->rewRule;
         cpTemp->mLabel2   = NULL;
         cpTemp->smLabel2  = 0;
         cpTemp->mult2     = NULL;
@@ -887,8 +891,9 @@ void criticalPairCurr (
       // completing the construction of the new critical pair and inserting it
       // to the list of critical pairs 
       // now we really need the memory for the exp label
-      cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
-                                sizeof(unsigned long));
+      //cpTemp->mLabelExp = (unsigned long*) omAlloc0(NUMVARS*
+      //                          sizeof(unsigned long));
+      cpTemp->mLabelExp = pOne();
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets
                         );
@@ -898,14 +903,14 @@ void criticalPairCurr (
       // compare which label is greater and possibly switch the 1st and 2nd 
       // generator in cpTemp
       // exchange generator 1 and 2 in cpTemp
-      if( expCmp(cpTemp->mLabelExp, checkExp) == -1 )
+      if( pLmCmp(cpTemp->mLabelExp, checkExp) == -1 )
       {
         poly pTempHolder                = cpTemp->p1;
         int* mLabelTempHolder           = cpTemp->mLabel1;
         int* multTempHolder             = cpTemp->mult1;
         unsigned long smLabelTempHolder = cpTemp->smLabel1;  
         unsigned long rewRuleTempHolder = cpTemp->rewRule1;
-        unsigned long* expTempHolder    = cpTemp->mLabelExp;
+        poly expTempHolder              = cpTemp->mLabelExp;
 
         cpTemp->p1                      = cpTemp->p2;
         cpTemp->p2                      = pTempHolder;
@@ -945,6 +950,10 @@ void criticalPairCurr (
 
 void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
 {
+  // pointer for deleting critical pairs of the same signature:
+  // ggv says: one pair per signature!
+  // NOTE that this is not possible in F5 due to the Rewritten Criterion!
+  Cpair* tempForDel       = NULL;
 #if F5EDEBUG1
   Print("INSERTCRITPAIR-BEGINNING deg bound %p\n",*bound);
 #endif
@@ -952,6 +961,8 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
   Print("ADDRESS NEW CRITPAIR: %p -- degree %ld\n",cp, deg);
   pWrite(cp->p1);
   pWrite(cp->p2);
+  Print("LABEL NEW PAIR: ");
+  pWrite( cp->mLabelExp );
   int j = currRing->N;
     while( j )
     {
@@ -979,49 +990,51 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
   }
   else
   {
-    if((*bound)->deg < deg) 
+    tempForDel    = (*bound)->cp;
+// first element in list has higher label
+    if( pLmCmp(cp->mLabelExp, tempForDel->mLabelExp) == -1 )
     {
-      CpairDegBound* temp = *bound;
-      while((temp)->next && ((temp)->next->deg < deg))
-      {
-        temp = (temp)->next;
-      }
-      if( (temp)->next && (temp)->next->deg == deg )
-      {
-        cp->next          = (temp)->next->cp;
-        (temp)->next->cp  = cp;
-        (temp)->next->length++;
-      }
-      else
-      {
-        CpairDegBound* boundNew = (CpairDegBound*) omAlloc(sizeof(CpairDegBound));
-        boundNew->next          = (temp)->next;
-        boundNew->deg           = deg;
-        boundNew->cp            = cp;
-        boundNew->length        = 1;
-        (temp)->next           = boundNew;
-      }
+      cp->next      = (*bound)->cp;
+      (*bound)->cp  = cp;
+      (*bound)->length++;
     }
     else
     {
-      if((*bound)->deg == deg) 
+      // first element in last has equal label
+      if( pLmCmp(cp->mLabelExp, tempForDel->mLabelExp) == 0 )
       {
-        cp->next      = (*bound)->cp;
-        (*bound)->cp  = cp;
-        (*bound)->length++;
+            cp->next          = tempForDel->next;
+            tempForDel->next  = cp;
       }
       else
+      {
+        // first element in list has smaller label
+        while( NULL!=tempForDel->next && pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == 1 )
         {
-        CpairDegBound* boundNew = (CpairDegBound*) omAlloc(sizeof(CpairDegBound));
-        boundNew->next          = *bound;
-        boundNew->deg           = deg;
-        boundNew->cp            = cp;
-        boundNew->length        = 1;
-        *bound                  = boundNew;
+          tempForDel  = tempForDel->next;
+        }
+        if( !tempForDel->next )
+        {
+          cp->next          = NULL;
+          tempForDel->next  = cp;
+        }
+        else
+        {
+          if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == 0 )
+          {
+            cp->next          = tempForDel->next;
+            tempForDel->next  = cp;
+          }
+          if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == -1 )
+          {
+            cp->next          = tempForDel->next;
+            tempForDel->next  = cp;
+          }
+        } 
       }
     }
   }
-#if F5EDEBUG3
+#if F5EDEBUG2
   CpairDegBound* test = *bound;
   Print("-------------------------------------\n");
   while( test )
@@ -1201,6 +1214,8 @@ void computeSpols (
   BOOLEAN newStep             = TRUE; 
   Cpair* temp                 = NULL;
   Cpair* tempDel              = NULL;
+  Lpoly** gCurrLast           = (Lpoly**) omAlloc( sizeof(Lpoly*) );
+  *gCurrLast                  = *gCurr;
   // rewRulesCurr stores the index of the first rule of the current degree step
   // Note that if there are higher label reductions taking place in currReduction() 
   // one has access to the last actual rewrite rule via rewRules->size.
@@ -1215,16 +1230,15 @@ void computeSpols (
   int* multTemp               = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
   int* multLabelTemp          = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
   poly sp;
-  while( cp )
-  {
 #if F5EDEBUG2
     Print("START OF NEW DEG ROUND: CP %ld | %p -- %p: # %d\n",cp->deg,cp->cp,cp,cp->length);
     Print("NEW CPDEG? %p\n",cp->next);
 #endif
-    temp  = sort(cp->cp, cp->length); 
-    CpairDegBound* cpDel  = cp;
-    cp                    = cp->next;
-    omFree( cpDel );
+    //temp  = sort(cp->cp, cp->length); 
+    temp                  = cp->cp;
+    //CpairDegBound* cpDel  = cp;
+    //cp                    = cp->next;
+    //omFree( cpDel );
     // save current position of rewrite rules in array to synchronize them at the end of
     // currReduction() with the corresponding labeled polynomial
     rewRulesCurr  = (*rewRules)->size;
@@ -1349,6 +1363,9 @@ void computeSpols (
         pWrite( pTestRule );
         pDelete( &pTestRule );
 #endif
+        // save current position of rewrite rules in array to synchronize them at the end of
+        // currReduction() with the corresponding labeled polynomial
+        rewRulesCurr  = (*rewRules)->size-1;
 
         // check if the critical pair is a trivial one, i.e. a pair generated 
         // during a higher label reduction 
@@ -1373,23 +1390,15 @@ void computeSpols (
 #endif
         if( sp )
         {
+          // all rules and s-polynomials of this degree step are computed and 
+          // prepared for further reductions in currReduction()
+          currReduction ( 
+              strat, sp, temp->mLabelExp, rewRules, rewRulesCurr, 
+              redGB, &cp, *gCurr, gCurrLast, f5Rules, multTemp, multLabelTemp, 
+              numVariables, shift, negBitmaskShifted, offsets
+              );
           // store the s-polynomial in the linked list for further
           // reductions in currReduction()
-          pNorm( sp ); 
-          Spoly* newSpoly     = (Spoly*) omAlloc( sizeof(struct Spoly) );
-          newSpoly->p         = sp;
-          newSpoly->labelExp  = temp->mLabelExp;
-          newSpoly->next      = NULL;
-          if( NULL == spolysFirst )
-          {
-            spolysFirst  = newSpoly;
-            spolysLast   = newSpoly;
-          }
-          else
-          {
-            spolysLast->next  = newSpoly;
-            spolysLast        = newSpoly;
-          }
         }
         else // sp == 0
         {
@@ -1404,7 +1413,8 @@ void computeSpols (
       }
       // free memory
       tempDel  = temp;
-      temp     = temp->next;
+      cp->cp    = (cp->cp)->next;
+      temp     = cp->cp;
       // note that this has no influence on the address of temp->label!
       // its memory was allocated at a different place and we still need these:
       // those are just the rewrite rules for the newly computed elements!
@@ -1420,13 +1430,6 @@ void computeSpols (
       }
       omFree( tempDel );
     }
-    // all rules and s-polynomials of this degree step are computed and 
-    // prepared for further reductions in currReduction()
-    currReduction ( 
-                    strat, spolysFirst, spolysLast, rewRules, rewRulesCurr, 
-                    redGB, &cp, gCurr, f5Rules, multTemp, multLabelTemp, 
-                    numVariables, shift, negBitmaskShifted, offsets
-                  );
     // elements are added to linked list gCurr => start next degree step
     spolysFirst = spolysLast  = NULL;
     newStep     = TRUE; 
@@ -1440,16 +1443,16 @@ void computeSpols (
     }
     Print("-------\n");
 #endif
-  }
+  //}
   // get back the new list of elements in gCurr, i.e. the list of elements
   // computed in this iteration step
 #if F5EDEBUG1
   Print("ITERATION STEP DONE: \n");
-  Lpoly* gCurrTemp = *gCurr;
-  while( gCurrTemp )
+  Lpoly* gCurrTemp2 = *gCurr;
+  while( gCurrTemp2 )
   {
-    pWrite( pHead(gCurrTemp->p) );
-    gCurrTemp = gCurrTemp->next;
+    pWrite( pHead(gCurrTemp2->p) );
+    gCurrTemp2 = gCurrTemp2->next;
   }
   Print("COMPUTESPOLS-END\n");
     Print("HERE1 -- %p -- %p\n", (*rewRules), (*rewRules)->label[0]);
@@ -1501,9 +1504,10 @@ inline void kBucketCopyToPoly(kBucket_pt bucket, poly *p, int *length)
 
 
 void currReduction  ( 
-                      kStrategy strat, Spoly* spolysFirst, Spoly* spolysLast,
+                      kStrategy strat, poly sp, poly spLabelExp,
                       RewRules** rewRulesP, unsigned long rewRulesCurr,
-                      ideal redGB, CpairDegBound** cp, Lpoly** gCurrFirst, 
+                      ideal redGB, CpairDegBound** cp, Lpoly* gCurrFirst, 
+                      Lpoly** gCurrLast,
                       const F5Rules* f5Rules, int* multTemp, 
                       int* multLabelTemp, int numVariables, int* shift, 
                       unsigned long* negBitmaskShifted, int* offsets
@@ -1511,7 +1515,7 @@ void currReduction  (
 
 {
 #if F5EDEBUG1
-    Print("CURRREDUCTION-BEGINNING: GCURR %p -- %p\n",*gCurrFirst, (*gCurrFirst)->next);
+    Print("CURRREDUCTION-BEGINNING: GCURR %p -- %p\n",gCurrFirst, (gCurrFirst)->next);
 #endif
   RewRules* rewRules = *rewRulesP;
   BOOLEAN isMult    = FALSE;
@@ -1523,34 +1527,25 @@ void currReduction  (
   unsigned long multLabelShortExp;
   static int tempLength           = 0;
   unsigned short int canonicalize = 0; 
-  Spoly* spTemp                   = spolysFirst;
   Lpoly* temp;
   unsigned long bucketExp;
 #if F5EDEBUG2
   Print("LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
-  unsigned long rewRulesTemp  = rewRulesCurr;
-  while( spTemp )
-  {
-    Print("%p -- ",spTemp->p);
-    pWrite( pHead(spTemp->p) );
-    spTemp = spTemp->next;
-    Print("RULE #%d of %ld -- ",rewRulesTemp, rewRules->size);
+    Print("%p -- ",sp);
+    pWrite( pHead(sp) );
+    Print("RULE #%d of %ld -- ",rewRulesCurr, rewRules->size);
     for( int _l=0; _l<currRing->N+1; _l++ )
     {
-      Print("%d  ",rewRules->label[rewRulesTemp][_l]);
+      Print("%d  ",rewRules->label[rewRulesCurr][_l]);
     }
     Print("\n-------------------------------------\n");
-    rewRulesTemp++;
-  }
   Print("---------------\n");
-  spTemp = spolysFirst;
 #endif
   // iterate over all elements in the s-polynomial list
-  while( NULL != spTemp )
-  { 
+  startComplete:
 #if F5EDEBUG1
-    Print("SPTEMP TO BE REDUCED: %p : %p -- ", spTemp, spTemp->p );
-    pWrite( pHead(spTemp->p) );
+    Print("SPTEMP TO BE REDUCED: %p : %p -- ", sp, sp );
+    pWrite( pHead(sp) );
     Print("RULE #%d of %ld -- ",rewRulesCurr, rewRules->size);
     for( int _l=0; _l<currRing->N+1; _l++ )
     {
@@ -1559,8 +1554,8 @@ void currReduction  (
     Print("\n-------------------------------------\n");
 #endif
     kBucket* bucket                 = kBucketCreate();
-    kBucketInit( bucket, spTemp->p, pLength(spTemp->p) );
-    temp  = *gCurrFirst;
+    kBucketInit( bucket, sp, pLength(sp) );
+    temp  = gCurrFirst;
     //----------------------------------------
     // reduction of the leading monomial of sp
     //----------------------------------------
@@ -1580,8 +1575,8 @@ void currReduction  (
       pWrite(pHead(temp->p));
 #endif
       if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
-                              bucketExp, &multTemp, &isMult
-                            ) 
+            bucketExp, &multTemp, &isMult
+            ) 
         )
       {
         redundant = TRUE;
@@ -1607,8 +1602,7 @@ void currReduction  (
           { 
             static unsigned long* multTempExp = (unsigned long*) 
                             omAlloc0( NUMVARS*sizeof(unsigned long) );
-            unsigned long* multLabelTempExp = (unsigned long*) 
-                            omAlloc0( NUMVARS*sizeof(unsigned long) );
+            poly multLabelTempExp = pOne(); 
             getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
                                 shift, negBitmaskShifted, offsets
                               );   
@@ -1616,8 +1610,9 @@ void currReduction  (
             // a new Lpoly with the higher label and store it in a different 
             // linked list for later reductions
 
-            if( expCmp( multLabelTempExp, spTemp->labelExp ) == 1 )
+            if( pLmCmp( multLabelTempExp, spLabelExp ) == 1 )
             {            
+/*
 #if F5EDEBUG1
               Print("HIGHER LABEL REDUCTION \n");
 #endif
@@ -1629,7 +1624,7 @@ void currReduction  (
                             bucket->buckets_length[cano] 
                           );
               static poly multiplier = pOne();
-              getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+              getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
                                   negBitmaskShifted, offsets
                                 );
               // throw away the leading monomials of reducer and bucket
@@ -1662,11 +1657,11 @@ void currReduction  (
               Print("ADDRESS: %p\n", rewRules->label[0]);
 #endif
               // get the corresponding offsets for the insertion of the element in the two lists:
-              Spoly* tempSpoly            = spTemp;
+              Spoly* tempSpoly            = sp;
               if( rewRules->size<rewRulesSize )
               {
                 // add element at the end 
-                if( expCmp( multLabelTempExp, spolysLast->labelExp ) == 1 )
+                if( pLmCmp( multLabelTempExp, spolysLast->labelExp ) == 1 )
                 {
                   // copy data from critical pair rule to rewRule
                   register unsigned long _length  = currRing->N+1;
@@ -1687,7 +1682,7 @@ void currReduction  (
                 else
                 { 
                   unsigned long insertOffset  = 0;
-                  while( tempSpoly->next && expCmp(multLabelTempExp, tempSpoly->next->labelExp) == 1 )
+                  while( tempSpoly->next && pLmCmp(multLabelTempExp, tempSpoly->next->labelExp) == 1 )
                   {
                     insertOffset++;
                     tempSpoly = tempSpoly->next;
@@ -1734,7 +1729,7 @@ void currReduction  (
                 newRules->size                  = rewRules->size;
 
                 // add element at the end 
-                if( expCmp( multLabelTempExp, spolysLast->labelExp ) == 1 )
+                if( pLmCmp( multLabelTempExp, spolysLast->labelExp ) == 1 )
                 {
                   register unsigned long _length  = currRing->N+1;
                   register unsigned long _ctr      = 0;
@@ -1781,7 +1776,7 @@ void currReduction  (
                   register unsigned long _length  = currRing->N+1;
                   register unsigned long _ctr     = 0;
                   unsigned long insertOffset      = 0;
-                  while( tempSpoly->next && expCmp(multLabelTempExp, tempSpoly->next->labelExp) == 1 )
+                  while( tempSpoly->next && pLmCmp(multLabelTempExp, tempSpoly->next->labelExp) == 1 )
                   {
                     insertOffset++;
                     tempSpoly = tempSpoly->next;
@@ -1892,7 +1887,7 @@ void currReduction  (
               pWrite( pHead(newPoly) );
               Print("---------------\n");
 #endif
-              
+            */  
               // get back on track for the old poly which has to be checked for 
               // reductions by the following element in gCurr
               isMult    = FALSE;
@@ -1912,7 +1907,7 @@ void currReduction  (
             // bucket reduction starts!
             static poly multiplier = pOne();
             static poly multReducer;
-            getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
+            getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
                                 negBitmaskShifted, offsets
                               );
             // throw away the leading monomials of reducer and bucket
@@ -1953,7 +1948,7 @@ void currReduction  (
             redundant = FALSE;
             if( kBucketGetLm( bucket ) )
             {
-              temp  = *gCurrFirst;
+              temp  = gCurrFirst;
             }
             else
             {
@@ -1991,7 +1986,7 @@ void currReduction  (
           redundant = FALSE;
           if( kBucketGetLm( bucket ) )
           {
-            temp  = *gCurrFirst;
+            temp  = gCurrFirst;
           }
           else
           {
@@ -2003,20 +1998,20 @@ void currReduction  (
       temp  = temp->next;
     }
     // we know that sp = 0 at this point!
-    spTemp->p  = kBucketExtractLm( bucket );
+    sp  = kBucketExtractLm( bucket );
 #if F5EDEBUG1
     Print("END OF TOP REDUCTION:  ");
     pWrite(kBucketGetLm(bucket));
 #endif
 #if F5EDEBUG3
-    pTest( spTemp->p );
+    pTest( sp );
 #endif
 // tail reduction
 #if F5ETAILREDUCTION
     while ( kBucketGetLm( bucket ) )
     {
       // search for reducers in the list gCurr
-      temp = *gCurrFirst;
+      temp = gCurrFirst;
       while ( temp )
       {
         startagainTail:
@@ -2024,12 +2019,12 @@ void currReduction  (
 #if F5EDEBUG3
               Print("HERE TAILREDUCTION AGAIN %p -- %p\n",temp, temp->next);
               Print("SPOLY RIGHT NOW: ");
-              pWrite( spTemp->p );
+              pWrite( sp );
               Print("POSSIBLE REDUCER: ");
               pWrite( temp->p );
               Print("BUCKET LM: ");
               pWrite( kBucketGetLm(bucket) );
-              pTest( spTemp->p );
+              pTest( sp );
 #endif
         if( isDivisibleGetMult( 
                                 temp->p, temp->sExp, kBucketGetLm( bucket ), 
@@ -2054,10 +2049,8 @@ void currReduction  (
                 !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
               )
             {  
-              static unsigned long* multTempExp = (unsigned long*) 
-                              omAlloc0( NUMVARS*sizeof(unsigned long) );
-              static unsigned long* multLabelTempExp = (unsigned long*) 
-                              omAlloc0( NUMVARS*sizeof(unsigned long) );
+              poly multTempExp = pOne(); 
+              poly multLabelTempExp = pOne(); 
             
               getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
                                   shift, negBitmaskShifted, offsets
@@ -2065,7 +2058,7 @@ void currReduction  (
 
               // if a higher label reduction should be done we do NOT reduce at all
               // we want to be fast in the tail reduction part
-              if( expCmp( multLabelTempExp, spTemp->labelExp ) == 1 )
+              if( pLmCmp( multLabelTempExp, spLabelExp ) == 1 )
               {            
                 isMult    = FALSE;
                 redundant = TRUE;
@@ -2103,7 +2096,7 @@ void currReduction  (
               isMult  = FALSE;
               if( kBucketGetLm( bucket ) )
               {
-                temp  = *gCurrFirst;
+                temp  = gCurrFirst;
               }
               else
               {
@@ -2144,18 +2137,18 @@ void currReduction  (
         temp  = temp->next;
       }
       // here we know that 
-      spTemp->p =  p_Merge_q( spTemp->p, kBucketExtractLm(bucket), currRing );
+      sp =  p_Merge_q( sp, kBucketExtractLm(bucket), currRing );
 #if F5EDEBUG3
-      pTest(spTemp->p);
+      pTest(sp);
       Print("MERGED NEW TAIL: ");
-      pWrite( spTemp->p );
+      pWrite( sp );
 #endif
     }
  // no tail reduction
 #else
     while( kBucketGetLm(bucket) )
     {
-      spTemp->p = p_Merge_q( spTemp->p, kBucketExtractLm(bucket), currRing );  
+      sp = p_Merge_q( sp, kBucketExtractLm(bucket), currRing );  
     }
 #endif // Tail reduction yes/no   
     
@@ -2163,56 +2156,50 @@ void currReduction  (
     // otherwise sp is reduced to zero and we do not need to add it to gCurr
     // Note that even in this case the corresponding rule is already added to
     // rewRules list!
-    if( spTemp->p )
+    if( sp )
     {
       // we have not reduced the tail w.r.t. redGB as in this case it is not really necessary to have
       // the "right" leading monomial
       //  => now we have to reduce w.r.t. redGB again!
-      spTemp->p = reduceByRedGBPoly( spTemp->p, strat );
-      pNorm( spTemp->p ); 
+      sp = reduceByRedGBPoly( sp, strat );
+      pNorm( sp ); 
       // add sp together with rewRulesLast to gCurr!!!
       Lpoly* newElement     = (Lpoly*) omAlloc( sizeof(Lpoly) );
-      newElement->next      = *gCurrFirst;
-      newElement->p         = spTemp->p; 
-      newElement->sExp      = pGetShortExpVector(spTemp->p); 
+      newElement->next      = NULL;
+      newElement->p         = sp; 
+      newElement->sExp      = pGetShortExpVector(sp); 
       newElement->rewRule   = rewRulesCurr; 
       newElement->redundant = redundant;
       // update pointer to last element in gCurr list
-      *gCurrFirst           = newElement;
+          (*gCurrLast)->next    = newElement;
+          *gCurrLast            = newElement;
 #if F5EDEBUG0
       Print("ELEMENT ADDED TO GCURR: ");
-      pWrite( pHead((*gCurrFirst)->p) );
+      pWrite( pHead((*gCurrLast)->p) );
       poly pSig = pOne(); 
       for( int lale = 1; lale < (currRing->N+1); lale++ )
       {
         pSetExp( pSig, lale, rewRules->label[rewRulesCurr][lale] );
       }
       pWrite( pSig );
-      pTest( (*gCurrFirst)->p );
+      pTest( (*gCurrLast)->p );
       pDelete( &pSig );
 #endif
       criticalPairPrev( 
-                        *gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
+                        *gCurrLast, gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
                         shift, negBitmaskShifted, offsets 
                       );
       criticalPairCurr( 
-                        *gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
+                        *gCurrLast, gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 
                         shift, negBitmaskShifted, offsets 
                       );
     }
     else // spTemp->p == 0
     {
-      pDelete( &spTemp->p );
+      pDelete( &sp );
     }
-    rewRulesCurr  = rewRulesCurr++;
-    Spoly* spDel  = spTemp;
-    spTemp        = spTemp->next;
-    // free memory of spTemp stuff
-    omFree( spDel->labelExp );
-    omFree( spDel );
     // free memory of bucket
     kBucketDeleteAndDestroy( &bucket );
-  }
   // free memory
 #if F5EDEBUG1
     Print("CURRREDUCTION-END \n");
@@ -2255,7 +2242,7 @@ Cpair* merge(Cpair* cp, Cpair* cp2)
 {
   // initialize new, sorted list of critical pairs
   Cpair* cpNew = NULL;
-  if( expCmp(cp->mLabelExp, cp2->mLabelExp) == -1 )
+  if( pLmCmp(cp->mLabelExp, cp2->mLabelExp) == -1 )
   {
     cpNew = cp;
     cp    = cp->next;
@@ -2268,7 +2255,7 @@ Cpair* merge(Cpair* cp, Cpair* cp2)
   Cpair* temp = cpNew;
   while(cp!=NULL && cp2!=NULL)
   {
-    if( expCmp(cp->mLabelExp, cp2->mLabelExp) == -1 )
+    if( pLmCmp(cp->mLabelExp, cp2->mLabelExp) == -1 )
     {
       temp->next  = cp;
       temp        = cp;
@@ -2302,13 +2289,12 @@ inline poly multInit( const int* exp, int numVariables, int* shift,
   poly np;
   omTypeAllocBin( poly, np, currRing->PolyBin );
   p_SetRingOfLm( np, currRing );
-  unsigned long* expTemp  =   (unsigned long*) omAlloc0(NUMVARS*
-                              sizeof(unsigned long));
+  poly expTemp  =  pOne();
   getExpFromIntArray( exp, expTemp, numVariables, shift, negBitmaskShifted, 
                       offsets 
                     );
   static number n  = nInit(1);
-  p_MemCopy_LengthGeneral( np->exp, expTemp, NUMVARS );
+  p_MemCopy_LengthGeneral( np->exp, expTemp->exp, NUMVARS );
   pNext(np) = NULL;
   pSetCoeff0(np, n);
   p_Setm( np, currRing );
@@ -2327,18 +2313,18 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   Print("CREATESPOLY - BEGINNING %p\n", cp );
 #endif
   LObject Pair( currRing );
-  Pair.p1  = cp->p1;
-  Pair.p2  = cp->p2;
+  Pair.p1  = cp->p2;
+  Pair.p2  = cp->p1;
 #if F5EDEBUG2
   Print( "P1: %p\n", cp->p1 );
   pWrite(cp->p1);
   Print( "P2: &p\n", cp->p2 );
   pWrite(cp->p2);
 #endif
-  poly m1 = multInit( cp->mult1, numVariables, shift, 
+  poly m1 = multInit( cp->mult2, numVariables, shift, 
                       negBitmaskShifted, offsets 
                     );
-  poly m2 = multInit( cp->mult2, numVariables, shift, 
+  poly m2 = multInit( cp->mult1, numVariables, shift, 
                       negBitmaskShifted, offsets 
                     );
 #if F5EDEBUG2
@@ -2354,7 +2340,10 @@ poly createSpoly( Cpair* cp, int numVariables, int* shift, unsigned long* negBit
   poly p1 = Pair.p1;
   poly p2 = Pair.p2;
 
+  p2  = pp_Mult_mm( p2, m2, currRing );
+  return p2;
 
+  // #####################################################
   poly last;
   Pair.tailRing = tailRing;
 
@@ -2818,7 +2807,7 @@ unsigned long getShortExpVecFromArray(int* a, ring r)
 }
 
 
-inline void getExpFromIntArray( const int* exp, unsigned long* r, 
+inline void getExpFromIntArray( const int* exp, poly r, 
                                 int numVariables, int* shift, unsigned long* 
                                 negBitmaskShifted, int* offsets
                               )
@@ -2833,10 +2822,11 @@ inline void getExpFromIntArray( const int* exp, unsigned long* r,
     unsigned long ee      =   exp[i];
     ee                    =   ee << shiftL;
     register int offsetL  =   offsets[i];
-    r[offsetL]            &=  negBitmaskShifted[i];
-    r[offsetL]            |=  ee;
+    r->exp[offsetL]       &=  negBitmaskShifted[i];
+    r->exp[offsetL]       |=  ee;
   }
-  r[currRing->pCompIndex] = exp[0];
+  r->exp[currRing->pCompIndex] = exp[0];
+  pSetm( r );
 }
 
 
