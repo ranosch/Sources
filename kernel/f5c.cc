@@ -53,8 +53,8 @@
 #endif
 #define F5ETAILREDUCTION  0 
 #define F5EDEBUG0         1 
-#define F5EDEBUG1         0 
-#define F5EDEBUG2         0 
+#define F5EDEBUG1         1 
+#define F5EDEBUG2         1 
 #define F5EDEBUG3         0 
 #define setMaxIdeal       64
 #define NUMVARS           currRing->ExpL_Size
@@ -1068,15 +1068,16 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
     }
     else
     {
-      // first element in last has equal label
+      // first element in list has equal label
       if( pLmCmp(cp->mLabelExp, tempForDel->mLabelExp) == 0 )
       {
         // need to check which generating element was generated later
         if( cp->rewRule1 > tempForDel->rewRule1 )
         {
           Cpair* tempDel  = tempForDel;
-          cp->next =  tempForDel->next;
-          tempForDel  = cp;
+          cp->next        = tempForDel->next;
+          (*bound)->cp    = cp;
+          
           omFreeSize( tempDel->mLabel1, ((currRing->N)+1)*sizeof(int) );
           omFreeSize( tempDel->mult1, ((currRing->N)+1)*sizeof(int) );
           omFreeSize( tempDel->mult2, ((currRing->N)+1)*sizeof(int) );
@@ -1126,15 +1127,21 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
               // Note that this situation can only happen when a higher label reduction
               // has led to cp and the 2nd generator becomes the new 1st generator!!!
               omFreeSize( cp->mLabel1, ((currRing->N)+1)*sizeof(int) );
+    Print("HERE1\n");
               omFreeSize( cp->mult1, ((currRing->N)+1)*sizeof(int) );
+    Print("HERE2\n");
               omFreeSize( cp->mult2, ((currRing->N)+1)*sizeof(int) );
-              //omFreeSize( cp, sizeof(Cpair) );
+    Print("HERE3\n");
+              omFreeSize( cp, sizeof(Cpair) );
             }
           }
-          if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == -1 )
+          else
           {
-            cp->next          = tempForDel->next;
-            tempForDel->next  = cp;
+            if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == -1 )
+            {
+              cp->next          = tempForDel->next;
+              tempForDel->next  = cp;
+            }
           }
         } 
       }
@@ -2015,7 +2022,7 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
 
               // get back on track for the old poly which has to be checked for 
               // reductions by the following element in gCurr
-              isMult    = FALSE;
+            isMult    = FALSE;
             redundant = TRUE;
             temp      = temp->next;
             if( temp )
@@ -3091,6 +3098,32 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
 
 poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
 {
+  LObject h;
+  h.p = pCopy(q);
+  redHomog( &h, strat );
+  if ((h.p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
+  {
+    if (TEST_OPT_PROT) { PrintS("t"); mflush(); }
+    #ifdef HAVE_RINGS
+    if (rField_is_Ring())
+    {
+      h.p = redtailBba_Z(h.p,strat->sl,strat);
+    }
+    else
+    #endif
+    {
+      BITSET save=test;
+      test &= ~Sy_bit(OPT_INTSTRATEGY);
+      h.p = redtailBba(h.p,strat->sl,strat,(lazyReduce & KSTD_NF_NONORM)==0);
+      test=save;
+    }
+  }
+  Print("H.P : ");
+  pWrite( h.p );
+  return h.p;
+  //----------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  //----------------------------------------------------------------------
   poly  p;
   int   i;
   int   j;
