@@ -52,7 +52,7 @@
 #define PDEBUG 0 
 #endif
 #define F5ETAILREDUCTION  0 
-#define F5EDEBUG0         1 
+#define F5EDEBUG0         0 
 #define F5EDEBUG1         0 
 #define F5EDEBUG2         0 
 #define F5EDEBUG3         0 
@@ -1129,11 +1129,8 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
               // Note that this situation can only happen when a higher label reduction
               // has led to cp and the 2nd generator becomes the new 1st generator!!!
               omFreeSize( cp->mLabel1, ((currRing->N)+1)*sizeof(int) );
-    Print("HERE1\n");
               omFreeSize( cp->mult1, ((currRing->N)+1)*sizeof(int) );
-    Print("HERE2\n");
               omFreeSize( cp->mult2, ((currRing->N)+1)*sizeof(int) );
-    Print("HERE3\n");
               omFreeSize( cp, sizeof(Cpair) );
             }
           }
@@ -3138,7 +3135,11 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
   kTest(strat);
   if (TEST_OPT_PROT) { PrintS("r"); mflush(); }
   int max_ind;
+  return q;
 
+  //---------------------------------------------------------------
+  //---------------------------------------------------------------
+  //---------------------------------------------------------------
   p = redNF(pCopy(q),max_ind,lazyReduce & KSTD_NF_NONORM,strat);
   if ((p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
   {
@@ -3186,8 +3187,8 @@ poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
       test=save;
     }
   }
-  Print("H.P : ");
-  pWrite( h.p );
+  //Print("H.P : ");
+  //pWrite( h.p );
   return h.p;
   //----------------------------------------------------------------------
   //----------------------------------------------------------------------
