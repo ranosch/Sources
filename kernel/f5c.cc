@@ -1574,6 +1574,72 @@ void currReduction  (
       pTest( temp->p );
       pWrite(pHead(temp->p));
 #endif
+      // loop over elements of lower index, i.e. elements in strat
+      for( int ctr=0; ctr<IDELEMS(redGB); ctr++ )
+      {
+        if( isDivisibleGetMult( redGB->m[ctr], strat->sevS[ctr], kBucketGetLm( bucket ), 
+              bucketExp, &multTemp, &isMult
+              ) 
+          )
+        {
+          //multCoeff1          = pGetCoeff( kBucketGetLm(bucket) );
+          //multCoeff2          = pGetCoeff( redGB->m[ctr] );
+          //multCoeff2          = n_Div( multCoeff1, multCoeff2, currRing );
+
+          static poly multiplier = pOne();
+          static poly multReducer;
+          getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
+              negBitmaskShifted, offsets
+              );
+          // throw away the leading monomials of reducer and bucket
+          //p_SetCoeff( multiplier, multCoeff2, currRing );
+          pSetm( multiplier );
+          p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+          kBucketExtractLm(bucket);
+          // build the multiplied reducer (note that we do not need the leading
+          // term at all!
+#if F5EDEBUG2
+          Print("MULT: %p\n", multiplier );
+          pWrite( multiplier );
+#endif
+          multReducer = pp_Mult_mm( redGB->m[ctr]->next, multiplier, currRing );
+#if F5EDEBUG2
+          Print("MULTRED BEFORE: \n" );
+          pWrite( pHead(multReducer) );
+#endif
+#if F5EDEBUG2
+          Print("MULTRED AFTER: \n" );
+          pWrite( pHead(multReducer) );
+#endif
+          //  length must be computed after the reduction with 
+          //  redGB!
+          tempLength = pLength( multReducer );
+          // reduce polynomial
+          kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+#if F5EDEBUG2
+          Print("AFTER REDUCTION STEP: ");
+          pWrite( kBucketGetLm(bucket) );
+#endif
+          if( canonicalize++ % 40 )
+          {
+            kBucketCanonicalize( bucket );
+            canonicalize = 0;
+          }
+          //superTop  = FALSE;
+          isMult    = FALSE;
+          redundant = FALSE;
+          if( kBucketGetLm( bucket ) )
+          {
+            temp  = gCurrFirst;
+          }
+          else
+          {
+            break;
+          }
+          goto startagainTop;
+
+        }
+      }
       if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
             bucketExp, &multTemp, &isMult
             ) 
@@ -2656,7 +2722,12 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
   kTest(strat);
   if (TEST_OPT_PROT) { PrintS("r"); mflush(); }
   int max_ind;
+  return q;
 
+  //------------------------------------------------------------------  
+  //------------------------------------------------------------------  
+  //------------------------------------------------------------------  
+  //------------------------------------------------------------------  
   p = redNF(pCopy(q),max_ind,lazyReduce & KSTD_NF_NONORM,strat);
   if ((p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
   {
