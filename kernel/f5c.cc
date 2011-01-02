@@ -53,8 +53,8 @@
 #endif
 #define F5ETAILREDUCTION  0 
 #define F5EDEBUG0         1 
-#define F5EDEBUG1         1 
-#define F5EDEBUG2         1 
+#define F5EDEBUG1         0 
+#define F5EDEBUG2         0 
 #define F5EDEBUG3         0 
 #define setMaxIdeal       64
 #define NUMVARS           currRing->ExpL_Size
@@ -169,6 +169,8 @@ ideal f5cIter (
   Print("F5CITER-BEGIN\n");
   Print("NEXT ITERATION ELEMENT: ");
   pWrite( p );
+  Print("REDGB ELEMENT: ");
+  pWrite( redGB->m[0] );
 #endif
 #if F5EDEBUG3
   Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
@@ -1698,6 +1700,72 @@ void currReduction  (
       pTest( temp->p );
       pWrite(pHead(temp->p));
 #endif
+      // loop over elements of lower index, i.e. elements in strat
+      for( int ctr=0; ctr<IDELEMS(redGB); ctr++ )
+      {
+        if( isDivisibleGetMult( redGB->m[ctr], f5Rules->slabel[ctr], kBucketGetLm( bucket ), 
+              bucketExp, &multTemp, &isMult
+              ) 
+          )
+        {
+          multCoeff1          = pGetCoeff( kBucketGetLm(bucket) );
+          multCoeff2          = pGetCoeff( redGB->m[ctr] );
+          multCoeff2          = n_Div( multCoeff1, multCoeff2, currRing );
+
+          static poly multiplier = pOne();
+          static poly multReducer;
+          getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
+              negBitmaskShifted, offsets
+              );
+          // throw away the leading monomials of reducer and bucket
+          p_SetCoeff( multiplier, multCoeff2, currRing );
+          pSetm( multiplier );
+          //p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+          kBucketExtractLm(bucket);
+          // build the multiplied reducer (note that we do not need the leading
+          // term at all!
+#if F5EDEBUG2
+          Print("MULT: %p\n", multiplier );
+          pWrite( multiplier );
+#endif
+          multReducer = pp_Mult_mm( redGB->m[ctr]->next, multiplier, currRing );
+#if F5EDEBUG2
+          Print("MULTRED BEFORE: \n" );
+          pWrite( pHead(multReducer) );
+#endif
+#if F5EDEBUG2
+          Print("MULTRED AFTER: \n" );
+          pWrite( pHead(multReducer) );
+#endif
+          //  length must be computed after the reduction with 
+          //  redGB!
+          tempLength = pLength( multReducer );
+          // reduce polynomial
+          kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+#if F5EDEBUG2
+          Print("AFTER REDUCTION STEP: ");
+          pWrite( kBucketGetLm(bucket) );
+#endif
+          if( canonicalize++ % 40 )
+          {
+            kBucketCanonicalize( bucket );
+            canonicalize = 0;
+          }
+          superTop  = FALSE;
+          isMult    = FALSE;
+          redundant = FALSE;
+          if( kBucketGetLm( bucket ) )
+          {
+            temp  = gCurrFirst;
+          }
+          else
+          {
+            break;
+          }
+          goto startagainTop;
+
+        }
+      }
       if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
             bucketExp, &multTemp, &isMult
             ) 
@@ -2107,7 +2175,7 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
                 Print("MULTRED BEFORE: \n" );
                 pWrite( pHead(multReducer) );
 #endif
-                multReducer = reduceByRedGBPoly( multReducer, strat );
+                //multReducer = reduceByRedGBPoly( multReducer, strat );
 #if F5EDEBUG2
                 Print("MULTRED AFTER: \n" );
                 pWrite( pHead(multReducer) );
@@ -2176,7 +2244,7 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
               Print("MULTRED BEFORE: \n" );
               pWrite( pHead(multReducer) );
 #endif
-              multReducer = reduceByRedGBPoly( multReducer, strat );
+              //multReducer = reduceByRedGBPoly( multReducer, strat );
 #if F5EDEBUG2
               Print("MULTRED AFTER: \n" );
               pWrite( pHead(multReducer) );
@@ -3099,7 +3167,7 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
 poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
 {
   LObject h;
-  h.p = pCopy(q);
+  h.p = q;
   redHomog( &h, strat );
   if ((h.p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
   {
