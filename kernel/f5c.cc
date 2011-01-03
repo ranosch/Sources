@@ -51,9 +51,9 @@
 #define PDEBUG 0 
 #endif
 #define F5ETAILREDUCTION  0 
-#define F5EDEBUG0         1 
-#define F5EDEBUG1         1 
-#define F5EDEBUG2         1 
+#define F5EDEBUG0         0 
+#define F5EDEBUG1         0 
+#define F5EDEBUG2         0 
 #define F5EDEBUG3         0 
 #define setMaxIdeal       64
 #define NUMVARS           currRing->ExpL_Size
@@ -116,6 +116,7 @@ ideal f5cMain(ideal F, ideal Q)
   ideal r = idInit(1, FRed->rank);
   // save the first element in ideal r, initialization of iteration process
   r->m[0] = FRed->m[0];
+  pNorm(r->m[0]);
   // counter over the remaining generators of the input ideal F
   for(i=1; i<IDELEMS(FRed); i++) 
   {
