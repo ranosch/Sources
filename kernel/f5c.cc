@@ -50,10 +50,10 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
-#define F5ETAILREDUCTION  1 
-#define F5EDEBUG0         0 
-#define F5EDEBUG1         0 
-#define F5EDEBUG2         0 
+#define F5ETAILREDUCTION  0 
+#define F5EDEBUG0         1 
+#define F5EDEBUG1         1 
+#define F5EDEBUG2         1 
 #define F5EDEBUG3         0 
 #define setMaxIdeal       64
 #define NUMVARS           currRing->ExpL_Size
@@ -1601,6 +1601,8 @@ void currReduction  (
 #if F5EDEBUG2
           Print("MULT: %p\n", multiplier );
           pWrite( multiplier );
+          Print("POLY: \n" );
+          pWrite( redGB->m[ctr]->next );
 #endif
           multReducer = pp_Mult_mm( redGB->m[ctr]->next, multiplier, currRing );
 #if F5EDEBUG2
