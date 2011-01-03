@@ -60,8 +60,9 @@
 int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 // size for strat & rewRules in the corresponding iteration steps
 // this is needed for the lengths of the rules arrays in the following
-unsigned long rewRulesSize  = 0;
-unsigned long stratSize     = 0;
+unsigned long rewRulesSize      = 0;
+unsigned long stratSize         = 0;
+unsigned long numberReductions  = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -140,8 +141,12 @@ ideal f5cMain(ideal F, ideal Q)
   omFree(shift);
   omFree(negBitmaskShifted);
   omFree(offsets);
-  create_count_f5 = 0;
-  stratSize       = 0;
+  Print("--------------------------------------------------\n");
+  Print("Number of Reductions:   %ld\n",numberReductions);
+  Print("--------------------------------------------------\n");
+  create_count_f5   = 0;
+  stratSize         = 0;
+  numberReductions  = 0;
   return r;
 }
 
@@ -1619,6 +1624,7 @@ void currReduction  (
           tempLength = pLength( multReducer );
           // reduce polynomial
           kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+          numberReductions++;
 #if F5EDEBUG2
           Print("AFTER REDUCTION STEP: ");
           pWrite( kBucketGetLm(bucket) );
@@ -2004,6 +2010,7 @@ void currReduction  (
             tempLength = pLength( multReducer );
             
             kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+            numberReductions++;
 #if F5EDEBUG2
             Print("AFTER REDUCTION STEP: ");
             pWrite( kBucketGetLm(bucket) );
@@ -2043,6 +2050,7 @@ void currReduction  (
           pWrite( temp->p );
 #endif
           kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
+          numberReductions++;
 #if F5EDEBUG2
           Print("AFTER REDUCTION STEP: ");
           pWrite( kBucketGetLm(bucket) );
