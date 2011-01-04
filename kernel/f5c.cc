@@ -52,7 +52,8 @@
 #define PDEBUG 0 
 #endif
 #define F5ETAILREDUCTION  0 
-#define F5EDEBUG0         1 
+#define F5EDEBUG00        1 
+#define F5EDEBUG0         0 
 #define F5EDEBUG1         0 
 #define F5EDEBUG2         0 
 #define F5EDEBUG3         0 
@@ -66,6 +67,7 @@ unsigned long f5RulesSize         = 0;
 unsigned long stratSize           = 0;
 unsigned long superTopReductions  = 0;
 unsigned long zeroReductions      = 0;
+unsigned long numberReductions    = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -143,10 +145,11 @@ ideal f5cMain(ideal F, ideal Q)
   omFree(shift);
   omFree(negBitmaskShifted);
   omFree(offsets);
-#if F5EDEBUG0
+#if F5EDEBUG00
   Print("-------------------------------------------\n");
   Print("# Super Top Reductions:  %ld\n", superTopReductions);
   Print("# Zero Reductions:       %ld\n", zeroReductions);
+  Print("# Reductions:            %ld\n", numberReductions);
   Print("-------------------------------------------\n");
 #endif
   create_count_f5     = 0;
@@ -155,6 +158,7 @@ ideal f5cMain(ideal F, ideal Q)
   rewRulesSize        = 0;
   superTopReductions  = 0;
   zeroReductions      = 0;
+  numberReductions    = 0;
   return r;
 }
 
@@ -1045,7 +1049,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
     }
     else
     {
-      // first element in last has equal label
+      // first element in list has equal label
       if( pLmCmp(cp->mLabelExp, tempForDel->mLabelExp) == 0 )
       {
         // need to check which generating element was generated later
@@ -1108,11 +1112,14 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
               //omFreeSize( cp, sizeof(Cpair) );
             }
           }
-          if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == -1 )
+          else
           {
-            cp->next          = tempForDel->next;
-            tempForDel->next  = cp;
-          }
+            if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == -1 )
+            {
+              cp->next          = tempForDel->next;
+              tempForDel->next  = cp;
+            }
+          } 
         } 
       }
     }
@@ -1664,6 +1671,73 @@ void currReduction  (
       pTest( temp->p );
       pWrite(pHead(temp->p));
 #endif
+      // loop over elements of lower index, i.e. elements in strat
+      for( int ctr=0; ctr<IDELEMS(redGB); ctr++ )
+      {
+        if( isDivisibleGetMult( redGB->m[ctr], f5Rules->slabel[ctr], kBucketGetLm( bucket ), 
+              bucketExp, &multTemp, &isMult
+              ) 
+          )
+        {
+          multCoeff1          = pGetCoeff( kBucketGetLm(bucket) );
+          multCoeff2          = pGetCoeff( redGB->m[ctr] );
+          multCoeff2          = n_Div( multCoeff1, multCoeff2, currRing );
+
+          static poly multiplier = pOne();
+          static poly multReducer;
+          getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
+              negBitmaskShifted, offsets
+              );
+          // throw away the leading monomials of reducer and bucket
+          p_SetCoeff( multiplier, multCoeff2, currRing );
+          pSetm( multiplier );
+          //p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+          kBucketExtractLm(bucket);
+          // build the multiplied reducer (note that we do not need the leading
+          // term at all!
+#if F5EDEBUG2
+          Print("MULT: %p\n", multiplier );
+          pWrite( multiplier );
+#endif
+          multReducer = pp_Mult_mm( redGB->m[ctr]->next, multiplier, currRing );
+#if F5EDEBUG2
+          Print("MULTRED BEFORE: \n" );
+          pWrite( pHead(multReducer) );
+#endif
+#if F5EDEBUG2
+          Print("MULTRED AFTER: \n" );
+          pWrite( pHead(multReducer) );
+#endif
+          //  length must be computed after the reduction with 
+          //  redGB!
+          tempLength = pLength( multReducer );
+          // reduce polynomial
+          kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+          numberReductions++;
+#if F5EDEBUG2
+          Print("AFTER REDUCTION STEP: ");
+          pWrite( kBucketGetLm(bucket) );
+#endif
+          if( canonicalize++ % 40 )
+          {
+            kBucketCanonicalize( bucket );
+            canonicalize = 0;
+          }
+          superTop  = FALSE;
+          isMult    = FALSE;
+          redundant = FALSE;
+          if( kBucketGetLm( bucket ) )
+          {
+            temp  = gCurrFirst;
+          }
+          else
+          {
+            break;
+          }
+          goto startagainTop;
+
+        }
+      }
       if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
             bucketExp, &multTemp, &isMult
             ) 
@@ -2063,7 +2137,7 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
               Print("MULTRED BEFORE: \n" );
               pWrite( pHead(multReducer) );
 #endif
-              multReducer = reduceByRedGBPoly( multReducer, strat );
+              //multReducer = reduceByRedGBPoly( multReducer, strat );
 #if F5EDEBUG2
               Print("MULTRED AFTER: \n" );
               pWrite( pHead(multReducer) );
@@ -2073,6 +2147,7 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
               tempLength = pLength( multReducer );
               // reduce polynomial
               kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+              numberReductions++;
 #if F5EDEBUG2
               Print("AFTER REDUCTION STEP: ");
               pWrite( kBucketGetLm(bucket) );
@@ -2116,7 +2191,8 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
                Print("REDUCTION WITH: ");
                pWrite( temp->p );
 #endif
-               kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
+              kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
+              numberReductions++;
 #if F5EDEBUG2
                Print("AFTER REDUCTION STEP: ");
                pWrite( kBucketGetLm(bucket) );
@@ -2952,7 +3028,11 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
   kTest(strat);
   if (TEST_OPT_PROT) { PrintS("r"); mflush(); }
   int max_ind;
+  return q;
 
+  //---------------------------------------------------------------
+  //---------------------------------------------------------------
+  //---------------------------------------------------------------
   p = redNF(pCopy(q),max_ind,lazyReduce & KSTD_NF_NONORM,strat);
   if ((p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
   {
@@ -2980,6 +3060,32 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
 
 poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
 {
+  LObject h;
+  h.p = q;
+  redHomog( &h, strat );
+  if ((h.p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
+  {
+    if (TEST_OPT_PROT) { PrintS("t"); mflush(); }
+    #ifdef HAVE_RINGS
+    if (rField_is_Ring())
+    {
+      h.p = redtailBba_Z(h.p,strat->sl,strat);
+    }
+    else
+    #endif
+    {
+      BITSET save=test;
+      test &= ~Sy_bit(OPT_INTSTRATEGY);
+      h.p = redtailBba(h.p,strat->sl,strat,(lazyReduce & KSTD_NF_NONORM)==0);
+      test=save;
+    }
+  }
+  //Print("H.P : ");
+  //pWrite( h.p );
+  return h.p;
+  //----------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  //----------------------------------------------------------------------
   poly  p;
   int   i;
   int   j;
