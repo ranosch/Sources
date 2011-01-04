@@ -52,7 +52,7 @@
 #define PDEBUG 0 
 #endif
 #define F5ETAILREDUCTION  0 
-#define F5EDEBUG0         0 
+#define F5EDEBUG0         1 
 #define F5EDEBUG1         0 
 #define F5EDEBUG2         0 
 #define F5EDEBUG3         0 
@@ -66,6 +66,7 @@ unsigned long f5RulesSize         = 0;
 unsigned long stratSize           = 0;
 unsigned long superTopReductions  = 0;
 unsigned long zeroReductions      = 0;
+unsigned long numberReductions    = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -147,6 +148,7 @@ ideal f5cMain(ideal F, ideal Q)
   Print("-------------------------------------------\n");
   Print("# Super Top Reductions:  %ld\n", superTopReductions);
   Print("# Zero Reductions:       %ld\n", zeroReductions);
+  Print("# Reductions:            %ld\n", numberReductions);
   Print("-------------------------------------------\n");
 #endif
   create_count_f5     = 0;
@@ -155,6 +157,7 @@ ideal f5cMain(ideal F, ideal Q)
   rewRulesSize        = 0;
   superTopReductions  = 0;
   zeroReductions      = 0;
+  numberReductions    = 0;
   return r;
 }
 
@@ -1739,6 +1742,7 @@ void currReduction  (
           tempLength = pLength( multReducer );
           // reduce polynomial
           kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+          numberReductions++;
 #if F5EDEBUG2
           Print("AFTER REDUCTION STEP: ");
           pWrite( kBucketGetLm(bucket) );
@@ -2182,6 +2186,7 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
                 tempLength = pLength( multReducer );
                 // reduce polynomial
                 kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+                numberReductions++;
                 // adjust the coefficient of the signature
                 // compute 1 / (1-multCoeff2)
                 number shifter =  n_Sub ( 
@@ -2251,6 +2256,7 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
               tempLength = pLength( multReducer );
               // reduce polynomial
               kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+              numberReductions++;
 #if F5EDEBUG2
               Print("AFTER REDUCTION STEP: ");
               pWrite( kBucketGetLm(bucket) );
@@ -2294,7 +2300,8 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
                Print("REDUCTION WITH: ");
                pWrite( temp->p );
 #endif
-               kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
+              kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
+              numberReductions++;
 #if F5EDEBUG2
                Print("AFTER REDUCTION STEP: ");
                pWrite( kBucketGetLm(bucket) );
@@ -2496,6 +2503,7 @@ kBucketLmZero:
           // the "right" leading monomial
           //  => now we have to reduce w.r.t. redGB again!
           sp = reduceByRedGBPoly( sp, strat );
+          numberReductions++;
           //pNorm( spTemp->p ); 
           // add sp together with rewRulesLast to gCurr!!!
           Lpoly* newElement     = (Lpoly*) omAlloc( sizeof(Lpoly) );
