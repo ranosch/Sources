@@ -257,7 +257,8 @@ ideal f5cIter (
   Print("Before reduction\n");
   pTest( p );
 #endif
-  p = reduceByRedGBPoly( p, strat );
+  p = kNF( redGB, NULL, p );
+  //p = reduceByRedGBPoly( p, strat );
 #if F5EDEBUG3
   Print("After reduction: ");
   pTest( p );
@@ -2000,7 +2001,7 @@ void currReduction  (
             Print("MULTRED BEFORE: %p\n", *multReducer );
             pWrite( pHead(multReducer) );
 #endif
-            multReducer = reduceByRedGBPoly( multReducer, strat );
+            //multReducer = reduceByRedGBPoly( multReducer, strat );
 #if F5EDEBUG2
             Print("MULTRED AFTER: %p\n", *multReducer );
             pWrite( pHead(multReducer) );
@@ -2766,6 +2767,32 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
 
 poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
 {
+  LObject h;
+  h.p = q;
+  redHomog( &h, strat );
+  if ((h.p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
+  {
+    if (TEST_OPT_PROT) { PrintS("t"); mflush(); }
+    #ifdef HAVE_RINGS
+    if (rField_is_Ring())
+    {
+      h.p = redtailBba_Z(h.p,strat->sl,strat);
+    }
+    else
+    #endif
+    {
+      BITSET save=test;
+      test &= ~Sy_bit(OPT_INTSTRATEGY);
+      h.p = redtailBba(h.p,strat->sl,strat,(lazyReduce & KSTD_NF_NONORM)==0);
+      test=save;
+    }
+  }
+  //Print("H.P : ");
+  //pWrite( h.p );
+  return h.p;
+  //----------------------------------------------------------------------
+  //----------------------------------------------------------------------
+  //----------------------------------------------------------------------
   poly  p;
   int   i;
   int   j;
