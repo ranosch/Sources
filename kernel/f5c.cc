@@ -52,7 +52,8 @@
 #define PDEBUG 0 
 #endif
 #define F5ETAILREDUCTION  0 
-#define F5EDEBUG0         1 
+#define F5EDEBUG00        1
+#define F5EDEBUG0         0 
 #define F5EDEBUG1         0 
 #define F5EDEBUG2         0 
 #define F5EDEBUG3         0 
@@ -144,7 +145,7 @@ ideal f5cMain(ideal F, ideal Q)
   omFree(shift);
   omFree(negBitmaskShifted);
   omFree(offsets);
-#if F5EDEBUG0
+#if F5EDEBUG00
   Print("-------------------------------------------\n");
   Print("# Super Top Reductions:  %ld\n", superTopReductions);
   Print("# Zero Reductions:       %ld\n", zeroReductions);
