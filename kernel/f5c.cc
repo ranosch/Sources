@@ -68,6 +68,7 @@ unsigned long stratSize           = 0;
 unsigned long superTopReductions  = 0;
 unsigned long zeroReductions      = 0;
 unsigned long numberReductions    = 0;
+unsigned long number1Reductions   = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -149,7 +150,8 @@ ideal f5cMain(ideal F, ideal Q)
   Print("-------------------------------------------\n");
   Print("# Super Top Reductions:  %ld\n", superTopReductions);
   Print("# Zero Reductions:       %ld\n", zeroReductions);
-  Print("# Reductions:            %ld\n", numberReductions);
+  Print("# Reductions:            %ld\n", number1Reductions);
+  Print("# Reduction steps:       %ld\n", numberReductions);
   Print("-------------------------------------------\n");
 #endif
   create_count_f5     = 0;
@@ -1479,6 +1481,7 @@ void computeSpols (
         pWrite( sp );
         pTest(sp);
 #endif
+        number1Reductions++;
         if( sp )
         {
           // all rules and s-polynomials of this degree step are computed and 
@@ -1732,7 +1735,8 @@ void currReduction  (
           }
           else
           {
-            break;
+            sp  = NULL;
+            goto kBucketLmZero;
           }
           goto startagainTop;
 
