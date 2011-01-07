@@ -63,6 +63,7 @@ int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 unsigned long rewRulesSize      = 0;
 unsigned long stratSize         = 0;
 unsigned long numberReductions  = 0;
+unsigned long number1Reductions = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -142,11 +143,13 @@ ideal f5cMain(ideal F, ideal Q)
   omFree(negBitmaskShifted);
   omFree(offsets);
   Print("--------------------------------------------------\n");
-  Print("Number of Reductions:   %ld\n",numberReductions);
+  Print("Number of Reductions:   %ld\n",number1Reductions);
+  Print("# Reduction steps:      %ld\n",numberReductions);
   Print("--------------------------------------------------\n");
   create_count_f5   = 0;
   stratSize         = 0;
   numberReductions  = 0;
+  number1Reductions = 0;
   return r;
 }
 
@@ -1395,6 +1398,7 @@ void computeSpols (
         pWrite( pHead(sp) );
         pTest(sp);
 #endif
+        number1Reductions++;
         if( sp )
         {
           // all rules and s-polynomials of this degree step are computed and 
@@ -1644,7 +1648,8 @@ void currReduction  (
           }
           else
           {
-            break;
+            sp  = NULL;
+            goto kLmBucketZero;
           }
           goto startagainTop;
 
