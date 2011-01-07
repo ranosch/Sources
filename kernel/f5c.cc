@@ -61,9 +61,11 @@ int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 // size for strat & rewRules in the corresponding iteration steps
 // this is needed for the lengths of the rules arrays in the following
 unsigned long rewRulesSize      = 0;
+unsigned long f5RulesSize       = 0;
 unsigned long stratSize         = 0;
 unsigned long numberReductions  = 0;
 unsigned long number1Reductions = 0;
+unsigned long zeroReductions    = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -145,11 +147,15 @@ ideal f5cMain(ideal F, ideal Q)
   Print("--------------------------------------------------\n");
   Print("Number of Reductions:   %ld\n",number1Reductions);
   Print("# Reduction steps:      %ld\n",numberReductions);
+  Print("# Zero Reductions:      %ld\n", zeroReductions);
   Print("--------------------------------------------------\n");
   create_count_f5   = 0;
+  rewRulesSize      = 0;
+  f5RulesSize       = 0;
   stratSize         = 0;
   numberReductions  = 0;
   number1Reductions = 0;
+  zeroReductions    = 0;
   return r;
 }
 
@@ -2279,6 +2285,7 @@ void currReduction  (
     }
     else // spTemp->p == 0
     {
+      zeroReductions++;
       pDelete( &sp );
     }
     // free memory of bucket
