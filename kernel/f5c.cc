@@ -1649,7 +1649,7 @@ void currReduction  (
           else
           {
             sp  = NULL;
-            goto kLmBucketZero;
+            goto kBucketLmZero;
           }
           goto startagainTop;
 
