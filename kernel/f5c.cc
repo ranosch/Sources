@@ -67,6 +67,7 @@ unsigned long f5RulesSize         = 0;
 unsigned long stratSize           = 0;
 unsigned long superTopReductions  = 0;
 unsigned long zeroReductions      = 0;
+unsigned long number1Reductions   = 0;
 unsigned long numberReductions    = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
@@ -149,7 +150,8 @@ ideal f5cMain(ideal F, ideal Q)
   Print("-------------------------------------------\n");
   Print("# Super Top Reductions:  %ld\n", superTopReductions);
   Print("# Zero Reductions:       %ld\n", zeroReductions);
-  Print("# Reductions:            %ld\n", numberReductions);
+  Print("# Reductions:            %ld\n", number1Reductions);
+  Print("# Reduction steps:       %ld\n", numberReductions);
   Print("-------------------------------------------\n");
 #endif
   create_count_f5     = 0;
@@ -159,6 +161,7 @@ ideal f5cMain(ideal F, ideal Q)
   superTopReductions  = 0;
   zeroReductions      = 0;
   numberReductions    = 0;
+  number1Reductions   = 0;
   return r;
 }
 
@@ -1509,6 +1512,7 @@ void computeSpols (
         pWrite( sp );
         pTest(sp);
 #endif
+        number1Reductions++;
         if( sp )
         {
           // all rules and s-polynomials of this degree step are computed and 
@@ -1762,58 +1766,59 @@ void currReduction  (
           }
           else
           {
-            break;
+            sp = NULL;
+            goto kBucketLmZero;
           }
           goto startagainTop;
 
         }
       }
-      if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
-            bucketExp, &multTemp, &isMult
-            ) 
-        )
-      {
-        redundant = TRUE;
-        // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
-        // multTemp and check this multiple by both criteria
-#if F5EDEBUG1
-        Print("ISMULT %d\n",isMult);
-#endif
-        if( isMult )
+        if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
+              bucketExp, &multTemp, &isMult
+              ) 
+          )
         {
-          // compute the multiple of the rule of temp & multTemp
-          for( i=1;i<(currRing->N)+1; i++ )
+          redundant = TRUE;
+          // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
+          // multTemp and check this multiple by both criteria
+#if F5EDEBUG1
+          Print("ISMULT %d\n",isMult);
+#endif
+          if( isMult )
           {
-            multLabelTemp[i]  = multTemp[i] + rewRules->label[temp->rewRule][i];
-          }
-          multLabelTemp[0]    = rewRules->label[temp->rewRule][0];
-          multLabelShortExp   = ~getShortExpVecFromArray( multLabelTemp );
-          multCoeff1          = pGetCoeff( kBucketGetLm(bucket) );
-          multCoeff2          = pGetCoeff( temp->p );
-          multCoeff2          = n_Div( multCoeff1, multCoeff2, currRing );
-          // test the multiplied label by both criteria 
+            // compute the multiple of the rule of temp & multTemp
+            for( i=1;i<(currRing->N)+1; i++ )
+            {
+              multLabelTemp[i]  = multTemp[i] + rewRules->label[temp->rewRule][i];
+            }
+            multLabelTemp[0]    = rewRules->label[temp->rewRule][0];
+            multLabelShortExp   = ~getShortExpVecFromArray( multLabelTemp );
+            multCoeff1          = pGetCoeff( kBucketGetLm(bucket) );
+            multCoeff2          = pGetCoeff( temp->p );
+            multCoeff2          = n_Div( multCoeff1, multCoeff2, currRing );
+            // test the multiplied label by both criteria 
 
-          // no criteria tests for the basic algorithm
-          /*
-             if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules, strat ) && 
-             !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
-             )
-             { 
-             */
-          static unsigned long* multTempExp = (unsigned long*) 
-            omAlloc0( NUMVARS*sizeof(unsigned long) );
-          poly multLabelTempExp = pOne();
-          getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
-              shift, negBitmaskShifted, offsets
-              );   
-          // if a higher label reduction takes place we need to create
-          // a new Lpoly with the higher label and store it in a different 
-          // linked list for later reductions
-
-          // in the basic algorithm we do not execute higher label reductions at all!
-          if( pLmCmp( multLabelTempExp, spLabelExp ) == 1 )
-          {            
+            // no criteria tests for the basic algorithm
             /*
+               if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules, strat ) && 
+               !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
+               )
+               { 
+             */
+            static unsigned long* multTempExp = (unsigned long*) 
+              omAlloc0( NUMVARS*sizeof(unsigned long) );
+            poly multLabelTempExp = pOne();
+            getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
+                shift, negBitmaskShifted, offsets
+                );   
+            // if a higher label reduction takes place we need to create
+            // a new Lpoly with the higher label and store it in a different 
+            // linked list for later reductions
+
+            // in the basic algorithm we do not execute higher label reductions at all!
+            if( pLmCmp( multLabelTempExp, spLabelExp ) == 1 )
+            {            
+              /*
 #if F5EDEBUG1
 Print("HIGHER LABEL REDUCTION \n");
 #endif
@@ -1828,11 +1833,11 @@ static poly multiplier = pOne();
 getExpFromIntArray( multTemp, multiplier->exp, numVariables, shift, 
 negBitmaskShifted, offsets
 );
-            // throw away the leading monomials of reducer and bucket
-            pSetm( multiplier );
-            p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(newBucket)), currRing );
-            tempLength = pLength( temp->p->next );
-            kBucketExtractLm(newBucket);
+              // throw away the leading monomials of reducer and bucket
+              pSetm( multiplier );
+              p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(newBucket)), currRing );
+              tempLength = pLength( temp->p->next );
+              kBucketExtractLm(newBucket);
 #if F5EDEBUG2
 Print("MULTIPLIER: ");
 pWrite(multiplier);
@@ -1842,320 +1847,390 @@ pWrite( pHead(temp->p) );
 kBucket_Minus_m_Mult_p( newBucket, multiplier, temp->p->next, 
 &tempLength 
 ); 
-            // get monomials out of bucket and save the poly as first generator 
-            // of a new critical pair
-            int length2 = 0;
-            // write bucket to poly & destroy bucket
-            kBucketClear( newBucket, &newPoly, &length2 );
-            kBucketDeleteAndDestroy( &newBucket );
+              // get monomials out of bucket and save the poly as first generator 
+              // of a new critical pair
+              int length2 = 0;
+              // write bucket to poly & destroy bucket
+              kBucketClear( newBucket, &newPoly, &length2 );
+              kBucketDeleteAndDestroy( &newBucket );
 
-            newPoly = reduceByRedGBPoly( newPoly, strat );
+              newPoly = reduceByRedGBPoly( newPoly, strat );
 
-            // add the new rule even when newPoly is zero!
-            // Note that we possibly need more memory in this iteration step!
+              // add the new rule even when newPoly is zero!
+              // Note that we possibly need more memory in this iteration step!
 #if F5EDEBUG2
 Print("SIZES BEFORE: %ld < %ld ?\n",rewRules->size, rewRulesSize);
 Print("ADDRESS: %p\n", rewRules->label[0]);
 #endif
-            // get the corresponding offsets for the insertion of the element in the two lists:
-            Spoly* tempSpoly            = spTemp;
-            if( rewRules->size<rewRulesSize )
-            {
-            // add element at the end 
-            if( expCmp( multLabelTempExp, spolysLast->labelExp ) == 1 )
-            {
-            // copy data from critical pair rule to rewRule
-            register unsigned long _length  = currRing->N+1;
-            register unsigned long _i       = 0;
-            register int* _d                = rewRules->label[rewRules->size];
-            register int* _s                = multLabelTemp;
-            while( _i<_length )
-            {
-            _d[_i]  = _s[_i];
-            _i++;
-            }
-            rewRules->slabel[rewRules->size]  = ~multLabelShortExp;
-            rewRules->size++;
-            tempSpoly = spolysLast;
-            }
-            // search list for the place where to insert this element
-            // note that we know that it is smaller than the last element w.r.t. labels
-            else
-            { 
-            unsigned long insertOffset  = 0;
-            while( tempSpoly->next && expCmp(multLabelTempExp, tempSpoly->next->labelExp) == 1 )
-            {
-              insertOffset++;
-              tempSpoly = tempSpoly->next;
-            }
-            // insert rule after position rewRulesCurr+offset
-            // insert poly after tempSpoly
-            register unsigned long _length  = currRing->N+1;
-            register unsigned long _ctr     = rewRules->size-1;
-            for( ; _ctr>rewRulesCurr+insertOffset; _ctr-- )
-            { 
+              // get the corresponding offsets for the insertion of the element in the two lists:
+              Spoly* tempSpoly            = spTemp;
+              if( rewRules->size<rewRulesSize )
+              {
+              // add element at the end 
+              if( expCmp( multLabelTempExp, spolysLast->labelExp ) == 1 )
+              {
+              // copy data from critical pair rule to rewRule
+              register unsigned long _length  = currRing->N+1;
               register unsigned long _i       = 0;
-              register int* _d                = rewRules->label[_ctr+1];
-              register int* _s                = rewRules->label[_ctr];
-              _i = 0;
+              register int* _d                = rewRules->label[rewRules->size];
+              register int* _s                = multLabelTemp;
+              while( _i<_length )
+              {
+              _d[_i]  = _s[_i];
+              _i++;
+              }
+              rewRules->slabel[rewRules->size]  = ~multLabelShortExp;
+              rewRules->size++;
+              tempSpoly = spolysLast;
+              }
+              // search list for the place where to insert this element
+              // note that we know that it is smaller than the last element w.r.t. labels
+              else
+              { 
+              unsigned long insertOffset  = 0;
+              while( tempSpoly->next && expCmp(multLabelTempExp, tempSpoly->next->labelExp) == 1 )
+              {
+                insertOffset++;
+                tempSpoly = tempSpoly->next;
+              }
+              // insert rule after position rewRulesCurr+offset
+              // insert poly after tempSpoly
+              register unsigned long _length  = currRing->N+1;
+              register unsigned long _ctr     = rewRules->size-1;
+              for( ; _ctr>rewRulesCurr+insertOffset; _ctr-- )
+              { 
+                register unsigned long _i       = 0;
+                register int* _d                = rewRules->label[_ctr+1];
+                register int* _s                = rewRules->label[_ctr];
+                _i = 0;
+                while( _i<_length )
+                {
+                  _d[_i]  = _s[_i];
+                  _i++;
+                }
+                rewRules->slabel[_ctr+1] = rewRules->slabel[_ctr];
+              }
+              register unsigned long _i       = 0;
+              register int* _d                = rewRules->label[rewRulesCurr+insertOffset+1];
+              register int* _s                = multLabelTemp;
               while( _i<_length )
               {
                 _d[_i]  = _s[_i];
                 _i++;
               }
-              rewRules->slabel[_ctr+1] = rewRules->slabel[_ctr];
+              rewRules->slabel[rewRulesCurr+insertOffset+1]  = ~multLabelShortExp;
+              rewRules->size++;
             }
-            register unsigned long _i       = 0;
-            register int* _d                = rewRules->label[rewRulesCurr+insertOffset+1];
-            register int* _s                = multLabelTemp;
-            while( _i<_length )
-            {
-              _d[_i]  = _s[_i];
-              _i++;
             }
-            rewRules->slabel[rewRulesCurr+insertOffset+1]  = ~multLabelShortExp;
-            rewRules->size++;
-          }
-          }
-            else
-            {
-#if F5EDEBUG1
-              Print("ALLOC MORE MEMORYi -- %p\n", rewRules->label[0]);
-#endif
-              unsigned int old                = rewRulesSize;
-              rewRulesSize                    = 3*rewRulesSize;
-              RewRules* newRules              = (RewRules*) omAlloc( sizeof(RewRules) );
-              newRules->label                 = (int**) omAlloc( rewRulesSize*sizeof(int*) );
-              newRules->slabel                = (unsigned long*)omAlloc( rewRulesSize*sizeof(unsigned long) );
-              newRules->size                  = rewRules->size;
-
-              // add element at the end 
-              if( expCmp( multLabelTempExp, spolysLast->labelExp ) == 1 )
-              {
-                register unsigned long _length  = currRing->N+1;
-                register unsigned long _ctr      = 0;
-                for( ; _ctr<old; _ctr++ )
-                {
-                  newRules->label[_ctr]     =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-                  register unsigned long _i = 0;
-                  register int* _d          = newRules->label[_ctr];
-                  register int* _s          = rewRules->label[_ctr];
-                  while( _i<_length )
-                  {
-                    _d[_i]  = _s[_i];
-                    _i++;
-                  }
-                  omFreeSize( rewRules->label[_ctr], (currRing->N+1)*sizeof(int) );
-                  newRules->slabel[_ctr] = rewRules->slabel[_ctr];
-                }
-                omFreeSize( rewRules->slabel, old*sizeof(unsigned long) );
-                for( ; _ctr<rewRulesSize; _ctr++ )
-                {
-                  newRules->label[_ctr] =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-                }
-                omFreeSize( rewRules, sizeof(RewRules) );
-                *rewRulesP  = rewRules  = newRules;
-                tempSpoly   = spolysLast;
-                // now we can go on adding the new rule to rewRules
-
-                // copy data from rule corresponding to new s-polynomial to rewRule
-                register unsigned long _i = 0;
-                register int* _d          = rewRules->label[rewRules->size];
-                register int* _s          = multLabelTemp;
-                while( _i<_length )
-                {
-                  _d[_i]  = _s[_i];
-                  _i++;
-                }
-                rewRules->slabel[rewRules->size]  = ~multLabelShortExp;
-                rewRules->size++;
-
-              }
               else
               {
-                // alloc more memory
-                register unsigned long _length  = currRing->N+1;
-                register unsigned long _ctr     = 0;
-                unsigned long insertOffset      = 0;
-                while( tempSpoly->next && expCmp(multLabelTempExp, tempSpoly->next->labelExp) == 1 )
-                {
-                  insertOffset++;
-                  tempSpoly = tempSpoly->next;
-                }
-                // insert rule after position rewRulesCurr+offset
-                // insert poly after tempSpoly
-                _ctr      = 0;
-                for( ; _ctr<rewRulesCurr+insertOffset+1 ; _ctr++ )
-                {
-                  newRules->label[_ctr]     =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-                  register unsigned long _i = 0;
-                  register int* _d          = newRules->label[_ctr];
-                  register int* _s          = rewRules->label[_ctr];
-                  while( _i<_length )
-                  {
-                    _d[_i]  = _s[_i];
-                    _i++;
-                  }
-                  omFreeSize( rewRules->label[_ctr], (currRing->N+1)*sizeof(int) );
-                  newRules->slabel[_ctr] = rewRules->slabel[_ctr];
-                }
-                // _ctr = rewRulesCurr+insertOffset+1 !
-                newRules->label[_ctr]     =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-                register unsigned long _i = 0;
-                register int* _d          = newRules->label[_ctr];
-                register int* _s          = multLabelTemp;
-                while( _i<_length )
-                {
-                  _d[_i]  = _s[_i];
-                  _i++;
-                }
-                newRules->slabel[_ctr]  = ~multLabelShortExp;
-                newRules->size++;
-
-                for( ; _ctr<old; _ctr++ )
-                {
-                  newRules->label[_ctr+1]   =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-                  register unsigned long _i = 0;
-                  register int* _d          = newRules->label[_ctr+1];
-                  register int* _s          = rewRules->label[_ctr];
-                  while( _i<_length )
-                  {
-                    _d[_i]  = _s[_i];
-                    _i++;
-                  }
-                  omFreeSize( rewRules->label[_ctr], (currRing->N+1)*sizeof(int) );
-                  newRules->slabel[_ctr+1] = rewRules->slabel[_ctr];
-                }
-                _ctr++;
-                // _ctr is now bigger than all elements => add more memory for further 
-                // rules.
-                // NOTE that we have to increment _ctr as we have added a new element in the
-                // list. In the last for-loop we have allocated memory for _ctr+1, so need to 
-                // add 1 to _ctr, before allocating more memory as we would overwrite data
-                // otherwise!
-                for( ; _ctr<rewRulesSize; _ctr++ )
-                {
-                  newRules->label[_ctr] =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
-                }
-
-                omFreeSize( rewRules->slabel, old*sizeof(unsigned long) );
-                omFreeSize( rewRules, sizeof(RewRules) );
-                *rewRulesP  = rewRules  = newRules;
-                //tempSpoly   = spolysLast;
-              }
-#if F5EDEBUG2
-              Print("MEMORY ALLOCATED -- %p\n", rewRules->label[0]);
-#endif
-            } 
-            // insert the new element at the right position, i.e. at the
-            // end of the list of spolynomials
-
-            if( NULL != newPoly )
-            {
-              pNorm( newPoly );
-            }
-            // even if newPoly = 0 we need to add it to the list of s-polynomials
-            // to keep it with the list of rew rules synchronized!
-            Spoly* spNew      = (Spoly*) omAlloc( sizeof(struct Spoly) );
-            spNew->p          = newPoly;
-            spNew->labelExp   = multLabelTempExp;
-            spNew->next       = tempSpoly->next;
-            tempSpoly->next   = spNew;
-            tempSpoly         = spNew;
-#if F5EDEBUG2
-            Print("SIZES AFTER: %ld < %ld ?\n",rewRules->size, rewRulesSize);
-            Print("LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
-            Spoly* lalasp = spTemp;
-            unsigned long rewRulesTemp  = rewRulesCurr;
-            while( lalasp )
-            {
-              Print("%p -- ",lalasp->p);
-              pWrite( pHead(lalasp->p) );
-              lalasp = lalasp->next;
-              Print("RULE #%d of %ld -- ",rewRulesTemp, rewRules->size);
-              for( int _l=0; _l<currRing->N+1; _l++ )
-              {
-                Print("%d  ",rewRules->label[rewRulesTemp][_l]);
-              }
-              Print("\n-------------------------------------\n");
-              rewRulesTemp++;
-            }
-            Print("---------------\n");
-            lalasp = spolysFirst;
-#endif
 #if F5EDEBUG1
-            Print("ADDED TO LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
-            pWrite( pHead(newPoly) );
-            Print("---------------\n");
+                Print("ALLOC MORE MEMORYi -- %p\n", rewRules->label[0]);
 #endif
-            */ // end of basic algorithm stuff!
+                unsigned int old                = rewRulesSize;
+                rewRulesSize                    = 3*rewRulesSize;
+                RewRules* newRules              = (RewRules*) omAlloc( sizeof(RewRules) );
+                newRules->label                 = (int**) omAlloc( rewRulesSize*sizeof(int*) );
+                newRules->slabel                = (unsigned long*)omAlloc( rewRulesSize*sizeof(unsigned long) );
+                newRules->size                  = rewRules->size;
 
-              // get back on track for the old poly which has to be checked for 
-              // reductions by the following element in gCurr
-            isMult    = FALSE;
-            redundant = TRUE;
-            temp      = temp->next;
-            if( temp )
-            {
-              goto startagainTop;
-            }
-            else
-            {
-              break;
-            }
-          }
-          else
-          {
-            // this is the ggv criterion:
-            // the element to be reduced as well as the multiplied reducer have
-            // the same leading monomial as polynomials & the same leading 
-            // monomial as labels
-            // => check the coefficients of the labels! 
-            if( pLmCmp( multLabelTempExp, spLabelExp ) == 0 )
-            { 
-              // SUPER TOP REDUCTION IN GGV
-              if( 
-                  n_Equal ( pGetCoeff(kBucketGetLm(bucket)), 
-                    pGetCoeff(temp->p), 
-                    currRing ) 
-                )
-              {
-                superTop  = TRUE;
-                temp      = temp->next;
-                if( temp )
+                // add element at the end 
+                if( expCmp( multLabelTempExp, spolysLast->labelExp ) == 1 )
                 {
-                  goto startagainTop;
+                  register unsigned long _length  = currRing->N+1;
+                  register unsigned long _ctr      = 0;
+                  for( ; _ctr<old; _ctr++ )
+                  {
+                    newRules->label[_ctr]     =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                    register unsigned long _i = 0;
+                    register int* _d          = newRules->label[_ctr];
+                    register int* _s          = rewRules->label[_ctr];
+                    while( _i<_length )
+                    {
+                      _d[_i]  = _s[_i];
+                      _i++;
+                    }
+                    omFreeSize( rewRules->label[_ctr], (currRing->N+1)*sizeof(int) );
+                    newRules->slabel[_ctr] = rewRules->slabel[_ctr];
+                  }
+                  omFreeSize( rewRules->slabel, old*sizeof(unsigned long) );
+                  for( ; _ctr<rewRulesSize; _ctr++ )
+                  {
+                    newRules->label[_ctr] =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                  }
+                  omFreeSize( rewRules, sizeof(RewRules) );
+                  *rewRulesP  = rewRules  = newRules;
+                  tempSpoly   = spolysLast;
+                  // now we can go on adding the new rule to rewRules
+
+                  // copy data from rule corresponding to new s-polynomial to rewRule
+                  register unsigned long _i = 0;
+                  register int* _d          = rewRules->label[rewRules->size];
+                  register int* _s          = multLabelTemp;
+                  while( _i<_length )
+                  {
+                    _d[_i]  = _s[_i];
+                    _i++;
+                  }
+                  rewRules->slabel[rewRules->size]  = ~multLabelShortExp;
+                  rewRules->size++;
+
                 }
                 else
                 {
-                  break;
+                  // alloc more memory
+                  register unsigned long _length  = currRing->N+1;
+                  register unsigned long _ctr     = 0;
+                  unsigned long insertOffset      = 0;
+                  while( tempSpoly->next && expCmp(multLabelTempExp, tempSpoly->next->labelExp) == 1 )
+                  {
+                    insertOffset++;
+                    tempSpoly = tempSpoly->next;
+                  }
+                  // insert rule after position rewRulesCurr+offset
+                  // insert poly after tempSpoly
+                  _ctr      = 0;
+                  for( ; _ctr<rewRulesCurr+insertOffset+1 ; _ctr++ )
+                  {
+                    newRules->label[_ctr]     =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                    register unsigned long _i = 0;
+                    register int* _d          = newRules->label[_ctr];
+                    register int* _s          = rewRules->label[_ctr];
+                    while( _i<_length )
+                    {
+                      _d[_i]  = _s[_i];
+                      _i++;
+                    }
+                    omFreeSize( rewRules->label[_ctr], (currRing->N+1)*sizeof(int) );
+                    newRules->slabel[_ctr] = rewRules->slabel[_ctr];
+                  }
+                  // _ctr = rewRulesCurr+insertOffset+1 !
+                  newRules->label[_ctr]     =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                  register unsigned long _i = 0;
+                  register int* _d          = newRules->label[_ctr];
+                  register int* _s          = multLabelTemp;
+                  while( _i<_length )
+                  {
+                    _d[_i]  = _s[_i];
+                    _i++;
+                  }
+                  newRules->slabel[_ctr]  = ~multLabelShortExp;
+                  newRules->size++;
+
+                  for( ; _ctr<old; _ctr++ )
+                  {
+                    newRules->label[_ctr+1]   =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                    register unsigned long _i = 0;
+                    register int* _d          = newRules->label[_ctr+1];
+                    register int* _s          = rewRules->label[_ctr];
+                    while( _i<_length )
+                    {
+                      _d[_i]  = _s[_i];
+                      _i++;
+                    }
+                    omFreeSize( rewRules->label[_ctr], (currRing->N+1)*sizeof(int) );
+                    newRules->slabel[_ctr+1] = rewRules->slabel[_ctr];
+                  }
+                  _ctr++;
+                  // _ctr is now bigger than all elements => add more memory for further 
+                  // rules.
+                  // NOTE that we have to increment _ctr as we have added a new element in the
+                  // list. In the last for-loop we have allocated memory for _ctr+1, so need to 
+                  // add 1 to _ctr, before allocating more memory as we would overwrite data
+                  // otherwise!
+                  for( ; _ctr<rewRulesSize; _ctr++ )
+                  {
+                    newRules->label[_ctr] =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+                  }
+
+                  omFreeSize( rewRules->slabel, old*sizeof(unsigned long) );
+                  omFreeSize( rewRules, sizeof(RewRules) );
+                  *rewRulesP  = rewRules  = newRules;
+                  //tempSpoly   = spolysLast;
                 }
-                /*
-                   if( spTemp->next )
-                   {
-                   spTemp  = spTemp->next;
-                   pDelete( &spTemp->p );
-                   omFreeSize( spDel, sizeof(Spoly) );
-                   Print("here4\n");
-                   goto startComplete;
-                   }
-                   else
-                   {
-                   pDelete( &spDel->p );
-                   omFreeSize( spDel, sizeof(Spoly) );
-                   }
-                   */
+#if F5EDEBUG2
+                Print("MEMORY ALLOCATED -- %p\n", rewRules->label[0]);
+#endif
+              } 
+              // insert the new element at the right position, i.e. at the
+              // end of the list of spolynomials
+
+              if( NULL != newPoly )
+              {
+                pNorm( newPoly );
               }
-              // leading monomials of signatures are equal, but leading 
-              // coefficients are different!
+              // even if newPoly = 0 we need to add it to the list of s-polynomials
+              // to keep it with the list of rew rules synchronized!
+              Spoly* spNew      = (Spoly*) omAlloc( sizeof(struct Spoly) );
+              spNew->p          = newPoly;
+              spNew->labelExp   = multLabelTempExp;
+              spNew->next       = tempSpoly->next;
+              tempSpoly->next   = spNew;
+              tempSpoly         = spNew;
+#if F5EDEBUG2
+              Print("SIZES AFTER: %ld < %ld ?\n",rewRules->size, rewRulesSize);
+              Print("LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
+              Spoly* lalasp = spTemp;
+              unsigned long rewRulesTemp  = rewRulesCurr;
+              while( lalasp )
+              {
+                Print("%p -- ",lalasp->p);
+                pWrite( pHead(lalasp->p) );
+                lalasp = lalasp->next;
+                Print("RULE #%d of %ld -- ",rewRulesTemp, rewRules->size);
+                for( int _l=0; _l<currRing->N+1; _l++ )
+                {
+                  Print("%d  ",rewRules->label[rewRulesTemp][_l]);
+                }
+                Print("\n-------------------------------------\n");
+                rewRulesTemp++;
+              }
+              Print("---------------\n");
+              lalasp = spolysFirst;
+#endif
+#if F5EDEBUG1
+              Print("ADDED TO LIST OF SPOLYS TO BE REDUCED: \n---------------\n");
+              pWrite( pHead(newPoly) );
+              Print("---------------\n");
+#endif
+              */ // end of basic algorithm stuff!
+
+                // get back on track for the old poly which has to be checked for 
+                // reductions by the following element in gCurr
+                isMult    = FALSE;
+              redundant = TRUE;
+              temp      = temp->next;
+              if( temp )
+              {
+                goto startagainTop;
+              }
+              else
+              {
+                break;
+              }
+            }
+            else
+            {
+              // this is the ggv criterion:
+              // the element to be reduced as well as the multiplied reducer have
+              // the same leading monomial as polynomials & the same leading 
+              // monomial as labels
+              // => check the coefficients of the labels! 
+              if( pLmCmp( multLabelTempExp, spLabelExp ) == 0 )
+              { 
+                // SUPER TOP REDUCTION IN GGV
+                if( 
+                    n_Equal ( pGetCoeff(kBucketGetLm(bucket)), 
+                      pGetCoeff(temp->p), 
+                      currRing ) 
+                  )
+                {
+                  superTop  = TRUE;
+                  temp      = temp->next;
+                  if( temp )
+                  {
+                    goto startagainTop;
+                  }
+                  else
+                  {
+                    break;
+                  }
+                  /*
+                     if( spTemp->next )
+                     {
+                     spTemp  = spTemp->next;
+                     pDelete( &spTemp->p );
+                     omFreeSize( spDel, sizeof(Spoly) );
+                     Print("here4\n");
+                     goto startComplete;
+                     }
+                     else
+                     {
+                     pDelete( &spDel->p );
+                     omFreeSize( spDel, sizeof(Spoly) );
+                     }
+                   */
+                }
+                // leading monomials of signatures are equal, but leading 
+                // coefficients are different!
+                else
+                {
+                  // else we can go on and reduce sp
+                  // The multiplied reducer will be reduced w.r.t. strat before the 
+                  // bucket reduction starts!
+
+                  // NOTE that we have to adjust the coefficient of the corresponding rule
+                  // due to ggv rules!
+                  static poly multiplier = pOne();
+                  static poly multReducer;
+                  getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
+                      negBitmaskShifted, offsets
+                      );
+                  // throw away the leading monomials of reducer and bucket
+                  p_SetCoeff( multiplier, multCoeff2, currRing );
+                  pSetm( multiplier );
+                  //p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+                  kBucketExtractLm(bucket);
+                  // build the multiplied reducer (note that we do not need the leading
+                  // term at all!
+#if F5EDEBUG2
+                  Print("MULT: %p\n", multiplier );
+                  pWrite( multiplier );
+#endif
+                  multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
+#if F5EDEBUG2
+                  Print("MULTRED BEFORE: \n" );
+                  pWrite( pHead(multReducer) );
+#endif
+                  //multReducer = reduceByRedGBPoly( multReducer, strat );
+#if F5EDEBUG2
+                  Print("MULTRED AFTER: \n" );
+                  pWrite( pHead(multReducer) );
+#endif
+                  //  length must be computed after the reduction with 
+                  //  redGB!
+                  tempLength = pLength( multReducer );
+                  // reduce polynomial
+                  kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+                  numberReductions++;
+                  // adjust the coefficient of the signature
+                  // compute 1 / (1-multCoeff2)
+                  number shifter =  n_Sub ( 
+                      nInit(1), 
+                      multCoeff2, 
+                      currRing);                
+                  shifter = n_Invers( shifter, currRing );
+                  // multiply spTemp->p with shifter
+                  kBucket_Mult_n( bucket, shifter);
+#if F5EDEBUG2
+                  Print("AFTER REDUCTION STEP: ");
+                  pWrite( kBucketGetLm(bucket) );
+#endif
+                  if( canonicalize++ % 40 )
+                  {
+                    kBucketCanonicalize( bucket );
+                    canonicalize = 0;
+                  }
+                  superTop  = FALSE;
+                  isMult    = FALSE;
+                  redundant = FALSE;
+                  if( kBucketGetLm( bucket ) )
+                  {
+                    temp  = gCurrFirst;
+                  }
+                  else
+                  {
+                    break;
+                  }
+                  goto startagainTop;
+
+                }
+              }
               else
               {
                 // else we can go on and reduce sp
                 // The multiplied reducer will be reduced w.r.t. strat before the 
                 // bucket reduction starts!
-
-                // NOTE that we have to adjust the coefficient of the corresponding rule
-                // due to ggv rules!
                 static poly multiplier = pOne();
                 static poly multReducer;
                 getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
@@ -2188,15 +2263,6 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
                 // reduce polynomial
                 kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
                 numberReductions++;
-                // adjust the coefficient of the signature
-                // compute 1 / (1-multCoeff2)
-                number shifter =  n_Sub ( 
-                    nInit(1), 
-                    multCoeff2, 
-                    currRing);                
-                shifter = n_Invers( shifter, currRing );
-                // multiply spTemp->p with shifter
-                kBucket_Mult_n( bucket, shifter);
 #if F5EDEBUG2
                 Print("AFTER REDUCTION STEP: ");
                 pWrite( kBucketGetLm(bucket) );
@@ -2221,112 +2287,51 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
 
               }
             }
-            else
-            {
-              // else we can go on and reduce sp
-              // The multiplied reducer will be reduced w.r.t. strat before the 
-              // bucket reduction starts!
-              static poly multiplier = pOne();
-              static poly multReducer;
-              getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
-                  negBitmaskShifted, offsets
-                  );
-              // throw away the leading monomials of reducer and bucket
-              p_SetCoeff( multiplier, multCoeff2, currRing );
-              pSetm( multiplier );
-              //p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
-              kBucketExtractLm(bucket);
-              // build the multiplied reducer (note that we do not need the leading
-              // term at all!
-#if F5EDEBUG2
-              Print("MULT: %p\n", multiplier );
-              pWrite( multiplier );
-#endif
-              multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
-#if F5EDEBUG2
-              Print("MULTRED BEFORE: \n" );
-              pWrite( pHead(multReducer) );
-#endif
-              //multReducer = reduceByRedGBPoly( multReducer, strat );
-#if F5EDEBUG2
-              Print("MULTRED AFTER: \n" );
-              pWrite( pHead(multReducer) );
-#endif
-              //  length must be computed after the reduction with 
-              //  redGB!
-              tempLength = pLength( multReducer );
-              // reduce polynomial
-              kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
-              numberReductions++;
-#if F5EDEBUG2
-              Print("AFTER REDUCTION STEP: ");
-              pWrite( kBucketGetLm(bucket) );
-#endif
-              if( canonicalize++ % 40 )
-              {
-                kBucketCanonicalize( bucket );
-                canonicalize = 0;
-              }
-              superTop  = FALSE;
-              isMult    = FALSE;
-              redundant = FALSE;
-              if( kBucketGetLm( bucket ) )
-              {
-                temp  = gCurrFirst;
-              }
-              else
-              {
-                break;
-              }
-              goto startagainTop;
-
-            }
           }
-        }
-        // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
-        // criterion again => go on with reduction steps
-             else
-             {
-               multCoeff1          = pGetCoeff( kBucketGetLm(bucket) );
-               multCoeff2          = pGetCoeff( temp->p );
-               multCoeff2          = n_Div( multCoeff1, multCoeff2, currRing );
-               static poly tempNeg  = pInit();
-               // throw away the leading monomials of reducer and bucket
-               tempNeg       = pCopy( temp->p );
-               tempLength    = pLength( tempNeg->next );
-               p_Mult_nn( tempNeg, multCoeff2, currRing );
-               pSetm( tempNeg );
-               kBucketExtractLm( bucket );
-#if F5EDEBUG2
-               Print("REDUCTION WITH: ");
-               pWrite( temp->p );
-#endif
-              kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
-              numberReductions++;
-#if F5EDEBUG2
-               Print("AFTER REDUCTION STEP: ");
-               pWrite( kBucketGetLm(bucket) );
-#endif
-               if( canonicalize++ % 40 )
-               {
-                 kBucketCanonicalize( bucket );
-                 canonicalize = 0;
-               }
-               superTop  = FALSE;
-               redundant = FALSE;
-               if( kBucketGetLm( bucket ) )
-               {
-                 temp  = gCurrFirst;
-               }
+          // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
+          // criterion again => go on with reduction steps
                else
                {
-                 break;
-               }
-               goto startagainTop;
-             } 
+                 multCoeff1          = pGetCoeff( kBucketGetLm(bucket) );
+                 multCoeff2          = pGetCoeff( temp->p );
+                 multCoeff2          = n_Div( multCoeff1, multCoeff2, currRing );
+                 static poly tempNeg  = pInit();
+                 // throw away the leading monomials of reducer and bucket
+                 tempNeg       = pCopy( temp->p );
+                 tempLength    = pLength( tempNeg->next );
+                 p_Mult_nn( tempNeg, multCoeff2, currRing );
+                 pSetm( tempNeg );
+                 kBucketExtractLm( bucket );
+#if F5EDEBUG2
+                 Print("REDUCTION WITH: ");
+                 pWrite( temp->p );
+#endif
+                 kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
+                 numberReductions++;
+#if F5EDEBUG2
+                 Print("AFTER REDUCTION STEP: ");
+                 pWrite( kBucketGetLm(bucket) );
+#endif
+                 if( canonicalize++ % 40 )
+                 {
+                   kBucketCanonicalize( bucket );
+                   canonicalize = 0;
+                 }
+                 superTop  = FALSE;
+                 redundant = FALSE;
+                 if( kBucketGetLm( bucket ) )
+                 {
+                   temp  = gCurrFirst;
+                 }
+                 else
+                 {
+                   break;
+                 }
+                 goto startagainTop;
+               } 
+          }
+          temp  = temp->next;
         }
-        temp  = temp->next;
-      }
       // we know that sp = 0 at this point!
       sp  = kBucketExtractLm( bucket );
 #if F5EDEBUG1
