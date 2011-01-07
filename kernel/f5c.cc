@@ -161,6 +161,7 @@ ideal f5cMain(ideal F, ideal Q)
   superTopReductions  = 0;
   zeroReductions      = 0;
   numberReductions    = 0;
+  number1Reductions   = 0;
   return r;
 }
 
