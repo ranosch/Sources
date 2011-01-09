@@ -3,7 +3,7 @@ system("--min-time", "0.001");
 system("--ticks-per-sec", 1000);
 LIB"f5ex2.lib";
 //LIB"poly.lib";
-//cyclic_n(7);
+//cyclic_n(4);
 //katsura10();
 //eco(9);
 //fmtm();

@@ -463,7 +463,8 @@ void criticalPairInit (
       cpTemp->mLabelExp   = pOne();
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets );
-      insertCritPair(cpTemp, critPairDeg, cpBounds);
+      insertCritPair( cpTemp, critPairDeg, cpBounds, numVariables, shift, 
+                      negBitmaskShifted, offsets);
       Cpair* cp         = (Cpair*) omAlloc( sizeof(Cpair) );
       cpTemp            = cp;
       cpTemp->next      = NULL;
@@ -532,7 +533,8 @@ void criticalPairInit (
     getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                         numVariables, shift, negBitmaskShifted, offsets
                       );
-    insertCritPair( cpTemp, critPairDeg, cpBounds );
+    insertCritPair( cpTemp, critPairDeg, cpBounds, numVariables, shift, 
+                    negBitmaskShifted, offsets);
   }
   else 
   {
@@ -632,7 +634,8 @@ void criticalPairPrev (
       cpTemp->mLabelExp   = pOne();
       getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                           numVariables, shift, negBitmaskShifted, offsets );
-      insertCritPair(cpTemp, critPairDeg, cpBounds);
+      insertCritPair( cpTemp, critPairDeg, cpBounds, numVariables, shift, 
+                      negBitmaskShifted, offsets);
       Cpair* cp         = (Cpair*) omAlloc( sizeof(Cpair) );
       cpTemp            = cp;
       cpTemp->next      = NULL;
@@ -700,7 +703,9 @@ void criticalPairPrev (
     getExpFromIntArray( cpTemp->mLabel1, cpTemp->mLabelExp, 
                         numVariables, shift, negBitmaskShifted, offsets
                       );
-    insertCritPair(cpTemp, critPairDeg, cpBounds);
+    insertCritPair( cpTemp, critPairDeg, cpBounds, numVariables, shift, 
+                    negBitmaskShifted, offsets);
+    
   }
   else 
   {
@@ -864,7 +869,9 @@ void criticalPairCurr (
             checkExp                        = expTempHolder;
           }
 
-          insertCritPair(cpTemp, critPairDeg, cpBounds);
+          insertCritPair( cpTemp, critPairDeg, cpBounds, numVariables, shift, 
+                          negBitmaskShifted, offsets);
+          
 
           Cpair* cp         = (Cpair*) omAlloc( sizeof(Cpair) );
           cpTemp            = cp;
@@ -979,7 +986,8 @@ void criticalPairCurr (
           checkExp                        = expTempHolder;
         }
       
-        insertCritPair(cpTemp, critPairDeg, cpBounds);
+        insertCritPair( cpTemp, critPairDeg, cpBounds, numVariables, shift, 
+                        negBitmaskShifted, offsets);
       }
     } 
     else 
@@ -1002,8 +1010,33 @@ void criticalPairCurr (
 
 
 
-void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
+void insertCritPair ( Cpair* cp, long deg, CpairDegBound** bound, int numVariables,
+                      int* shift, unsigned long* negBitmaskShifted, int* offsets  )
 {
+  poly lmTest1  = pOne();
+  poly lmTest2  = pOne();
+  poly lmTest   = pOne();
+  poly tempTest1  = pOne();
+  poly tempTest2  = pOne();
+  poly tempTest   = pOne();
+  poly m1 = multInit( cp->mult1, numVariables, shift, 
+                      negBitmaskShifted, offsets 
+                    );
+  poly m2 = multInit( cp->mult2, numVariables, shift, 
+                      negBitmaskShifted, offsets 
+                    );
+  lmTest1   = pp_Mult_mm( cp->p1, m1, currRing );
+  lmTest2   = pp_Mult_mm( cp->p2, m2, currRing );
+  lmTest1   = lmTest1->next;
+  lmTest2   = lmTest2->next;
+  if( pLmCmp( pHead(lmTest1), pHead(lmTest2) ) == 1  )
+  {
+    lmTest  = pHead(lmTest1);
+  }
+  else
+  {
+    lmTest  = pHead(lmTest2);
+  }
   // pointer for deleting critical pairs of the same signature:
   // ggv says: one pair per signature!
   // NOTE that this is not possible in F5 due to the Rewritten Criterion!
@@ -1054,11 +1087,30 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
     }
     else
     {
+      /*
       // first element in list has equal label
       if( pLmCmp(cp->mLabelExp, tempForDel->mLabelExp) == 0 )
       {
         // need to check which generating element was generated later
-        if( pLmCmp( cp->p1, tempForDel->p1 ) == -1 )
+      poly tm1 = multInit( tempForDel->mult1, numVariables, shift, 
+                          negBitmaskShifted, offsets 
+                        );
+      poly tm2 = multInit( tempForDel->mult2, numVariables, shift, 
+                          negBitmaskShifted, offsets 
+                        );
+      tempTest1   = pp_Mult_mm( tempForDel->p1, tm1, currRing );
+      tempTest2   = pp_Mult_mm( tempForDel->p2, tm2, currRing );
+      tempTest1   = tempTest1->next;
+      tempTest2   = tempTest2->next;
+      if( pLmCmp( pHead(tempTest1), pHead(tempTest2) ) == 1  )
+      {
+        tempTest  = pHead(tempTest1);
+      }
+      else
+      {
+        tempTest  = pHead(tempTest2);
+      }
+        if( pLmCmp( lmTest, tempTest ) == -1 )
         {
           Cpair* tempDel  = tempForDel;
           cp->next =  tempForDel->next;
@@ -1081,6 +1133,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
       }
       else
       {
+      */
         // first element in list has smaller label
         while( NULL!=tempForDel->next && pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == 1 )
         {
@@ -1093,10 +1146,20 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
         }
         else
         {
-          if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == 0 )
+          /*if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == 0 )
           {
             // need to check which generating element was generated later
-            if( pLmCmp( cp->p1, tempForDel->p1 ) == -1 )
+            poly tm1 = multInit( tempForDel->mult1, numVariables, shift, 
+                                negBitmaskShifted, offsets 
+                              );
+            poly tm2 = multInit( tempForDel->mult2, numVariables, shift, 
+                                negBitmaskShifted, offsets 
+                              );
+            tempTest1   = pp_Mult_mm( tempForDel->p1, tm1, currRing );
+            tempTest2   = pp_Mult_mm( tempForDel->p2, tm2, currRing );
+            tempTest1   = tempTest1->next;
+            tempTest2   = tempTest2->next;
+            if( pLmCmp( lmTest, tempTest ) == -1 )
             {
               Cpair* tempDel  = tempForDel->next;
               cp->next =  (tempForDel->next)->next;
@@ -1120,13 +1183,13 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
           else
           {
             if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == -1 )
-            {
+            {*/
               cp->next          = tempForDel->next;
               tempForDel->next  = cp;
 
-            }
-          }
-        } 
+           /* }
+          }*/
+        /*}*/ 
       }
     }
   }
@@ -1157,6 +1220,12 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
   Print("-------------------------------------\n");
   Print("INSERTCRITPAIR-END deg bound %p\n",*bound);
 #endif
+  pDelete( &lmTest1 );
+  pDelete( &lmTest2 );
+  pDelete( &lmTest );
+  pDelete( &tempTest1 );
+  pDelete( &tempTest2 );
+  pDelete( &tempTest );
 }
 
 
@@ -1221,13 +1290,17 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 
 
 inline BOOLEAN criterion2 ( 
-                            const int* mLabel, const unsigned long smLabel, 
-                            const RewRules* rewRules, const unsigned long rewRulePos
+                            poly lm, const int* mLabel, const unsigned long smLabel, 
+                            const RewRules* rewRules, const unsigned long rewRulePos,
+                            int numVariables, int* shift, unsigned long* negBit,
+                            int* offsets
                           )
 {
   unsigned long i   = rewRulePos + 1;
   unsigned long end = rewRules->size;
   int j             = currRing->N;
+  poly   tempMult   = pOne();
+  int*    tempArray = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
 #if F5EDEBUG1
     Print("CRITERION2-BEGINNING\nTested Element: ");
 #endif
@@ -1264,7 +1337,9 @@ inline BOOLEAN criterion2 (
     {
       while(j)
       {
-        if(mLabel[j] < rewRules->label[i][j])
+        tempArray[j] = mLabel[j] - rewRules->label[i][j];
+        Print(" %d\n", tempArray[j]);
+        if( tempArray[j] < 0 )
         {
           j = currRing->N;
           i++;
@@ -1272,6 +1347,29 @@ inline BOOLEAN criterion2 (
         }
         j--;
       }
+      // tempArray is multiplier for lms
+      Print("CRIT2TESTMULT: \n");
+      if( !rewRules->p[i] )
+      {
+        j = currRing->N;
+        i++;
+        goto nextElement;
+      }
+
+      getExpFromIntArray( tempArray, tempMult, numVariables, shift, 
+          negBit, offsets
+          );
+      tempMult = pp_Mult_qq( pHead(rewRules->p[i]), tempMult, currRing );
+      // if tempMult > lm do not use rule, but search more!
+      /*
+      if( pLmCmp( tempMult, lm) == 1 )
+      {
+        j = currRing->N;
+        i++;
+        goto nextElement;
+      }
+      */
+      // else we can use the rule!!!
 #if F5EDEBUG1
     Print("Rewrite Rule: ");
     j = currRing->N;
@@ -1306,6 +1404,9 @@ void computeSpols (
 #endif
   // check whether a new deg step starts or not
   // needed to keep the synchronization of RewRules list and Spoly list alive
+  poly lmTest1                = pOne();
+  poly lmTest2                = pOne();
+  poly lmTest                 = pOne();
   BOOLEAN start               = TRUE; 
   BOOLEAN newStep             = TRUE; 
   Cpair* temp                 = NULL;
@@ -1351,8 +1452,29 @@ void computeSpols (
       // w.r.t. redGB
 
       // no criteria tests in the basic algorithm!
+      poly m1 = multInit( temp->mult1, numVariables, shift, 
+                          negBitmaskShifted, offsets 
+                        );
+      poly m2 = multInit( temp->mult2, numVariables, shift, 
+                          negBitmaskShifted, offsets 
+                        );
+      lmTest1   = pp_Mult_mm( temp->p1, m1, currRing );
+      lmTest2   = pp_Mult_mm( temp->p2, m2, currRing );
+      lmTest1   = lmTest1->next;
+      lmTest2   = lmTest2->next;
+      if( pLmCmp( pHead(lmTest1), pHead(lmTest2) ) == 1  )
+      {
+        lmTest  = pHead(lmTest1);
+      }
+      else
+      {
+        lmTest  = pHead(lmTest2);
+      }
+      pWrite( pHead(lmTest) );
       if( 
-          !criterion2(temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1) 
+          !criterion2 ( lmTest, temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1,
+                        numVariables, shift, negBitmaskShifted, offsets 
+                      ) 
         )
       {
         if( (*rewRules)->size < rewRulesSize )
@@ -1371,6 +1493,7 @@ void computeSpols (
             _i++;
           }
           (*rewRules)->slabel[(*rewRules)->size]  = ~temp->smLabel1;
+          (*rewRules)->p[(*rewRules)->size]       = NULL;
           (*rewRules)->size++;
         }
         else
@@ -2408,7 +2531,7 @@ kBucketLmZero:
           newElement->sExp      = pGetShortExpVector(sp); 
           newElement->rewRule   = rewRulesCurr; 
           newElement->redundant = redundant;
-          rewRules->p[rewRulesCurr] = newElement->p;
+          rewRules->p[rewRulesCurr] = sp;
           // update pointer to last element in gCurr list
           (*gCurrLast)->next    = newElement;
           *gCurrLast            = newElement;
@@ -2457,7 +2580,7 @@ kBucketLmZero:
       {
         // if spTemp->p = 0 we have to add the corresponding rewRule to the array
         // of f5Rules
-        rewRules->p = NULL;
+        rewRules->p[rewRulesCurr] = NULL;
 #if F5EDEBUG0
         Print("ZERO REDUCTION!\n");
         poly pSig = pOne(); 

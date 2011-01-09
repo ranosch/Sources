@@ -281,8 +281,12 @@ void criticalPairCurr (
 void insertCritPair (
   Cpair*          critPair, ///<[in]      new critical pair to be inserted
   long            deg,      ///<[in]      degree of \c critPair
-  CpairDegBound** bound     ///<[in,out]  first element of the list of 
+  CpairDegBound** bound,    ///<[in,out]  first element of the list of 
                             ///           critical pair degree bounds
+  int numVariables,               ///<[in]  global stuff for faster exponent computations
+  int* shift,                     ///<[in]  global stuff for faster exponent computations
+  unsigned long* negBit,          ///<[in]  global stuff for faster exponent computations
+  int* offsets                    ///<[in]  global stuff for faster exponent computations
                     );
 
 
@@ -304,11 +308,16 @@ inline BOOLEAN criterion1 (
 /// @return 1, if the label is detected by the Rewritten Criterion; 0, else
 /// @sa criterion1
 inline BOOLEAN criterion2 (
+  const poly          lm,         ///<[in]  lm of the corresponding s-polynomial
   const int*          mLabel,     ///<[in]  multiplied labeled to be checked
   const unsigned long smLabel,    ///<[in]  corresponding short exponent vector
   const RewRules*   rewRules,     ///<[in]  rules for Rewritten Criterion checks
-  const unsigned long rewRulePos  ///<[in]  position from which the rule check 
+  const unsigned long rewRulePos, ///<[in]  position from which the rule check 
                                   ///       should start
+  int numVariables,               ///<[in]  global stuff for faster exponent computations
+  int* shift,                     ///<[in]  global stuff for faster exponent computations
+  unsigned long* negBit,          ///<[in]  global stuff for faster exponent computations
+  int* offsets                    ///<[in]  global stuff for faster exponent computations
                           );
 
 
