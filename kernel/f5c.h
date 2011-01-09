@@ -57,6 +57,7 @@ struct RewRules
 {
   unsigned long   size;   ///< current number of rules in the list
   int**           label;  ///< array of exponent vectors of the rules
+  poly*           p;      ///< corresponding lm of poly
   unsigned long*  slabel; ///< array of short exponent vecotrs of the rules
 };
 

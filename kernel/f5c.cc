@@ -246,6 +246,7 @@ ideal f5cIter (
   // malloc two times the size of the previous Groebner basis
   // Note that we possibly need more memory in this iteration step!
   rewRules->label   = (int**) omAlloc((rewRulesSize)*sizeof(int*));
+  rewRules->p       = (poly*) omAlloc((rewRulesSize)*sizeof(poly));
   rewRules->slabel  = (unsigned long*) omAlloc((rewRulesSize)*
                       sizeof(unsigned long)); 
   // Initialize a first (dummy) rewrite rule for the initial polynomial of this
@@ -255,6 +256,7 @@ ideal f5cIter (
   // (b) Note also that the size of strat is >=1.
   rewRules->label[0]  = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
   rewRules->slabel[0] = 0;
+  rewRules->p[0]  = p;
   for(i=1; i<rewRulesSize; i++) 
   {
     rewRules->label[i]  =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
@@ -1349,13 +1351,10 @@ void computeSpols (
       // w.r.t. redGB
 
       // no criteria tests in the basic algorithm!
-      /*
       if( 
-          !criterion2(temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1) &&
-          (!temp->mLabel2 || !criterion2(temp->mLabel2, temp->smLabel2, (*rewRules), temp->rewRule2)) 
+          !criterion2(temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1) 
         )
       {
-      */
         if( (*rewRules)->size < rewRulesSize )
         {
 #if F5EDEBUG2
@@ -1383,6 +1382,7 @@ void computeSpols (
           rewRulesSize                    = 3*rewRulesSize;
           RewRules* newRules              = (RewRules*) omAlloc( sizeof(RewRules) );
           newRules->label                 = (int**) omAlloc( rewRulesSize*sizeof(int*) );
+          newRules->p                     = (poly*) omAlloc( rewRulesSize*sizeof(poly) );
           newRules->slabel                = (unsigned long*)omAlloc( rewRulesSize*sizeof(unsigned long) );
           newRules->size                  = (*rewRules)->size;
           register unsigned long _length  = currRing->N+1;
@@ -1399,8 +1399,10 @@ void computeSpols (
               _i++;
             }
             omFreeSize( (*rewRules)->label[ctr], (currRing->N+1)*sizeof(int) );
+            newRules->p[ctr]      = (*rewRules)->p[ctr];
             newRules->slabel[ctr] = (*rewRules)->slabel[ctr];
           }
+          omFreeSize( (*rewRules)->p, old*sizeof(poly) );
           omFreeSize( (*rewRules)->slabel, old*sizeof(unsigned long) );
           for( ; ctr<rewRulesSize; ctr++ )
           {
@@ -1498,7 +1500,6 @@ void computeSpols (
         {
           pDelete( &sp );
         }
-      /*
       }
       else
       {
@@ -1506,7 +1507,6 @@ void computeSpols (
         //  rewrite rule, but which was detected by one of F5's criteria
         omFree( temp->mLabel1 );
       }
-      */
       // free memory
       tempDel  = temp;
       cp->cp  = (cp->cp)->next;
@@ -2408,6 +2408,7 @@ kBucketLmZero:
           newElement->sExp      = pGetShortExpVector(sp); 
           newElement->rewRule   = rewRulesCurr; 
           newElement->redundant = redundant;
+          rewRules->p[rewRulesCurr] = newElement->p;
           // update pointer to last element in gCurr list
           (*gCurrLast)->next    = newElement;
           *gCurrLast            = newElement;
@@ -2456,6 +2457,7 @@ kBucketLmZero:
       {
         // if spTemp->p = 0 we have to add the corresponding rewRule to the array
         // of f5Rules
+        rewRules->p = NULL;
 #if F5EDEBUG0
         Print("ZERO REDUCTION!\n");
         poly pSig = pOne(); 
