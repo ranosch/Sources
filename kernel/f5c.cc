@@ -1361,14 +1361,12 @@ inline BOOLEAN criterion2 (
           );
       tempMult = pp_Mult_qq( pHead(rewRules->p[i]), tempMult, currRing );
       // if tempMult > lm do not use rule, but search more!
-      /*
       if( pLmCmp( tempMult, lm) == 1 )
       {
         j = currRing->N;
         i++;
         goto nextElement;
       }
-      */
       // else we can use the rule!!!
 #if F5EDEBUG1
     Print("Rewrite Rule: ");
