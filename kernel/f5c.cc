@@ -1680,6 +1680,9 @@ void computeSpols (
   // free memory
   omFree( multTemp );
   omFree( multLabelTemp );
+  pDelete( &lmTest1 );
+  pDelete( &lmTest2 );
+  pDelete( &lmTest );
   // the following is false as we use arrays for rewRules right now which will be 
   // deleted in f5cIter(), similar to f5Rules
   /*
