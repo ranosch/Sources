@@ -51,6 +51,7 @@
 #define PDEBUG 0 
 #endif
 #define F5ETAILREDUCTION  0 
+#define F5EDEBUG00        1 
 #define F5EDEBUG0         0 
 #define F5EDEBUG1         0 
 #define F5EDEBUG2         0 
@@ -144,11 +145,13 @@ ideal f5cMain(ideal F, ideal Q)
   omFree(shift);
   omFree(negBitmaskShifted);
   omFree(offsets);
+#if F5EDEBUG00
   Print("--------------------------------------------------\n");
   Print("Number of Reductions:   %ld\n",number1Reductions);
   Print("# Reduction steps:      %ld\n",numberReductions);
   Print("# Zero Reductions:      %ld\n", zeroReductions);
   Print("--------------------------------------------------\n");
+#endif
   create_count_f5   = 0;
   rewRulesSize      = 0;
   f5RulesSize       = 0;
@@ -188,6 +191,7 @@ ideal f5cIter (
 #endif  
   // create the reduction structure "strat" which is needed for all 
   // reductions with redGB in this iteration step
+  Print("HERE\n");
   kStrategy strat   = new skStrategy;
   BOOLEAN b         = pLexOrder;
   BOOLEAN toReset   = FALSE;
@@ -224,16 +228,17 @@ ideal f5cIter (
   // store #elements in redGB for freeing the memory of F5Rules in the end of this
   // iteration step
   unsigned long oldLength;
+  // set global variables for the sizes of F5 & Rewritten Rules available
+  rewRulesSize  = f5RulesSize = 2*(strat->sl+1);
+  stratSize     = strat->sl+1;
   // create array of leading monomials of previously computed elements in redGB
   F5Rules* f5Rules    = (F5Rules*) omAlloc(sizeof(struct F5Rules));
   RewRules* rewRules  = (RewRules*) omAlloc(sizeof(struct RewRules));
   // malloc memory for all rules
-  f5Rules->label    = (int**) omAlloc((strat->sl+1)*sizeof(int*));
+  f5Rules->label    = (int**) omAlloc(f5RulesSize*sizeof(int*));
+  f5Rules->slabel     = (unsigned long*) omAlloc(f5RulesSize*
+                        sizeof(unsigned long)); 
   
-  // set global variables for the sizes of F5 & Rewritten Rules available
-  rewRulesSize  = 2*(strat->sl+1);
-  stratSize     = strat->sl+1;
-
   // malloc two times the size of the previous Groebner basis
   // Note that we possibly need more memory in this iteration step!
   rewRules->label   = (int**) omAlloc((rewRulesSize)*sizeof(int*));
@@ -254,13 +259,20 @@ ideal f5cIter (
   // use the strategy strat to get the F5 Rules:
   // When preparing strat we have already computed & stored the short exonent
   // vectors there => do not recompute them again 
-  for(i=0; i<=strat->sl; i++) 
+  for(i=0; i<stratSize; i++) 
   {
     f5Rules->label[i]  =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
     pGetExpV( strat->S[i], f5Rules->label[i] );
+    f5Rules->slabel[i]  = strat->sevS[i];
+  } 
+  // alloc memory for the rest of the labels
+  for( ; i<f5RulesSize; i++) 
+  {
+    f5Rules->label[i]   = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
   } 
 
   rewRules->size  = 1;
+  f5Rules->size   = stratSize;
   // reduce and initialize the list of Lpolys with the current ideal generator p
 #if F5EDEBUG3
   Print("Before reduction\n");
@@ -293,7 +305,7 @@ ideal f5cIter (
     if( cpBounds )
     {
       computeSpols( 
-                    strat, cpBounds, redGB, &gCurr, f5Rules, &rewRules, 
+                    strat, cpBounds, redGB, &gCurr, &f5Rules, &rewRules, 
                     numVariables, shift, negBitmaskShifted, offsets
                   );
     }
@@ -1102,7 +1114,7 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 #endif
   nextElement:
   
-  for( ; i < stratSize; i++)
+  for( ; i < f5Rules->size; i++)
   {
 #if F5EDEBUG2
     Print("F5 Rule: ");
@@ -1112,9 +1124,9 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
       j--;
     }
     j = currRing->N;
-    Print("\n %ld\n", strat->sevS[i]);
+    Print("\n %ld\n", f5Rules->slabel[i]);
 #endif
-    if(!(smLabel & strat->sevS[i]))
+    if(!(smLabel & f5Rules->slabel[i]))
     {
       while(j)
       {
@@ -1217,7 +1229,7 @@ inline BOOLEAN criterion2 (
 
 void computeSpols ( 
                     kStrategy strat, CpairDegBound* cp, ideal redGB, Lpoly** gCurr, 
-                    const F5Rules* f5Rules, RewRules** rewRules, int numVariables, 
+                    F5Rules** f5Rules, RewRules** rewRules, int numVariables, 
                     int* shift, unsigned long* negBitmaskShifted, int* offsets
                   )
 {
@@ -1525,7 +1537,7 @@ void currReduction  (
                       RewRules** rewRulesP, unsigned long rewRulesCurr,
                       ideal redGB, CpairDegBound** cp, Lpoly* gCurrFirst, 
                       Lpoly** gCurrLast,
-                      const F5Rules* f5Rules, int* multTemp, 
+                      F5Rules** f5RulesP, int* multTemp, 
                       int* multLabelTemp, int numVariables, int* shift, 
                       unsigned long* negBitmaskShifted, int* offsets
                     )
@@ -1534,8 +1546,9 @@ void currReduction  (
 #if F5EDEBUG1
     Print("CURRREDUCTION-BEGINNING: GCURR %p -- %p\n",gCurrFirst, (gCurrFirst)->next);
 #endif
-  RewRules* rewRules = *rewRulesP;
-  BOOLEAN isMult    = FALSE;
+  RewRules* rewRules  = *rewRulesP;
+  F5Rules* f5Rules    = *f5RulesP;
+  BOOLEAN isMult      = FALSE;
   // check needed to ensure termination of F5 (see F5+)
   // this will be added to all new labeled polynomials to check
   // when to terminate the algorithm
@@ -2285,7 +2298,97 @@ void currReduction  (
     }
     else // spTemp->p == 0
     {
+      // if spTemp->p = 0 we have to add the corresponding rewRule to the array
+      // of f5Rules
+#if F5EDEBUG0
+      Print("ZERO REDUCTION!\n");
+      poly pSig = pOne(); 
+      for( int lale = 1; lale < (currRing->N+1); lale++ )
+      {
+        pSetExp( pSig, lale, rewRules->label[rewRulesCurr][lale] );
+      }
+      pWrite( pSig );
+      pTest( (gCurrFirst)->p );
+      pDelete( &pSig );
+#endif
       zeroReductions++;
+#if F5EDEBUG2
+      Print("SIZES BEFORE: %ld < %ld ?\n",f5Rules->size, f5RulesSize);
+      Print("ADDRESS: %p\n", f5Rules->label[0]);
+#endif
+      // get the corresponding offsets for the insertion of the element in the two lists:
+      if( f5Rules->size<f5RulesSize )
+      {
+        // copy data from critical pair rule to rewRule
+        register unsigned long _length  = currRing->N+1;
+        register unsigned long _i       = 0;
+  Print("HERE\n");
+        register int* _d                = f5Rules->label[f5Rules->size];
+  Print("HERE %p\n", f5Rules->label[f5Rules->size]);
+        register int* _s                = rewRules->label[rewRulesCurr];
+  Print("HERE %ld\n", rewRulesCurr);
+        while( _i<_length )
+        {
+          Print("%ld\n",_i);
+          _d[_i]  = _s[_i];
+          _i++;
+        }
+  Print("HERE\n");
+        f5Rules->slabel[f5Rules->size]  = rewRules->slabel[rewRulesCurr];
+        f5Rules->size++;
+      }
+      else
+      {
+#if F5EDEBUG1
+        Print("ALLOC MORE MEMORYi -- %p\n", f5Rules->label[0]);
+#endif
+        unsigned int old    = f5RulesSize;
+        f5RulesSize         = 3*f5RulesSize;
+        F5Rules* newRules   = (F5Rules*) omAlloc( sizeof(F5Rules) );
+        newRules->label     = (int**) omAlloc( f5RulesSize*sizeof(int*) );
+        newRules->slabel    = (unsigned long*)omAlloc( f5RulesSize*sizeof(unsigned long) );
+        newRules->size      = f5Rules->size;
+        // add element at the end 
+        register unsigned long _length  = currRing->N+1;
+        register unsigned long _ctr     = 0;
+        for( ; _ctr<old; _ctr++ )
+        {
+          newRules->label[_ctr]     =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+          register unsigned long _i = 0;
+          register int* _d          = newRules->label[_ctr];
+          register int* _s          = f5Rules->label[_ctr];
+          while( _i<_length )
+          {
+            _d[_i]  = _s[_i];
+            _i++;
+          }
+          omFreeSize( f5Rules->label[_ctr], (currRing->N+1)*sizeof(int) );
+          newRules->slabel[_ctr]  = f5Rules->slabel[_ctr];
+        }
+        omFreeSize( f5Rules->slabel, old*sizeof(unsigned long) );
+        for( ; _ctr<f5RulesSize; _ctr++ )
+        {
+          newRules->label[_ctr] =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+        }
+        omFreeSize( f5Rules, sizeof(F5Rules) );
+        *f5RulesP  = f5Rules  = newRules;
+        // now we can go on adding the new rule to f5Rules
+
+        // copy data from rule corresponding to new s-polynomial to rewRule
+        register unsigned long _i = 0;
+        register int* _d          = f5Rules->label[f5Rules->size];
+        register int* _s          = rewRules->label[rewRulesCurr];
+        while( _i<_length )
+        {
+          _d[_i]  = _s[_i];
+          _i++;
+        }
+        f5Rules->slabel[f5Rules->size]  = rewRules->slabel[rewRulesCurr];
+        f5Rules->size++;
+#if F5EDEBUG2
+        Print("MEMORY ALLOCATED -- %p\n", f5Rules->label[0]);
+#endif
+      } 
       pDelete( &sp );
     }
     // free memory of bucket
