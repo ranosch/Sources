@@ -1152,69 +1152,64 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 
 
 
-inline BOOLEAN newCriterion1 ( const int* mLabel, const unsigned long smLabel, 
-                            const F5Rules* f5Rules, const unsigned long stratSize
-                          )
+inline void newCriterion1 ( CpairDegBound** cp, const F5Rules* f5Rules )
 {
   int i = 0;
   int j = currRing->N;
+  // the currently computed s-polynomials corresponds to the first
+  // critical pair, it is not deleted yet
+  Cpair* temp = (*cp)->cp;
 #if F5EDEBUG1
   Print("CRITERION1-BEGINNING\nTested Element: ");
 #endif
 #if F5EDEBUG1
   while( j )
-    {
-      Print("%d ",mLabel[(currRing->N)-j]);
-      j--;
-    }
+  {
+    Print("%d ",mLabel[(currRing->N)-j]);
+    j--;
+  }
   j = currRing->N;
   Print("\n %ld\n",smLabel);
 
 #endif
-  if( f5Rules->size <= stratSize )
-    {
-      return FALSE;
-    }
-  else
-    {
-      i = stratSize;
+  i = stratSize;
 nextElement:
 
-      for( ; i < f5Rules->size; i++)
-        {
+  while( temp->next )
+  {
 #if F5EDEBUG2
-          Print("F5 Rule: ");
-          while( j )
-            {
-              Print("%d ",f5Rules->label[i][(currRing->N)-j]);
-              j--;
-            }
-          j = currRing->N;
-          Print("\n %ld\n", f5Rules->slabel[i]);
-#endif
-          if(!(smLabel & f5Rules->slabel[i]))
-            {
-              while(j)
-                {
-                  if(mLabel[j] < f5Rules->label[i][j])
-                    {
-                      j = currRing->N;
-                      i++;
-                      goto nextElement;
-                    }
-                  j--;
-                }
-#if F5EDEBUG1
-              Print("CRITERION1-END-DETECTED \n");
-#endif
-              return TRUE;
-            }
-        }
-#if F5EDEBUG1
-      Print("CRITERION1-END \n");
-#endif
-      return FALSE;
+    Print("F5 Rule: ");
+    while( j )
+    {
+      Print("%d ",f5Rules->label[f5Rules->size-1][(currRing->N)-j]);
+      j--;
     }
+    j = currRing->N;
+    Print("\n %ld\n", f5Rules->slabel[f5Rules->size-1]);
+#endif
+    if(!((temp->next)->smLabel1 & f5Rules->slabel[f5Rules->size-1]))
+    {
+      while(j)
+      {
+        if((temp->next)->mLabel1[j] < f5Rules->label[f5Rules->size-1][j])
+        {
+          j = currRing->N;
+          temp = temp->next;
+          goto nextElement;
+        }
+        j--;
+      }
+#if F5EDEBUG1
+      Print("CRITERION1-END-DETECTED \n");
+#endif
+      // detected => delete temp->next in list!
+      Cpair* tempForDel = temp->next;
+      temp->next        = (temp->next)->next;
+    }
+  }
+#if F5EDEBUG1
+  Print("CRITERION1-END \n");
+#endif
 }
 
 
@@ -1352,8 +1347,6 @@ void computeSpols (
       // and compute the corresponding s-polynomial (and pre-reduce it
       // w.r.t. redGB
       if( 
-          !newCriterion1(temp->mLabel1, temp->smLabel1, *f5Rules, stratSize) && 
-          (!temp->mLabel2 || !newCriterion1(temp->mLabel2, temp->smLabel2, *f5Rules, stratSize) ) && 
           !criterion2(temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1) &&
           (!temp->mLabel2 || !criterion2(temp->mLabel2, temp->smLabel2, (*rewRules), temp->rewRule2)) 
         )
@@ -2457,6 +2450,11 @@ void currReduction  (
 #if F5EDEBUG2
         Print("MEMORY ALLOCATED -- %p\n", f5Rules->label[0]);
 #endif
+
+      // now check all already computed critical pairs by this new rule
+      // added to the F5Rules
+      newCriterion1( cp, f5Rules ); 
+
       } 
       pDelete( &sp );
     }

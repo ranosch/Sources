@@ -303,11 +303,9 @@ inline BOOLEAN criterion1 (
 /// critical pair by the F5 Criterion when zero reductions had taken place
 /// @return 1, if the label is detected by the F5 Criterion; 0, else
 /// @sa criterion2
-inline BOOLEAN newCriterion1 (
-  const int*          mLabel,  ///<[in]  multiplied labeled to be checked
-  const unsigned long smLabel, ///<[in]  corresponding short exponent vector
-  const F5Rules*      f5Rules, ///<[in]  rules (integer vectors) for F5 Criterion checks
-  const unsigned long stratSz  ///<[in]  size of redGB
+inline void newCriterion1 (
+  CpairDegBound** cp,         ///<[in]  list of critical pairs
+  const F5Rules*      f5Rules ///<[in]  rules (integer vectors) for F5 Criterion checks
                           );
 
 
