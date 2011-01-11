@@ -1647,6 +1647,7 @@ void currReduction  (
 #endif
     kBucket* bucket                 = kBucketCreate();
     kBucketInit( bucket, sp, pLength(sp) );
+    bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
     temp  = gCurrFirst;
     //----------------------------------------
     // reduction of the leading monomial of sp
@@ -1658,7 +1659,6 @@ void currReduction  (
     while ( temp )
     {
       startagainTop:
-      bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
 #if F5EDEBUG2
       Print("TO BE REDUCED: ");
       pWrite( kBucketGetLm(bucket) );
@@ -1732,6 +1732,7 @@ void currReduction  (
             sp  = NULL;
             goto kBucketLmZero;
           }
+          bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
           goto startagainTop;
 
         }
@@ -2117,6 +2118,7 @@ void currReduction  (
             {
               break;
             }
+            bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
             goto startagainTop;
           }
         }
@@ -2156,6 +2158,7 @@ void currReduction  (
           {
             break;
           }
+          bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
           goto startagainTop;
         } 
       }
