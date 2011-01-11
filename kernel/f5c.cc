@@ -1152,6 +1152,73 @@ inline BOOLEAN criterion1 ( const int* mLabel, const unsigned long smLabel,
 
 
 
+inline BOOLEAN newCriterion1 ( const int* mLabel, const unsigned long smLabel, 
+                            const F5Rules* f5Rules, const unsigned long stratSize
+                          )
+{
+  int i = 0;
+  int j = currRing->N;
+#if F5EDEBUG1
+  Print("CRITERION1-BEGINNING\nTested Element: ");
+#endif
+#if F5EDEBUG1
+  while( j )
+    {
+      Print("%d ",mLabel[(currRing->N)-j]);
+      j--;
+    }
+  j = currRing->N;
+  Print("\n %ld\n",smLabel);
+
+#endif
+  if( f5Rules->size <= stratSize )
+    {
+      return FALSE;
+    }
+  else
+    {
+      i = stratSize;
+nextElement:
+
+      for( ; i < f5Rules->size; i++)
+        {
+#if F5EDEBUG2
+          Print("F5 Rule: ");
+          while( j )
+            {
+              Print("%d ",f5Rules->label[i][(currRing->N)-j]);
+              j--;
+            }
+          j = currRing->N;
+          Print("\n %ld\n", f5Rules->slabel[i]);
+#endif
+          if(!(smLabel & f5Rules->slabel[i]))
+            {
+              while(j)
+                {
+                  if(mLabel[j] < f5Rules->label[i][j])
+                    {
+                      j = currRing->N;
+                      i++;
+                      goto nextElement;
+                    }
+                  j--;
+                }
+#if F5EDEBUG1
+              Print("CRITERION1-END-DETECTED \n");
+#endif
+              return TRUE;
+            }
+        }
+#if F5EDEBUG1
+      Print("CRITERION1-END \n");
+#endif
+      return FALSE;
+    }
+}
+
+
+
 inline BOOLEAN criterion2 ( 
                             const int* mLabel, const unsigned long smLabel, 
                             const RewRules* rewRules, const unsigned long rewRulePos
@@ -1285,6 +1352,8 @@ void computeSpols (
       // and compute the corresponding s-polynomial (and pre-reduce it
       // w.r.t. redGB
       if( 
+          !newCriterion1(temp->mLabel1, temp->smLabel1, *f5Rules, stratSize) && 
+          (!temp->mLabel2 || !newCriterion1(temp->mLabel2, temp->smLabel2, *f5Rules, stratSize) ) && 
           !criterion2(temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1) &&
           (!temp->mLabel2 || !criterion2(temp->mLabel2, temp->smLabel2, (*rewRules), temp->rewRule2)) 
         )
