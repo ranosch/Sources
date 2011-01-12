@@ -193,22 +193,6 @@ ideal f5cIter (
   // reductions with redGB in this iteration step
   Print("HERE\n");
   kStrategy strat   = new skStrategy;
-  BOOLEAN b         = pLexOrder;
-  BOOLEAN toReset   = FALSE;
-  BOOLEAN delete_w  = TRUE;
-  if (rField_has_simple_inverse())
-  {  
-    strat->LazyPass = 20;
-  }
-  else
-  {
-    strat->LazyPass = 2;
-  }
-  strat->LazyDegree   = 1;
-  strat->enterOnePair = enterOnePairNormal;
-  strat->chainCrit    = chainCritNormal;
-  strat->syzComp      = 0;
-  strat->ak           = idRankFreeModule(redGB);
   prepRedGBReduction(strat, redGB);
 #if F5EDEBUG3
   Print("F5CITER-AFTER PREPREDUCTION\n");
@@ -235,8 +219,8 @@ ideal f5cIter (
   F5Rules* f5Rules    = (F5Rules*) omAlloc(sizeof(struct F5Rules));
   RewRules* rewRules  = (RewRules*) omAlloc(sizeof(struct RewRules));
   // malloc memory for all rules
-  f5Rules->label    = (int**) omAlloc(f5RulesSize*sizeof(int*));
-  f5Rules->slabel     = (unsigned long*) omAlloc(f5RulesSize*
+  f5Rules->label  = (int**) omAlloc(f5RulesSize*sizeof(int*));
+  f5Rules->slabel = (unsigned long*) omAlloc(f5RulesSize*
                         sizeof(unsigned long)); 
   
   // malloc two times the size of the previous Groebner basis
@@ -278,8 +262,8 @@ ideal f5cIter (
   Print("Before reduction\n");
   pTest( p );
 #endif
-  p = kNF( redGB, NULL, p );
-  //p = reduceByRedGBPoly( p, strat );
+  //p = kNF( redGB, NULL, p );
+  p = reduceByRedGBPoly( p, strat );
 #if F5EDEBUG3
   Print("After reduction: ");
   pTest( p );
@@ -2881,19 +2865,84 @@ static poly redMoraNF (poly h,kStrategy strat, int flag)
 
 void prepRedGBReduction(kStrategy strat, ideal F, ideal Q, int lazyReduce)
 {
-  /*- creating temp data structures------------------- -*/
-  BITSET save_test=test;
-  test|=Sy_bit(OPT_REDTAIL);
-  initBuchMoraCrit(strat);
-  strat->initEcart = initEcartBBA;
-  strat->enterS = enterSBba;
-#ifndef NO_BUCKETS
-  strat->use_buckets = (!TEST_OPT_NOT_BUCKETS) && (!rIsPluralRing(currRing));
+  BOOLEAN b         = pLexOrder;
+  BOOLEAN toReset   = FALSE;
+  BOOLEAN delete_w  = TRUE;
+  intvec* hilb      = NULL;
+  intvec** w        = NULL;
+  if ( rField_has_simple_inverse() )
+  {  
+    strat->LazyPass = 20;
+  }
+  else
+  {
+    strat->LazyPass = 2;
+  }
+  strat->LazyDegree   = 1;
+  strat->enterOnePair = enterOnePairNormal;
+  strat->chainCrit    = chainCritNormal;
+  strat->syzComp      = 0;
+  strat->ak           = idRankFreeModule( F );
+  // initialising the strategy for redGB-reductions
+  tHomog h;
+  if ( strat->ak == 0 )
+  {
+    h = (tHomog)idHomIdeal( F, Q );
+    w = NULL;
+  }
+  else if ( !TEST_OPT_DEGBOUND )
+  {
+    h = (tHomog)idHomModule( F, Q, w );
+  }
+  pLexOrder = b;
+  if ( h==isHomog )
+  {
+    pLexOrder = TRUE;
+    if ( hilb==NULL ) 
+    {
+      strat->LazyPass *=  2;
+    }
+  }
+  strat->homog  = h;
+#ifdef KDEBUG
+  idTest(F);
+  idTest(Q);
 #endif
-  /*- set S -*/
-  strat->sl = -1;
-  /*- init local data struct.---------------------------------------- -*/
-  /*Shdl=*/initS(F,Q,strat);
+
+  // copied from bba() in kstd2.cc
+  om_Opts.MinTrack  = 5;
+  int srmax,  lrmax, red_result = 1;
+  int olddeg, reduc;
+  int hilbeledeg  = 1,  hilbcount = 0,  minimcnt  = 0;
+  BOOLEAN withT   = FALSE;
+
+  initBuchMoraCrit( strat ); /*set Gebauer, honey, sugarCrit*/
+  initBuchMoraPos( strat );
+  initHilbCrit( F, Q, &hilb, strat );
+  initBba( F, strat );
+  initBuchMora( F, Q, strat );
+  if ( strat->minim>0 )
+  {
+    strat->M=idInit( IDELEMS(F), F->rank );
+  }
+  srmax = strat->sl;
+  reduc = olddeg = lrmax = 0;
+
+#ifndef NO_BUCKETS
+  if (!TEST_OPT_NOT_BUCKETS)
+    strat->use_buckets = 1;
+#endif
+
+#ifdef HAVE_TAIL_RING
+  if(!idIs0(F) &&(!rField_is_Ring()))  // create strong gcd poly computes with tailring and S[i] ->to be fixed
+    kStratInitChangeTailRing(strat);
+#endif
+  if (BVERBOSE(23))
+  {
+    if (test_PosInT!=NULL) strat->posInT=test_PosInT;
+    if (test_PosInL!=NULL) strat->posInL=test_PosInL;
+  }
+  initS(F,Q,strat);
 }
 
 
@@ -2972,8 +3021,6 @@ poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
       test=save;
     }
   }
-  //Print("H.P : ");
-  //pWrite( h.p );
   return h.p;
   //----------------------------------------------------------------------
   //----------------------------------------------------------------------
