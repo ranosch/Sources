@@ -2137,13 +2137,13 @@ void currReduction  (
           if( kBucketGetLm( bucket ) )
           {
             temp  = gCurrFirst;
+            bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
+            goto startagainTop;
           }
           else
           {
             break;
           }
-          bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
-          goto startagainTop;
         } 
       }
       temp  = temp->next;
@@ -2967,7 +2967,35 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
   //}
   kTest(strat);
   if (TEST_OPT_PROT) { PrintS("r"); mflush(); }
+  //----------------------------------------------------------------------
+  //------------Possible optimization later on ---------------------------
+  //----------------------------------------------------------------------
+  /*
   int max_ind;
+  LObject h;
+  int red_result;
+  h.p = q;
+  red_result  = strat->red( &h, strat );
+  if ((h.p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
+  {
+    if (TEST_OPT_PROT) { PrintS("t"); mflush(); }
+    #ifdef HAVE_RINGS
+    if (rField_is_Ring())
+    {
+      h.p = redtailBba_Z(h.p,strat->sl,strat);
+    }
+    else
+    #endif
+    {
+      BITSET save=test;
+      test &= ~Sy_bit(OPT_INTSTRATEGY);
+      h.p = redtailBba(h.p,strat->sl,strat,(lazyReduce & KSTD_NF_NONORM)==0);
+      test=save;
+    }
+  }
+  return h.p;
+  */
+
   return q;
 
   //------------------------------------------------------------------  
@@ -3002,8 +3030,9 @@ poly reduceByRedGBCritPair  ( Cpair* cp, kStrategy strat, int numVariables,
 poly reduceByRedGBPoly( poly q, kStrategy strat, int lazyReduce )
 {
   LObject h;
+  int red_result;
   h.p = q;
-  redHomog( &h, strat );
+  red_result  = strat->red( &h, strat );
   if ((h.p!=NULL)&&((lazyReduce & KSTD_NF_LAZY)==0))
   {
     if (TEST_OPT_PROT) { PrintS("t"); mflush(); }
