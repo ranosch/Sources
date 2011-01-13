@@ -463,7 +463,7 @@ poly createSpoly  (
 // INTERREDUCTION STUFF: HANDLED A BIT DIFFERENT FROM SINGULAR KERNEL    //
 ///////////////////////////////////////////////////////////////////////////
 
-/// @brief \c prepRedGBRed() prepares the structure \c strat for all reduction 
+/// @brief \c prepRedGBReduction() prepares the structure \c strat for all reduction 
 /// steps of newly computed polynomials in this iteration step with elements of
 /// the previous iteration steps, i.e. elements in \c redGB .
 /// @sa reduceByRedGB
@@ -476,6 +476,17 @@ void prepRedGBReduction (
   int   lazyReduce=0    ///<[in]      option to reduce lazy
                         );
 
+
+
+/// @brief \c initST() initializes the sets S & T of strat with the data of
+/// redGB. This is nothing else but \c initS() plus the \c enterT() command
+/// executed every time an element is added to S.
+/// @sa initS, enterT
+void initST ( 
+  ideal F,        ///<[in] redGB
+  ideal Q,        ///<[in] quotient ring
+  kStrategy strat ///<[in,out] strategy storing reducers 
+            );
 
 
 /// @brief \c reduceByRedGBCritPair() takes a critical pair \c cp, computes the 
