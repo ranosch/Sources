@@ -46,11 +46,6 @@
 #include <kernel/sca.h>
 #endif
 #include <unistd.h>
-#include "structs.h"
-#include "kbuckets.h"
-#include "prCopy.h"
-#include "p_MemCmp.h"
-#include "pInline2.h"
 #include <kernel/f5c.h>
 
 
