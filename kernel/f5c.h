@@ -161,7 +161,15 @@ struct CpairDegBound
 //--------------------------- FUNCTIONS & PROCEDURES -----------------------------
 //--------------------------------------------------------------------------------
 
-/// @brief \c f5cMain is the main function of the F5 implementation in the
+/// @brief \c f5cMain is the wrapper around the F5 implementation in the
+/// Singular kernel. 
+/// @return ideal which represents the Groebner basis of the input ideal \c F
+/// @sa kstd
+ideal f5cMain (ideal F,ideal Q,tHomog h,intvec ** w,intvec *hilb  = NULL,int syzComp   = 0,int newIdeal  = 0,intvec *vw    = NULL);
+
+
+
+/// @brief \c doF5 is the main function of the F5 implementation in the
 /// Singular kernel. It starts the computations of a Groebner basis of \c F.
 /// This is done iteratively on the generators of \c F and degree-wise in each 
 /// iteration step. 
@@ -170,19 +178,10 @@ struct CpairDegBound
 /// combined with the variant F5+ (for a guaranteed termination of the
 /// algorithm).
 /// @return ideal which represents the Groebner basis of the input ideal \c F
-/// @sa kstd
-ideal f5cMain ( 
-  ideal F,              ///<[in] input ideal for Groebner basis computation
-  ideal Q,              ///<[in] quotient ring
-  tHomog h,             ///<[in] label: homogeneous or not
-  intvec ** w,          ///<[in] weight vectors for orderings
-  intvec *hilb  = NULL, ///<[in] hilbert series
-  int syzComp   = 0,    ///<[in]
-  int newIdeal  = 0,    ///<[in]
-  intvec *vw    = NULL  ///<[in]
-              );
-
+/// @sa bba, mora
+ideal doF5(ideal F,ideal Q,intvec *w,intvec *hilb,kStrategy strat);
  
+
 
 /// @brief \c f5cIter() computes a Groebner basis of < \c p , \c redGB > using
 /// the criteria of Faugere's F5 Algorithm in the variant F5+.
