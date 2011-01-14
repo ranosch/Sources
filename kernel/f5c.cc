@@ -186,7 +186,6 @@ ideal f5cIter (
   int i;
   // store #elements in redGB for freeing the memory of F5Rules in the end of this
   // iteration step
-  unsigned long oldLength;
   // set global variables for the sizes of F5 & Rewritten Rules available
   rewRulesSize        = f5RulesSize = 2*(strat->sl+1);
   stratSize           = strat->sl+1;
@@ -299,7 +298,7 @@ ideal f5cIter (
   {
     omFreeSize( f5Rules->label[i], (currRing->N+1)*sizeof(int) );
   }
-  omFreeSize( f5Rules->label, oldLength*sizeof(int*) );
+  omFreeSize( f5Rules->label, f5RulesSize*sizeof(int*) );
   omFreeSize( f5Rules, sizeof(F5Rules) );
   
   for( i=0; i<rewRulesSize; i++ )
