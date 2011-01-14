@@ -45,6 +45,8 @@ typedef struct
   pid_t pid; /* only valid for fork/tcp mode*/
   int fd_read,fd_write; /* only valid for fork/tcp mode*/
   char level;
+  char ungetc_buf; /* status sets to !=0, if ungetc was used, ssiRead* set to 0*/
+
 } ssiInfo;
 
 
@@ -150,7 +152,7 @@ void ssiWriteNumber(const ssiInfo *d, const number n)
       fprintf(d->f_write,"8 ");
       mpz_out_str (d->f_write,32, n->z);
       fprintf(d->f_write," ");
-      
+
       //if (d->f_debug!=NULL) gmp_fprintf(d->f_debug,"number: gmp \"%Zd\" ",n->z);
     }
   }
@@ -735,18 +737,24 @@ BOOLEAN ssiOpen(si_link l, short flag, leftv u)
         WerrorS("ERROR: no host specified");
         l->data=NULL;
         omFree(d);
+        omFree(path);
+        omFree(cli_host);
         return TRUE;
       }
       else if(r == 1)
       {
-        path = "Singular";
+        strcmp(path,"Singular");
       }
       char* ssh_command = (char*)omAlloc(256);
       char* ser_host = (char*)omAlloc(64);
       gethostname(ser_host,64);
       sprintf(ssh_command,"ssh %s %s -q --batch --link=ssi --MPhost=%s --MPport=%d &",cli_host,path,ser_host,portno);
-      system(ssh_command);
       //Print("client on %s started:%s\n",cli_host,path);
+      omFree(path);
+      omFree(cli_host);
+      system(ssh_command);
+      omFree(ssh_command);
+      omFree(ser_host);
       clilen = sizeof(cli_addr);
       newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, (socklen_t *)&clilen);
       if(newsockfd < 0)
@@ -882,6 +890,7 @@ LINKAGE BOOLEAN ssiClose(si_link l)
 LINKAGE leftv ssiRead1(si_link l)
 {
   ssiInfo *d = (ssiInfo *)l->data;
+  d->ungetc_buf='\0';
   leftv res=(leftv)omAlloc0(sizeof(sleftv));
   int t=0;
   fscanf(d->f_read,"%d",&t);
@@ -1082,6 +1091,7 @@ si_link_extension slInitSsiExtension(si_link_extension s)
   s->type="ssi";
   return s;
 }
+
 const char* slStatusSsi(si_link l, const char* request)
 {
   ssiInfo *d=(ssiInfo*)l->data;
@@ -1091,6 +1101,7 @@ const char* slStatusSsi(si_link l, const char* request)
   {
     fd_set  mask, fdmask;
     struct timeval wt;
+    if (d->ungetc_buf) return "ready";
     loop
     {
       /* Don't block. Return socket status immediately. */
@@ -1113,7 +1124,7 @@ const char* slStatusSsi(si_link l, const char* request)
       //Print("try c=%d\n",c);
       if (c== -1) return "eof";
       else if (isdigit(c))
-      { ungetc(c,d->f_read); return "ready"; }
+      { ungetc(c,d->f_read); d->ungetc_buf='\1'; return "ready"; }
       else if (c>' ')
       {
         Werror("unknown char in ssiLink(%d)",c);
@@ -1134,7 +1145,6 @@ const char* slStatusSsi(si_link l, const char* request)
   }
   else return "unknown status request";
 }
-
 int slStatusSsiL(lists L, int timeout)
 {
   si_link l;
@@ -1152,7 +1162,7 @@ int slStatusSsiL(lists L, int timeout)
     if(SI_LINK_OPEN_P(l)==0)
     { WerrorS("all links must be open"); return -2;}
     if ((strcmp(l->m->type,"ssi")!=0)
-    || ((strcmp(l->mode,"fork")!=0) && (strcmp(l->mode,"tcp")!=NULL)))
+    || ((strcmp(l->mode,"fork")!=0) && (strcmp(l->mode,"tcp")!=0)))
     { WerrorS("all links must be of type ssi:fork or ssi:tcp"); return -2;}
     d=(ssiInfo*)l->data;
     FD_SET(d->fd_read, &mask);
@@ -1186,6 +1196,7 @@ int slStatusSsiL(lists L, int timeout)
       d=(ssiInfo*)l->data;
       if(j==d->fd_read) break;
     }
+    if (d->ungetc_buf) return i+1;
     loop
     {
       /* yes: read 1 char*/
@@ -1195,7 +1206,7 @@ int slStatusSsiL(lists L, int timeout)
       //Print("try c=%d\n",c);
       if (c== -1) return 0;
       else if (isdigit(c))
-      { ungetc(c,d->f_read); return i+1; }
+      { ungetc(c,d->f_read); d->ungetc_buf='\1'; return i+1; }
       else if (c>' ')
       {
         Werror("unknown char in ssiLink(%d)",c);
@@ -1215,6 +1226,10 @@ int ssiBatch(const char *host, const char * port)
   slInit(l, buf);
   slOpen(l,SI_LINK_OPEN,NULL);
   SI_LINK_SET_RW_OPEN_P(l);
+
+  idhdl id = enterid(omStrDup("link_ll"), 0, LINK_CMD, &IDROOT, FALSE);
+  IDLINK(id) = l;
+
   loop
   {
     leftv h=ssiRead1(l); /*contains an exit.... */

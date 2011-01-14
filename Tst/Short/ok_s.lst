@@ -55,6 +55,7 @@ bug_6
 bug_7
 bug_8
 bug_9
+bug_ainvar
 bug_barei
 bug_barei_2
 bug_c_dp
@@ -94,11 +95,13 @@ bug_tr239
 ; do not try bug_tr280 without MP
 ; bug_tr280
 bug_tr288
+bug_tr300
 brnoeth_s
 cyc5_lp
 bug_sres
 bug_sres_betti
 bug_sres_cyc5
+bug_x_i_j
 classify_s
 dbm_s
 deform_s
@@ -140,6 +143,7 @@ intdet_s
 intersect_s
 invar
 invarlib
+janet
 latex
 lift_s
 liftstd_s
@@ -204,6 +208,7 @@ slimgb_rcyclic12_32003_lp
 slimgb_rcyclic13_32003_lp
 solve_s
 spcurve
+spectrumlib
 sres_s
 std_s
 ;MP stratify

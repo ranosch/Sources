@@ -97,7 +97,6 @@ void luDecomp(const matrix aMat, matrix &pMat, matrix &lMat, matrix &uMat)
   int rr = aMat->rows();
   int cc = aMat->cols();
   pMat = mpNew(rr, rr);
-  lMat = mpNew(rr, rr);
   uMat = mpNew(rr, cc);
   /* copy aMat into uMat: */
   for (int r = 1; r <= rr; r++)
@@ -450,7 +449,8 @@ bool luSolveViaLUDecomp(const matrix pMat, const matrix lMat,
           if (MATELEM(N, c, d) != NULL)
             p = pAdd(p, ppMult_qq(MATELEM(uMat, r, c), MATELEM(N, c, d)));
         q = pNSet(nInvers(pGetCoeff(MATELEM(uMat, r, nonZeroC))));
-        MATELEM(N, nonZeroC, d) = pMult(pNeg(p), q);;
+        MATELEM(N, nonZeroC, d) = pMult(pNeg(p), q);
+        pNormalize(MATELEM(N, nonZeroC, d));
       }
       p = pNeg(pCopy(MATELEM(yVec, r, 1)));
       for (int c = nonZeroC + 1; c <= n; c++)
@@ -490,9 +490,9 @@ bool luSolveViaLUDecomp(const matrix pMat, const matrix lMat,
    DELETE LATER */
 void printNumber(const number z)
 {
-	if (nIsZero(z)) printf("number = 0\n");
-	else
-	{
+  if (nIsZero(z)) printf("number = 0\n");
+  else
+  {
     poly p = pOne();
     pSetCoeff(p, nCopy(z));
     pSetm(p);
@@ -860,16 +860,7 @@ number hessenbergStep(
     else nDelete(&t1);
   }
   nDelete(&denominator);
-			  /*
-			  // inspect the following for inaccuracies in the computation;
-			  // norm of u should be 2 by construction
-				poly o = NULL;
-				for (int j = 1; j <= rr; j++)
-				  o = pAdd(o, ppMult_qq(MATELEM(uVec, j, 1), MATELEM(uVec, j, 1)));	
-				printf("norm of u = %s\n", pString(o));
-				printMatrix(vVec); printMatrix(uVec);
-				pDelete(&o);
-			  */
+
   /* finished building vector u; now turn to pMat */
   pMat = mpNew(rr, rr);
   /* we set P := E - u * u^T, as desired */
@@ -1198,8 +1189,8 @@ int similar(
 		w3 = nSub(ni, ii); w4 = nMult(w3, w3);
 		w5 = nAdd(w2, w4);
 		if (!nGreater(w5, tt)) result = i;
-		nDelete(&w1); nDelete(&w2); nDelete(&w3); nDelete(&w4); nDelete(&w5);
-		nDelete(&rr); nDelete(&ii);
+		nDelete(&w1); nDelete(&w2); nDelete(&w3); nDelete(&w4);
+                nDelete(&w5); nDelete(&rr); nDelete(&ii);
 		if (result != -1) break;
 	}
 	nDelete(&tt); nDelete(&nr); nDelete(&ni);
@@ -1226,7 +1217,8 @@ lists qrDoubleShift(const matrix A, const number tol1, const number tol2,
   	delete [] queue;
   	result->Init(1);
   	result->m[0].rtyp = INT_CMD;
-	  result->m[0].data = (void*)0;   /* a list with a single entry (int 0) */
+	  result->m[0].data = (void*)0;   /* a list with a single entry
+                                             which is the int zero */
   }
   else
   {
@@ -1269,3 +1261,384 @@ lists qrDoubleShift(const matrix A, const number tol1, const number tol2,
   }
   return result;
 }
+
+/* This codes assumes that there are at least two variables in the current
+   base ring. No assumption is made regarding the monomial ordering. */
+void henselFactors(const int xIndex, const int yIndex, const poly h,
+                   const poly f0, const poly g0, const int d, poly &f, poly &g)
+{
+  int n = (int)pDeg(f0);
+  int m = (int)pDeg(g0);
+  matrix aMat = mpNew(n + m, n + m);     /* matrix A for linear system */
+  matrix pMat; matrix lMat; matrix uMat; /* for the decomposition of A */
+  f = pCopy(f0); g = pCopy(g0);          /* initially: h = f*g mod <x^1> */
+  
+  /* initial step: read off coefficients of f0, and g0 */
+  poly p = f0; poly matEntry; number c;
+  while (p != NULL)
+  {
+    c = nCopy(pGetCoeff(p));
+    matEntry = pOne(); pSetCoeff(matEntry, c);
+    MATELEM(aMat, pGetExp(p, yIndex) + 1, 1) = matEntry;
+    p = pNext(p);
+  }
+  p = g0;
+  while (p != NULL)
+  {
+    c = nCopy(pGetCoeff(p));
+    matEntry = pOne(); pSetCoeff(matEntry, c);
+    MATELEM(aMat, pGetExp(p, yIndex) + 1, m + 1) = matEntry;
+    p = pNext(p);
+  }
+  /* fill the rest of A */
+  for (int row = 2; row <= n + 1; row++)
+    for (int col = 2; col <= m; col++)
+    {
+      if (col > row) break;
+      MATELEM(aMat, row, col) = pCopy(MATELEM(aMat, row - 1, col - 1));
+    }
+  for (int row = n + 2; row <= n + m; row++)
+    for (int col = row - n; col <= m; col++)
+      MATELEM(aMat, row, col) = pCopy(MATELEM(aMat, row - 1, col - 1));
+  for (int row = 2; row <= m + 1; row++)
+    for (int col = m + 2; col <= m + n; col++)
+    {
+      if (col - m > row) break;
+      MATELEM(aMat, row, col) = pCopy(MATELEM(aMat, row - 1, col - 1));
+    }
+  for (int row = m + 2; row <= n + m; row++)
+    for (int col = row; col <= m + n; col++)
+      MATELEM(aMat, row, col) = pCopy(MATELEM(aMat, row - 1, col - 1));
+  
+  /* constructing the LU-decomposition of A */
+  luDecomp(aMat, pMat, lMat, uMat);
+  
+  /* Before the xExp-th loop, we know that h = f*g mod <x^xExp>.
+     Afterwards the algorithm ensures      h = f*g mod <x^(xExp + 1)>.
+     Hence in the end we obtain f and g as required, i.e.,
+                                           h = f*g mod <x^(d+1)>.
+     The algorithm works by solving a (m+n)x(m+n) linear equation system
+     A*x = b with constant matrix A (as decomposed above). By theory, the
+     system is guaranteed to have a unique solution. */
+  poly fg = ppMult_qq(f, g);   /* for storing the product of f and g */
+  for (int xExp = 1; xExp <= d; xExp++)
+  {
+    matrix bVec = mpNew(n + m, 1);     /* b */
+    matrix xVec = mpNew(n + m, 1);     /* x */
+    
+    p = pCopy(fg);
+    p = pAdd(pCopy(h), pNeg(p));       /* p = h - f*g */
+    /* we collect all terms in p with x-exponent = xExp and use their
+       coefficients to build the vector b */
+    int bIsZeroVector = true;
+    while (p != NULL)
+    {
+      if (pGetExp(p, xIndex) == xExp)
+      {
+        number c = nCopy(pGetCoeff(p));
+        poly matEntry = pOne(); pSetCoeff(matEntry, c);
+        MATELEM(bVec, pGetExp(p, yIndex) + 1, 1) = matEntry;
+        if (matEntry != NULL) bIsZeroVector = false;
+      }
+      pLmDelete(&p); /* destruct leading term of p and move to next term */
+    }
+    /* solve the linear equation system */
+    if (!bIsZeroVector) /* otherwise x = 0 and f, g do not change */
+    {
+      matrix notUsedMat;
+      luSolveViaLUDecomp(pMat, lMat, uMat, bVec, xVec, notUsedMat);
+      idDelete((ideal*)&notUsedMat);
+      /* update f and g by newly computed terms, and update f*g */
+      poly fNew = NULL; poly gNew = NULL;
+      for (int row = 1; row <= m; row++)
+      {
+        if (MATELEM(xVec, row, 1) != NULL)
+        {
+          p = pCopy(MATELEM(xVec, row, 1));   /* p = c                  */
+          pSetExp(p, xIndex, xExp);           /* p = c * x^xExp         */
+          pSetExp(p, yIndex, row - 1);        /* p = c * x^xExp * y^i   */
+          pSetm(p);
+          gNew = pAdd(gNew, p);
+        }
+      }
+      for (int row = m + 1; row <= m + n; row++)
+      {
+        if (MATELEM(xVec, row, 1) != NULL)
+        {
+          p = pCopy(MATELEM(xVec, row, 1));   /* p = c                  */
+          pSetExp(p, xIndex, xExp);           /* p = c * x^xExp         */
+          pSetExp(p, yIndex, row - m - 1);    /* p = c * x^xExp * y^i   */
+          pSetm(p);
+          fNew = pAdd(fNew, p);
+        }
+      }
+      fg = pAdd(fg, ppMult_qq(f, gNew));
+      fg = pAdd(fg, ppMult_qq(g, fNew));
+      fg = pAdd(fg, ppMult_qq(fNew, gNew));
+      f = pAdd(f, fNew);
+      g = pAdd(g, gNew);
+    }
+    /* clean-up loop-dependent vectors */
+    idDelete((ideal*)&bVec); idDelete((ideal*)&xVec);
+  }
+  
+  /* clean-up matrices A, P, L and U, and polynomial fg */
+  idDelete((ideal*)&aMat); idDelete((ideal*)&pMat);
+  idDelete((ideal*)&lMat); idDelete((ideal*)&uMat);
+  pDelete(&fg);
+}
+
+void lduDecomp(const matrix aMat, matrix &pMat, matrix &lMat, matrix &dMat,
+               matrix &uMat, poly &l, poly &u, poly &lTimesU)
+{
+  int rr = aMat->rows();
+  int cc = aMat->cols();
+  /* we use an int array to store all row permutations;
+     note that we only make use of the entries [1..rr] */
+  int* permut = new int[rr + 1];
+  for (int i = 1; i <= rr; i++) permut[i] = i;
+  /* fill lMat and dMat with the (rr x rr) unit matrix */
+  unitMatrix(rr, lMat);
+  unitMatrix(rr, dMat);
+  uMat = mpNew(rr, cc);
+  /* copy aMat into uMat: */
+  for (int r = 1; r <= rr; r++)
+    for (int c = 1; c <= cc; c++)
+      MATELEM(uMat, r, c) = pCopy(MATELEM(aMat, r, c));
+  u = pOne(); l = pOne();
+  
+  int col = 1; int row = 1;
+  while ((col <= cc) & (row < rr))
+  {
+    int pivotR; int pivotC; bool pivotValid = false;
+    while (col <= cc)
+    {
+      pivotValid = pivot(uMat, row, rr, col, col, &pivotR, &pivotC);
+      if (pivotValid)  break;
+      col++;
+    }
+    if (pivotValid)
+    {
+      if (pivotR != row)
+      {
+        swapRows(row, pivotR, uMat);
+        poly p = MATELEM(dMat, row, row);
+        MATELEM(dMat, row, row) = MATELEM(dMat, pivotR, pivotR);
+        MATELEM(dMat, pivotR, pivotR) = p;
+        swapColumns(row, pivotR, lMat);
+        swapRows(row, pivotR, lMat);
+        int temp = permut[row];
+        permut[row] = permut[pivotR]; permut[pivotR] = temp;
+      }
+      /* in gg, we compute the gcd of all non-zero elements in
+         uMat[row..rr, col];
+         the next number is the pivot and thus guaranteed to be different
+         from zero: */
+      number gg = nCopy(pGetCoeff(MATELEM(uMat, row, col))); number t;
+      for (int r = row + 1; r <= rr; r++)
+      {
+        if (MATELEM(uMat, r, col) != NULL)
+        {
+          t = gg;
+          gg = nGcd(t, pGetCoeff(MATELEM(uMat, r, col)), currRing);
+          nDelete(&t);
+        }
+      }
+      t = nDiv(pGetCoeff(MATELEM(uMat, row, col)), gg);
+      nNormalize(t);   /* this division works without remainder */
+      if (!nIsOne(t))
+      {
+        for (int r = row; r <= rr; r++)
+          pMult_nn(MATELEM(dMat, r, r), t);
+        pMult_nn(MATELEM(lMat, row, row), t);
+      }
+      l = pMult(l, pCopy(MATELEM(lMat, row, row)));
+      u = pMult(u, pCopy(MATELEM(uMat, row, col)));
+      
+      for (int r = row + 1; r <= rr; r++)
+      {
+        if (MATELEM(uMat, r, col) != NULL)
+        {
+          number g = nGcd(pGetCoeff(MATELEM(uMat, row, col)),
+                          pGetCoeff(MATELEM(uMat, r, col)), currRing);
+          number f1 = nDiv(pGetCoeff(MATELEM(uMat, r, col)), g);
+          nNormalize(f1);   /* this division works without remainder */
+          number f2 = nDiv(pGetCoeff(MATELEM(uMat, row, col)), g);
+          nNormalize(f2);   /* this division works without remainder */
+          pDelete(&MATELEM(uMat, r, col)); MATELEM(uMat, r, col) = NULL;
+          for (int c = col + 1; c <= cc; c++)
+          {
+            poly p = MATELEM(uMat, r, c);
+            pMult_nn(p, f2);
+            poly q = pCopy(MATELEM(uMat, row, c));
+            pMult_nn(q, f1); q = pNeg(q);
+            MATELEM(uMat, r, c) = pAdd(p, q);
+          }
+          number tt = nDiv(g, gg);
+          nNormalize(tt);   /* this division works without remainder */
+          pMult_nn(MATELEM(lMat, r, r), tt); nDelete(&tt);
+          MATELEM(lMat, r, row) = pCopy(MATELEM(lMat, r, r));
+          pMult_nn(MATELEM(lMat, r, row), f1);
+          nDelete(&f1); nDelete(&f2); nDelete(&g);
+        }
+        else pMult_nn(MATELEM(lMat, r, r), t);
+      }
+      nDelete(&t); nDelete(&gg);
+      col++; row++;
+    }
+  }
+  /* one factor in the product u might be missing: */
+  if (row == rr)
+  {
+    while ((col <= cc) && (MATELEM(uMat, row, col) == NULL)) col++;
+    if (col <= cc) u = pMult(u, pCopy(MATELEM(uMat, row, col)));
+  }
+  
+  /* building the permutation matrix from 'permut' and computing l */
+  pMat = mpNew(rr, rr);
+  for (int r = 1; r <= rr; r++)
+    MATELEM(pMat, r, permut[r]) = pOne();
+  delete[] permut;
+  
+  lTimesU = ppMult_qq(l, u);
+}
+
+bool luSolveViaLDUDecomp(const matrix pMat, const matrix lMat,
+                         const matrix dMat, const matrix uMat,
+                         const poly l, const poly u, const poly lTimesU,
+                         const matrix bVec, matrix &xVec, matrix &H)
+{
+  int m = uMat->rows(); int n = uMat->cols();
+  matrix cVec = mpNew(m, 1);  /* for storing l * pMat * bVec */
+  matrix yVec = mpNew(m, 1);  /* for storing the unique solution of
+                                 lMat * yVec = cVec */
+
+  /* compute cVec = l * pMat * bVec but without actual matrix mult. */
+  for (int r = 1; r <= m; r++)
+  {
+    for (int c = 1; c <= m; c++)
+    {
+      if (MATELEM(pMat, r, c) != NULL)
+        { MATELEM(cVec, r, 1) = ppMult_qq(l, MATELEM(bVec, c, 1)); break; }
+    }
+  }
+
+  /* solve lMat * yVec = cVec; this will always work as lMat is invertible;
+     moreover, all divisions are guaranteed to be without remainder */
+  poly p; poly q;
+  for (int r = 1; r <= m; r++)
+  {
+    p = pNeg(pCopy(MATELEM(cVec, r, 1)));
+    for (int c = 1; c < r; c++)
+      p = pAdd(p, ppMult_qq(MATELEM(lMat, r, c), MATELEM(yVec, c, 1) ));
+    /* The following division is without remainder. */
+    q = pNSet(nInvers(pGetCoeff(MATELEM(lMat, r, r))));
+    MATELEM(yVec, r, 1) = pMult(pNeg(p), q);
+    pNormalize(MATELEM(yVec, r, 1));    
+  }
+  
+  /* compute u * dMat * yVec and put result into yVec */
+  for (int r = 1; r <= m; r++)
+  {
+    p = ppMult_qq(u, MATELEM(dMat, r, r));
+    MATELEM(yVec, r, 1) = pMult(p, MATELEM(yVec, r, 1));
+  }
+  
+  /* determine whether uMat * xVec = yVec is solvable */
+  bool isSolvable = true;
+  bool isZeroRow; int nonZeroRowIndex;
+  for (int r = m; r >= 1; r--)
+  {
+    isZeroRow = true;
+    for (int c = 1; c <= n; c++)
+      if (MATELEM(uMat, r, c) != NULL) { isZeroRow = false; break; }
+    if (isZeroRow)
+    {
+      if (MATELEM(yVec, r, 1) != NULL) { isSolvable = false; break; }
+    }
+    else { nonZeroRowIndex = r; break; }
+  }
+
+  if (isSolvable)
+  {
+    xVec = mpNew(n, 1);
+    matrix N = mpNew(n, n); int dim = 0;
+    /* solve uMat * xVec = yVec and determine a basis of the solution
+       space of the homogeneous system uMat * xVec = 0;
+       We do not know in advance what the dimension (dim) of the latter
+       solution space will be. Thus, we start with the possibly too wide
+       matrix N and later copy the relevant columns of N into H. */
+    int nonZeroC; int lastNonZeroC = n + 1;
+    for (int r = nonZeroRowIndex; r >= 1; r--)
+    {
+      for (nonZeroC = 1; nonZeroC <= n; nonZeroC++)
+        if (MATELEM(uMat, r, nonZeroC) != NULL) break;
+      for (int w = lastNonZeroC - 1; w >= nonZeroC + 1; w--)
+      {
+        /* this loop will only be done when the given linear system has
+           more than one, i.e., infinitely many solutions */
+        dim++;
+        /* now we fill two entries of the dim-th column of N */
+        MATELEM(N, w, dim) = pNeg(pCopy(MATELEM(uMat, r, nonZeroC)));
+        MATELEM(N, nonZeroC, dim) = pCopy(MATELEM(uMat, r, w));
+      }
+      for (int d = 1; d <= dim; d++)
+      {
+        /* here we fill the entry of N at [r, d], for each valid vector
+           that we already have in N;
+           again, this will only be done when the given linear system has
+           more than one, i.e., infinitely many solutions */
+        p = NULL;
+        for (int c = nonZeroC + 1; c <= n; c++)
+          if (MATELEM(N, c, d) != NULL)
+            p = pAdd(p, ppMult_qq(MATELEM(uMat, r, c), MATELEM(N, c, d)));
+        /* The following division may be with remainder but only takes place
+           when dim > 0. */
+        q = pNSet(nInvers(pGetCoeff(MATELEM(uMat, r, nonZeroC))));
+        MATELEM(N, nonZeroC, d) = pMult(pNeg(p), q);
+        pNormalize(MATELEM(N, nonZeroC, d));
+      }
+      p = pNeg(pCopy(MATELEM(yVec, r, 1)));
+      for (int c = nonZeroC + 1; c <= n; c++)
+        if (MATELEM(xVec, c, 1) != NULL)
+          p = pAdd(p, ppMult_qq(MATELEM(uMat, r, c), MATELEM(xVec, c, 1)));
+      /* The following division is without remainder. */
+      q = pNSet(nInvers(pGetCoeff(MATELEM(uMat, r, nonZeroC))));
+      MATELEM(xVec, nonZeroC, 1) = pMult(pNeg(p), q);
+      pNormalize(MATELEM(xVec, nonZeroC, 1));
+      lastNonZeroC = nonZeroC;
+    }
+    
+    /* divide xVec by l*u = lTimesU and put result in xVec */
+    number z = nInvers(pGetCoeff(lTimesU));
+    for (int c = 1; c <= n; c++)
+    {
+      pMult_nn(MATELEM(xVec, c, 1), z);
+      pNormalize(MATELEM(xVec, c, 1));
+    }
+    nDelete(&z);
+    
+    if (dim == 0)
+    {
+      /* that means the given linear system has exactly one solution;
+         we return as H the 1x1 matrix with entry zero */
+      H = mpNew(1, 1);
+    }
+    else
+    {
+      /* copy the first 'dim' columns of N into H */
+      H = mpNew(n, dim);
+      for (int r = 1; r <= n; r++)
+        for (int c = 1; c <= dim; c++)
+          MATELEM(H, r, c) = pCopy(MATELEM(N, r, c));
+    }
+    /* clean up N */
+    idDelete((ideal*)&N);
+  }
+
+  idDelete((ideal*)&cVec);
+  idDelete((ideal*)&yVec);
+
+  return isSolvable;
+}
+

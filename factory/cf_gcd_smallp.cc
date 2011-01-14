@@ -27,7 +27,7 @@
 #include "canonicalform.h"
 #include "cf_map.h"
 #include "cf_util.h"
-#include "ftmpl_functions.h"
+#include "templates/ftmpl_functions.h"
 #include "cf_random.h"
 #include "ffreval.h"
 #include "facHensel.h"
@@ -2966,8 +2966,7 @@ CanonicalForm sparseGCDFq (const CanonicalForm& F, const CanonicalForm& G,
     if (!find (l, random_element))
       l.append (random_element);
 
-    if (getCharacteristic () > 3 && size (skeleton) < 100
-        || size (skeleton) < 10)
+    if (getCharacteristic () > 3 && size (skeleton) < 100)
     {
       CFArray Monoms;
       CFArray *coeffMonoms= NULL;
@@ -3412,8 +3411,7 @@ CanonicalForm sparseGCDFp (const CanonicalForm& F, const CanonicalForm& G,
     if (!find (l, random_element))
       l.append (random_element);
 
-    if ((getCharacteristic() > 3 && size (skeleton) < 100) ||
-         size (skeleton) < 10)
+    if ((getCharacteristic() > 3 && size (skeleton) < 100))
     {
       CFArray Monoms;
       CFArray* coeffMonoms= NULL;
@@ -3828,12 +3826,13 @@ bool Hensel_P (const CanonicalForm & U, CFArray & G, const Evaluation & A,
   int * liftBounds;
   if (U.level() > 2)
   {
-    liftBounds= new int [U.level() - 1];
+    liftBounds= new int [U.level() - 1]; /* index: 0.. U.level()-2 */
     liftBounds[0]= liftBound;
     for (int i= 1; i < U.level() - 1; i++)
       liftBounds[i]= degree (shiftedU, Variable (i + 2)) + 1;
     factors= henselLift2 (UEval, factors, liftBounds, U.level() - 1, false,
                           shiftedLCsEval1, shiftedLCsEval2, Pi, diophant);
+   delete [] liftBounds;
   }
   G[1]= factors.getFirst();
   G[2]= factors.getLast();

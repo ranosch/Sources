@@ -360,9 +360,6 @@ int       pSize( poly p );
 // homogenizes p by multiplying certain powers of the varnum-th variable
 poly      pHomogen (poly p, int varnum);
 
-// replaces the maximal powers of the leading monomial of p2 in p1 by
-// the same powers of n, utility for dehomogenization
-poly      pDehomogen (poly p1,poly p2,number n);
 BOOLEAN   pIsHomogeneous (poly p);
 
 poly      pPermPoly (poly p, int * perm,const ring OldRing, nMapFunc nMap,
@@ -376,12 +373,7 @@ poly      pTakeOutComp1(poly * p, int k);
 // component == comp and *p of all other monoms *lq == pLength(*q)
 // On return all components pf *q == 0
 void pTakeOutComp(poly *p, long comp, poly *q, int *lq);
-// Similar to pTakeOutComp, except that only those components are
-// taken out whose Order == order
-// ASSUME: monomial ordering is Order compatible, i.e., if m1, m2 Monoms then
-//         m1 >= m2 ==> pGetOrder(m1) >= pGetOrder(m2)
-void pDecrOrdTakeOutComp(poly *p, long comp, long order,
-                         poly *q, int *lq);
+
 // This is something weird -- Don't use it, unless you know what you are doing
 poly      pTakeOutComp(poly * p, int k);
 void      pSetPolyComp(poly p, int comp);
@@ -400,7 +392,7 @@ poly      pInvers(int n, poly p,intvec *w=NULL);
 long      pDegW(poly p, const short *w);
 
 /*-----------type conversions ----------------------------*/
-poly  pPolys2Vec(polyset p, int len);
+//poly  pPolys2Vec(polyset p, int len);
 void  pVec2Polys(poly v, polyset *p, int *len);
 int   p_Var(poly mi,const ring r);
 #define   pVar(m) p_Var(m,currRing)

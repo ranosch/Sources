@@ -7,8 +7,8 @@ AUTHORS:  Oleksandr Iena,       yena@mathematik.uni-kl.de,
 @*        Markus Becker,        mbecker@mathematik.uni-kl.de,
 @*        Viktor Levandovskyy,  levandov@mathematik.uni-kl.de
 
-OVERVIEW:s
-Involution is an anti-isomorphism of a non-commutative K-algebra
+OVERVIEW:
+Involution is an anti-automorphism of a non-commutative K-algebra
 @* with the property that applied an involution twice, one gets an identity.
 @* Involution is linear with respect to the ground field. In this library we compute
 @* linear involutions, distinguishing the case of a diagonal matrix (such involutions
@@ -26,9 +26,12 @@ findInvo();          computes linear involutions on a basering;
 findInvoDiag();     computes homothetic (diagonal) involutions on a basering;
 findAuto(n);          computes linear automorphisms of order n of a basering;
 ncdetection();        computes an ideal, presenting an involution map on some particular noncommutative algebras;
-involution(m,theta);  applies the involution to an object.
+involution(m,theta);  applies the involution to an object;
+isInvolution(F); check whether a map F in an involution;
+isAntiEndo(F);   check whether a map F in an antiendomorphism.
 ";
 
+LIB "nctools.lib";
 LIB "ncalg.lib";
 LIB "poly.lib";
 LIB "primdec.lib";
@@ -383,17 +386,17 @@ static proc new_var()
       if(i*j!=1)
       {
         s = s+ ","+NVAR(i,j);
-      };
-    };
-  };
+      }
+    }
+  }
   return(s);
-};
+}
 
 static proc NVAR(int i, int j)
 {
   //  return("@_"+string(i)+"_"+string(j));
   return("a"+string(i)+string(j));
-};
+}
 ///////////////////////////////////////////////////////////////////////////////////
 static proc new_var_special()
 //generates a string of new variables
@@ -405,9 +408,9 @@ static proc new_var_special()
   for(i=2; i<=NVars; i++)
   {
     s = s+ ","+NVAR(i,i);
-  };
+  }
   return(s);
-};
+}
 ///////////////////////////////////////////////////////////////////////////////////
 static proc RelMatr()
 // returns the matrix of relations
@@ -421,10 +424,10 @@ static proc RelMatr()
     for(j=i+1; j<=NVars; j++)
     {
       Rel[i,j]=var(j)*var(i)-var(i)*var(j);
-    };
-  };
+    }
+  }
   return(Rel);
-};
+}
 /////////////////////////////////////////////////////////////////
 proc findInvo()
 "USAGE: findInvo();
@@ -432,6 +435,8 @@ RETURN: a ring containing a list L of pairs, where
 @*        L[i][1]  =  ideal; a Groebner Basis of an i-th associated prime,
 @*        L[i][2]  =  matrix, defining a linear map, with entries, reduced with respect to L[i][1]
 PURPOSE: computed the ideal of linear involutions of the basering
+ASSUME: the relations on the algebra are of the form YX = XY + D, that is
+the current ring is a G-algebra of Lie type.
 NOTE: for convenience, the full ideal of relations @code{idJ}
 and the initial matrix with indeterminates @code{matD} are exported in the output ring
 SEE ALSO: findInvoDiag, involution
@@ -441,6 +446,12 @@ EXAMPLE: example findInvo; shows examples
   def @B    = basering; //save the name of basering
   int NVars = nvars(@B); //number of variables in basering
   int i, j;
+
+  // check basering is of Lie type:
+  if (!isLieType())
+  {
+    ERROR("Assume violated: basering is of non-Lie type");
+  }
 
   matrix Rel = RelMatr(); //the matrix of relations
 
@@ -454,7 +465,7 @@ EXAMPLE: example findInvo; shows examples
   else //if there exist parameters
   {
      execute("ring @@@KK=(0,"+Par+") ,("+varstr(@B)+","+@ss+"), dp;");//new ring with new variables
-  };
+  }
 
   matrix Rel = imap(@B, Rel); //consider the matrix of relations in new ring
 
@@ -467,8 +478,8 @@ EXAMPLE: example findInvo; shows examples
     for(j=i+1; j<=NVars; j++)
     {
       M[i,j] = Rel[i,j];
-    };
-  };
+    }
+  }
 
   def @@K = nc_algebra(1, M); setring @@K; //now new ring @@K become a noncommutative ring
 
@@ -480,9 +491,9 @@ EXAMPLE: example findInvo; shows examples
     for(j=1; j<=NVars; j++)
     {
       execute( "@@F = @@F+"+NVAR(i,j)+"*"+string( var(j) )+";" );
-    };
+    }
     l=l+list(@@F);
-  };
+  }
 
   matrix N = imap(@@@KK,Rel);
 
@@ -491,8 +502,8 @@ EXAMPLE: example findInvo; shows examples
     for(j=i+1; j<=NVars; j++)
     {
       N[i,j]= l[j]*l[i] - l[i]*l[j] + In_Poly( N[i,j], l, NVars);
-    };
-  };
+    }
+  }
   kill l;
   //---------------------------------------------
   //get the ideal of coefficients of N
@@ -502,7 +513,7 @@ EXAMPLE: example findInvo; shows examples
   for(i=2; i<=NVars; i++)
   {
     J = ideal( coeffs( J, var(i) ) );
-  };
+  }
   J = simplify(J,2);
   //-------------------------------------------------
   if ( Par=="" ) //initializes the ring of relations
@@ -512,7 +523,7 @@ EXAMPLE: example findInvo; shows examples
   else
   {
     execute("ring @@KK=(0,"+Par+"),("+@ss+"), dp;");
-  };
+  }
   ideal J = imap(@@K,J); // ideal, considered in @@KK now
   string snv = "["+string(NVars)+"]";
   execute("matrix @@D"+snv+snv+"="+@ss+";"); // matrix with entries=new variables
@@ -563,6 +574,8 @@ RETURN: a ring together with a list of pairs L, where
 @*        L[i][1]  =  ideal; a Groebner Basis of an i-th associated prime,
 @*        L[i][2]  =  matrix, defining a linear map, with entries, reduced with respect to L[i][1]
 PURPOSE: compute homothetic (diagonal) involutions of the basering
+ASSUME: the relations on the algebra are of the form YX = XY + D, that is
+the current ring is a G-algebra of Lie type.
 NOTE: for convenience, the full ideal of relations @code{idJ}
 and the initial matrix with indeterminates @code{matD} are exported in the output ring
 SEE ALSO: findInvo, involution
@@ -571,6 +584,12 @@ EXAMPLE: example findInvoDiag; shows examples
   def @B    = basering; //save the name of basering
   int NVars = nvars(@B); //number of variables in basering
   int i, j;
+
+  // check basering is of Lie type:
+  if (!isLieType())
+  {
+    ERROR("Assume violated: basering is of non-Lie type");
+  }
 
   matrix Rel = RelMatr(); //the matrix of relations
 
@@ -584,7 +603,7 @@ EXAMPLE: example findInvoDiag; shows examples
   else //if there exist parameters
   {
     execute("ring @@@KK=(0,"+Par+") ,("+varstr(@B)+","+@ss+"), dp;");//new ring with new variables
-  };
+  }
 
   matrix Rel = imap(@B, Rel); //consider the matrix of relations in new ring
 
@@ -596,8 +615,8 @@ EXAMPLE: example findInvoDiag; shows examples
     for(j=i+1; j<=NVars; j++)
     {
       M[i,j] = Rel[i,j];
-    };
-  };
+    }
+  }
 
   def @@K = nc_algebra(1, M); setring @@K; //now new ring @@K become a noncommutative ring
 
@@ -607,7 +626,7 @@ EXAMPLE: example findInvoDiag; shows examples
   {
     execute( "l["+string(i)+"]="+NVAR(i,i)+"*"+string( var(i) )+";" );
 
-  };
+  }
   matrix N = imap(@@@KK,Rel);
 
   for(i=1; i<NVars; i++)//get matrix by applying the involution to relations
@@ -615,8 +634,8 @@ EXAMPLE: example findInvoDiag; shows examples
     for(j=i+1; j<=NVars; j++)
     {
       N[i,j]= l[j]*l[i] - l[i]*l[j] + In_Poly( N[i,j], l, NVars);
-    };
-  };
+    }
+  }
   kill l;
   //---------------------------------------------
   //get the ideal of coefficients of N
@@ -627,7 +646,7 @@ EXAMPLE: example findInvoDiag; shows examples
   for(i=2; i<=NVars; i++)
   {
     J = ideal( coeffs( J, var(i) ) );
-  };
+  }
   J = simplify(J,2);
   //-------------------------------------------------
 
@@ -638,7 +657,7 @@ EXAMPLE: example findInvoDiag; shows examples
   else
   {
     execute("ring @@KK=(0,"+Par+"),("+@ss+"), dp;");
-  };
+  }
 
   ideal J = imap(@@K,J); // ideal, considered in @@KK now
 
@@ -646,7 +665,7 @@ EXAMPLE: example findInvoDiag; shows examples
   for(i=1;i<=NVars;i++)
   {
     execute("@@D["+string(i)+","+string(i)+"]="+NVAR(i,i)+";");
-  };
+  }
   J = J, ideal( @@D*@@D - matrix( freemodule(NVars) ) ); // add the condition that involution to square is just identity
   J = simplify(J,2); // without extra zeros
 
@@ -695,6 +714,8 @@ RETURN: a ring together with a list of pairs L, where
 @*        L[i][2]  =  matrix, defining a linear map, with entries, reduced with respect to L[i][1]
 PURPOSE: compute the ideal of linear automorphisms of the basering,
 @*  given by a matrix, n-th power of which gives identity (i.e. unipotent matrix)
+ASSUME: the relations on the algebra are of the form YX = XY + D, that is
+the current ring is a G-algebra of Lie type.
 NOTE: if n=0, a matrix, defining an automorphism is not assumed to be unipotent
 @* but just non-degenerate. A nonzero parameter @code{@@p} is introduced as the value of
 @* the determinant of the matrix above.
@@ -708,9 +729,17 @@ EXAMPLE: example findAuto; shows examples
     "The index of unipotency is too small.";
     return(0);
   }
+
+
   def @B    = basering; //save the name of basering
   int NVars = nvars(@B); //number of variables in basering
   int i, j;
+
+  // check basering is of Lie type:
+  if (!isLieType())
+  {
+    ERROR("Assume violated: basering is of non-Lie type");
+  }
 
   matrix Rel = RelMatr(); //the matrix of relations
 
@@ -724,7 +753,7 @@ EXAMPLE: example findAuto; shows examples
   else //if there exist parameters
   {
      execute("ring @@@K=(0,"+Par+") ,("+varstr(@B)+","+@ss+"), dp;");//new ring with new variables
-  };
+  }
 
   matrix Rel = imap(@B, Rel); //consider the matrix of relations in new ring
 
@@ -737,8 +766,8 @@ EXAMPLE: example findAuto; shows examples
     for(j=i+1; j<=NVars; j++)
     {
       M[i,j] = Rel[i,j];
-    };
-  };
+    }
+  }
 
   def @@K = nc_algebra(1, M); setring @@K; //now new ring @@K become a noncommutative ring
 
@@ -750,9 +779,9 @@ EXAMPLE: example findAuto; shows examples
     for(j=1; j<=NVars; j++)
     {
       execute( "@@F = @@F+"+NVAR(i,j)+"*"+string( var(j) )+";" );
-    };
+    }
     l=l+list(@@F);
-  };
+  }
 
   matrix N = imap(@@@K,Rel);
 
@@ -761,8 +790,8 @@ EXAMPLE: example findAuto; shows examples
     for(j=i+1; j<=NVars; j++)
     {
       N[i,j]= l[j]*l[i] - l[i]*l[j] - Hom_Poly( N[i,j], l, NVars);
-    };
-  };
+    }
+  }
   kill l;
   //---------------------------------------------
   //get the ideal of coefficients of N
@@ -772,7 +801,7 @@ EXAMPLE: example findAuto; shows examples
   for(i=2; i<=NVars; i++)
   {
     J = ideal( coeffs( J, var(i) ) );
-  };
+  }
   J = simplify(J,2);
   //-------------------------------------------------
   if (( Par=="" ) && (n!=0)) //initializes the ring of relations
@@ -786,7 +815,7 @@ EXAMPLE: example findAuto; shows examples
   if ( Par!="" )
   {
     execute("ring @@KK=(0,"+Par+"),("+@ss+"), dp;");
-  };
+  }
   //  execute("setring @@KK;");
   //  basering;
   ideal J = imap(@@K,J); // ideal, considered in @@KK now
@@ -850,4 +879,96 @@ example
   size(L); // here, we have 1 parametrized family
   print(L[1][2]); // here, @p is a nonzero parameter
   det(L[1][2]-@p);  // check whether determinante is zero
+}
+
+
+proc isAntiEndo(def F)
+"USAGE: isAntiEndo(F); F is a map from current ring to itself
+RETURN: integer, 1 if F determines an antiendomorphism of
+current ring and 0 otherwise
+ASSUME: F is a map from current ring to itself
+SEE ALSO: isInvolution, involution, findInvo
+EXAMPLE: example isAntiEndo; shows examples
+"
+{
+  // assumes:
+  // (1) F is from br to br
+  // I don't see how to check it; in case of error it will happen in the body
+  // (2) do not assume: F is linear, F is bijective
+  int n = nvars(basering);
+  int i,j;
+  poly pi,pj,q;
+  int answer=1;
+  ideal @f = ideal(F); list L=@f[1..ncols(@f)];
+  for (i=1; i<n; i++)
+  {
+    for (j=i+1; j<=n; j++)
+    {
+      // F( x_j x_i) =def= F(x_i) F(x_j)
+      pi = var(i);
+      pj = var(j);
+      //      q = involution(pj*pi,F) - F(pi)*F(pj);
+      q = In_Poly(pj*pi,L,n) - F[i]*F[j];
+      if (q!=0)
+      {
+        answer=0; return(answer);
+      }
+    }
+  }
+  return(answer);
+}
+example
+{"EXAMPLE:";echo = 2;
+  def A = makeUsl(2); setring A;
+  map I = A,-e,-f,-h; //correct antiauto involution
+  isAntiEndo(I);
+  map J = A,3*e,1/3*f,-h; // antiauto but not involution
+  isAntiEndo(J);
+  map K = A,f,e,-h; // not antiendo
+  isAntiEndo(K);
+}
+
+
+proc isInvolution(def F)
+"USAGE: isInvolution(F); F is a map from current ring to itself
+RETURN: integer, 1 if F determines an involution and 0 otherwise
+THEORY: involution is an antiautomorphism of order 2
+ASSUME: F is a map from current ring to itself
+SEE ALSO: involution, findInvo, isAntiEndo
+EXAMPLE: example isInvolution; shows examples
+"
+{
+  // does not assume: F is an antiautomorphism, can be antiendo
+  // allows to detect endos which are not autos
+  // isInvolution == ( F isAntiEndo && F(F)==id )
+  if (!isAntiEndo(F))
+  {
+    return(0);
+  }
+  //  def G = F(F);
+  int j; poly p; ideal @f = ideal(F); list L=@f[1..ncols(@f)];
+  int nv = nvars(basering);
+  for(j=nv; j>=1; j--)
+  {
+    //    p = var(j); p = F(p); p = F(p) - var(j);
+    //p = G(p) - p;
+    p = In_Poly(var(j),L,nv);
+    p = In_Poly(p,L,nv) -var(j) ;
+
+    if (p!=0)
+    {
+      return(0);
+    }
+  }
+  return(1);
+}
+example
+{"EXAMPLE:";echo = 2;
+  def A = makeUsl(2); setring A;
+  map I = A,-e,-f,-h; //correct antiauto involution
+  isInvolution(I);
+  map J = A,3*e,1/3*f,-h; // antiauto but not involution
+  isInvolution(J);
+  map K = A,f,e,-h; // not antiauto
+  isInvolution(K);
 }

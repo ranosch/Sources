@@ -143,7 +143,6 @@ private:
   void smToredElim();
   void smCopToRes();
   void smSelectPR();
-  void smElim();
   void sm1Elim();
   void smHElim();
   void smMultCol();
@@ -163,7 +162,6 @@ public:
   int smGetRed() { return tored; }
   ideal smRes2Mod();
   poly smDet();
-  void smBareiss(int, int);
   void smNewBareiss(int, int);
   void smToIntvec(intvec *);
 };
@@ -586,64 +584,6 @@ poly sparse_mat::smDet()
 }
 
 /*
-* the Bareiss elimination:
-*   - with x unreduced last rows, pivots from here are not allowed
-*   - the method will finish for number of unreduced columns < y
-*/
-void sparse_mat::smBareiss(int x, int y)
-{
-  if ((x > 0) && (x < nrows))
-  {
-    tored -= x;
-    this->smToredElim();
-  }
-  if (y < 1) y = 1;
-  if (act <= y)
-  {
-    this->smCopToRes();
-    return;
-  }
-  normalize = this->smCheckNormalize();
-  if (normalize) this->smNormalize();
-  this->smPivot();
-  this->smSelectPR();
-  this->smElim();
-  crd++;
-  this->smColToRow();
-  act--;
-  this->smRowToCol();
-  this->smZeroElim();
-  if (tored != nrows)
-    this->smToredElim();
-  if (act < y)
-  {
-    this->smCopToRes();
-    return;
-  }
-  loop
-  {
-    if (normalize) this->smNormalize();
-    this->smPivot();
-    oldpiv = piv;
-    this->smSelectPR();
-    this->smElim();
-    crd++;
-    this->smColToRow();
-    act--;
-    this->smRowToCol();
-    this->smZeroElim();
-    if (tored != nrows)
-      this->smToredElim();
-    if (act < y)
-    {
-      if (TEST_OPT_PROT) PrintS(".\n");
-      this->smCopToRes();
-      return;
-    }
-  }
-}
-
-/*
 * the new Bareiss elimination:
 *   - with x unreduced last rows, pivots from here are not allowed
 *   - the method will finish for number of unreduced columns < y
@@ -896,131 +836,6 @@ void sparse_mat::smNewPivot()
 }
 
 /* ----------------- elimination ------------------ */
-
-/* steps of elimination */
-void sparse_mat::smElim()
-{
-  poly p = piv->m;        // pivotelement
-  smpoly c = m_act[act];  // pivotcolumn
-  smpoly r = red;         // row to reduce
-  poly q;
-  smpoly res, a, b;
-  poly w, ha, hb;
-  int i;
-
-  if (oldpiv != NULL) q = oldpiv->m; // previous pivot
-  else q = NULL;
-  if ((c == NULL) || (r == NULL))
-  {
-    while (r) smElemDelete(&r);
-    for (i=1; i<act; i++)
-    {
-      a = m_act[i];
-      while (a != NULL)
-      {
-        ha = SM_MULT(a->m, p, q);
-        pDelete(&a->m);
-        if (q) SM_DIV(ha, q);
-        a->m = ha;
-        a = a->n;
-      }
-    }
-    return;
-  }
-  for (i=1; i<act; i++)
-  {
-    a = m_act[i];
-    if ((r == NULL) || (i != r->pos))  // cols without elimination
-    {
-      while (a != NULL)
-      {
-        ha = SM_MULT(a->m, p, q);
-        pDelete(&a->m);
-        if (q) SM_DIV(ha, q);
-        a->m = ha;
-        a = a->n;
-      }
-    }
-    else                    // cols with elimination
-    {
-      res = dumm;
-      res->n = NULL;
-      b = c;
-      w = r->m;
-      loop                  // combine the chains a and b: p*a + w*b
-      {
-        if (a == NULL)
-        {
-          if (b != NULL)
-          {
-            do
-            {
-              res = res->n = smElemCopy(b);
-              hb = SM_MULT(b->m, w, q);
-              if (q) SM_DIV(hb, q);
-              res->m = hb;
-              b = b->n;
-            } while (b != NULL);
-          }
-          else
-            res->n = NULL;
-          break;
-        }
-        if (b == NULL)
-        {
-          do
-          {
-            ha = SM_MULT(a->m, p, q);
-            pDelete(&a->m);
-            if (q) SM_DIV(ha, q);
-            a->m = ha;
-            res = res->n = a;
-            a = a->n;
-          } while (a != NULL);
-          break;
-        }
-        if (a->pos < b->pos)
-        {
-          ha = SM_MULT(a->m, p, q);
-          pDelete(&a->m);
-          if (q) SM_DIV(ha, q);
-          a->m = ha;
-          res = res->n = a;
-          a = a->n;
-        }
-        else if (a->pos > b->pos)
-        {
-          res = res->n = smElemCopy(b);
-          hb = SM_MULT(b->m, w, q);
-          b = b->n;
-          if (q) SM_DIV(hb, q);
-          res->m = hb;
-        }
-        else
-        {
-          ha = SM_MULT(a->m, p, q);
-          pDelete(&a->m);
-          hb = SM_MULT(b->m, w, q);
-          ha = pAdd(ha, hb);
-          if (ha != NULL)
-          {
-            if (q) SM_DIV(ha, q);
-            a->m = ha;
-            res = res->n = a;
-            a = a->n;
-          }
-          else
-          {
-            smElemDelete(&a);
-          }
-          b = b->n;
-        }
-      }
-      m_act[i] = dumm->n;
-      if (r) smElemDelete(&r);
-    }
-  }
-}
 
 /* first step of elimination */
 void sparse_mat::sm1Elim()
