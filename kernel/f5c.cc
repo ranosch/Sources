@@ -76,31 +76,9 @@ ideal f5cMain(ideal F, ideal Q)
   {
     return idInit(1, F->rank);
   }
-  // interreduction of the input ideal F
   ideal FRed      = idCopy( F );
-  //ideal FRedTemp  = kInterRed( FRed );
-  //idDelete( &FRed );
-  //FRed            = FRedTemp;
 
-#if F5EDEBUG3
-  int j = 0;
-  int k = 0;
-  int* expVec   = new int[(currRing->N)+1];
-  for( ; k<IDELEMS(FRed); k++)
-  {
-    Print("ORDER: %ld\n",FRed->m[k]->exp[currRing->pOrdIndex]);
-    Print("SIZE OF INTERNAL EXPONENT VECTORS: %d\n",currRing->ExpL_Size);
-    pGetExpV(FRed->m[k],expVec);
-    Print("EXP VEC: ");
-    for( ; j<currRing->N+1; j++)
-    {
-      Print("%d  ",expVec[j]);
-    }
-    j = 0;
-    Print("\n");
-  }
-#endif
-  /// define the global variables for fast exponent vector
+  /// define the variables for fast exponent vector
   /// reading/writing/comparison
   int i = 0;
   /// declaration of global variables used for exponent vector
@@ -123,28 +101,28 @@ ideal f5cMain(ideal F, ideal Q)
   r->m[0] = FRed->m[0];
   pNorm(r->m[0]);
   // counter over the remaining generators of the input ideal F
-  for(i=1; i<IDELEMS(FRed); i++) 
+  for( i=1; i<IDELEMS(FRed); i++ ) 
   {
     // computation of r: a groebner basis of <F[0],...,F[gen]> = <r,F[gen]>
-    r = f5cIter(FRed->m[i], r, numVariables, shift, negBitmaskShifted, offsets);
+    r = f5cIter( FRed->m[i], r, numVariables, shift, negBitmaskShifted, offsets );
     // the following interreduction is the essential idea of F5e.
     // NOTE that we do not need the old rules from previous iteration steps
     // => we only interreduce the polynomials and forget about their labels
     ideal rTemp = kInterRed(r);
     idDelete( &r );
-    r = rTemp;
+    r           = rTemp;
 #if F5EDEBUG3
     for( k=0; k<IDELEMS(r); k++ )
     {
       pTest( r->m[k] );
       Print("TESTS after interred: %p ",r->m[k]);
-      pWrite(r->m[k]);
+      pWrite(i r->m[k] );
     }
 #endif
   }
-  omFree(shift);
-  omFree(negBitmaskShifted);
-  omFree(offsets);
+  omFree( shift );
+  omFree( negBitmaskShifted );
+  omFree( offsets );
 #if F5EDEBUG00
   Print("--------------------------------------------------\n");
   Print("Number of Reductions:   %ld\n",number1Reductions);
@@ -175,9 +153,6 @@ ideal f5cIter (
   pWrite( pHead(p) );
 #endif
 #if F5EDEBUG3
-  Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
-  int j = 0;
-  int k = 0;
   Print("SIZE OF redGB: %d\n",IDELEMS(redGB));
   for( ; k<IDELEMS(redGB); k++)
   {
@@ -193,7 +168,7 @@ ideal f5cIter (
   // reductions with redGB in this iteration step
   Print("HERE\n");
   kStrategy strat   = new skStrategy;
-  prepRedGBReduction(strat, redGB);
+  prepRedGBReduction( strat, redGB );
 #if F5EDEBUG3
   Print("F5CITER-AFTER PREPREDUCTION\n");
   Print("ORDER %ld -- %ld\n",p_GetOrder(p,currRing), p->exp[currRing->pOrdIndex]);
@@ -213,28 +188,28 @@ ideal f5cIter (
   // iteration step
   unsigned long oldLength;
   // set global variables for the sizes of F5 & Rewritten Rules available
-  rewRulesSize  = f5RulesSize = 2*(strat->sl+1);
-  stratSize     = strat->sl+1;
+  rewRulesSize        = f5RulesSize = 2*(strat->sl+1);
+  stratSize           = strat->sl+1;
   // create array of leading monomials of previously computed elements in redGB
   F5Rules* f5Rules    = (F5Rules*) omAlloc(sizeof(struct F5Rules));
   RewRules* rewRules  = (RewRules*) omAlloc(sizeof(struct RewRules));
   // malloc memory for all rules
-  f5Rules->label  = (int**) omAlloc(f5RulesSize*sizeof(int*));
-  f5Rules->slabel = (unsigned long*) omAlloc(f5RulesSize*
+  f5Rules->label      = (int**) omAlloc(f5RulesSize*sizeof(int*));
+  f5Rules->slabel     = (unsigned long*) omAlloc(f5RulesSize*
                         sizeof(unsigned long)); 
   
   // malloc two times the size of the previous Groebner basis
   // Note that we possibly need more memory in this iteration step!
-  rewRules->label   = (int**) omAlloc((rewRulesSize)*sizeof(int*));
-  rewRules->slabel  = (unsigned long*) omAlloc((rewRulesSize)*
-                      sizeof(unsigned long)); 
+  rewRules->label     = (int**) omAlloc((rewRulesSize)*sizeof(int*));
+  rewRules->slabel    = (unsigned long*) omAlloc((rewRulesSize)*
+                        sizeof(unsigned long)); 
   // Initialize a first (dummy) rewrite rule for the initial polynomial of this
   // iteration step:
   // (a) Note that we are allocating & setting all entries to zero for this first 
   //     rewrite rule.
   // (b) Note also that the size of strat is >=1.
-  rewRules->label[0]  = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
-  rewRules->slabel[0] = 0;
+  rewRules->label[0]    = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
+  rewRules->slabel[0]   = 0;
   for(i=1; i<rewRulesSize; i++) 
   {
     rewRules->label[i]  =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
@@ -243,14 +218,14 @@ ideal f5cIter (
   // use the strategy strat to get the F5 Rules:
   // When preparing strat we have already computed & stored the short exonent
   // vectors there => do not recompute them again 
-  for(i=0; i<stratSize; i++) 
+  for( i=0; i<stratSize; i++ ) 
   {
-    f5Rules->label[i]  =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
+    f5Rules->label[i]   =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
     pGetExpV( strat->S[i], f5Rules->label[i] );
     f5Rules->slabel[i]  = strat->sevS[i];
   } 
   // alloc memory for the rest of the labels
-  for( ; i<f5RulesSize; i++) 
+  for( ; i<f5RulesSize; i++ ) 
   {
     f5Rules->label[i]   = (int*) omAlloc( (currRing->N+1)*sizeof(int) );
   } 
@@ -274,12 +249,12 @@ ideal f5cIter (
     pNorm( p );  
     Lpoly* gCurr      = (Lpoly*) omAlloc( sizeof(Lpoly) );
     gCurr->next       = NULL;
-    gCurr->sExp       = pGetShortExpVector(p);
+    gCurr->sExp       = pGetShortExpVector( p );
     gCurr->p          = p;
     gCurr->rewRule    = 0;
     gCurr->redundant  = FALSE;
-     
     Lpoly* gCurrFirst = gCurr;
+
     // initializing the list of critical pairs for this iteration step 
     CpairDegBound* cpBounds = NULL;
     criticalPairInit( 
@@ -300,24 +275,14 @@ ideal f5cIter (
 #endif
     while( gCurrFirst )
     {
-#if F5EDEBUG3
-      if( p_GetOrder( gCurrFirst->p, currRing ) == pWTotaldegree( gCurrFirst->p, currRing ) )
-      {
-        Print(" ALLES OK\n");
-      }
-      else 
-      {
-        Print("BEI POLY "); gCurrFirst->p; //Print(" stimmt etwas nicht!\n");
-      }
-#endif
 #if F5EDEBUG2
       Print("%d INSERT TO REDGB: ",counter);
-      pWrite(gCurrFirst->p);
+      pWrite( gCurrFirst->p );
 #endif
       idInsertPoly( redGB, gCurrFirst->p );
       temp        = gCurrFirst;
       gCurrFirst  = gCurrFirst->next;
-      omFree(temp);
+      omFree( temp );
 #if F5EDEBUG2
       counter++;
 #endif
@@ -330,8 +295,7 @@ ideal f5cIter (
   // free memory
   // Delete the F5 Rules, the Rewritten Rules, and the reduction strategy 
   // strat, since the current iteration step is completed right now.
-  oldLength = strat->sl;
-  for( i=0; i<=oldLength; i++ )
+  for( i=0; i<f5RulesSize; i++ )
   {
     omFreeSize( f5Rules->label[i], (currRing->N+1)*sizeof(int) );
   }
