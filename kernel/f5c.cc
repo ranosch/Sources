@@ -2588,9 +2588,9 @@ void prepRedGBReduction(kStrategy strat, ideal F, ideal Q, int lazyReduce)
   int hilbeledeg  = 1,  hilbcount = 0,  minimcnt  = 0;
   BOOLEAN withT   = FALSE;
 
-  initBuchMoraCrit( strat ); /*set Gebauer, honey, sugarCrit*/
+  //initBuchMoraCrit( strat ); /*set Gebauer, honey, sugarCrit*/
   initBuchMoraPos( strat );
-  initHilbCrit( F, Q, &hilb, strat );
+  //initHilbCrit( F, Q, &hilb, strat );
   initBba( F, strat );
   initBuchMora( F, Q, strat );
   if ( strat->minim>0 )
@@ -2886,21 +2886,25 @@ void clearStrat(kStrategy strat, ideal F, ideal Q)
   Print("CLEARSTRAT - BEGINNING\n");
 #endif
   /*- release temp data------------------------------- -*/
-  if (Q!=NULL) updateResult(strat->Shdl,Q,strat);
+  cleanT( strat );
+  if ( Q!=NULL ) 
+  {
+    updateResult( strat->Shdl, Q, strat );
+  }
   kModW = NULL;
-  pRestoreDegProcs(pFDegOld, pLDegOld);
+  pRestoreDegProcs( pFDegOld, pLDegOld );
   HCord=strat->HCord;
-  omfree(strat->sevS);
-  omfree(strat->ecartS);
-  omfree(strat->T);
-  omfree(strat->sevT);
-  omfree(strat->R);
-  omfree(strat->S_2_R);
-  omfree(strat->L);
-  omfree(strat->B);
-  omfree(strat->fromQ);
-  idDelete(&strat->Shdl);
-  delete(strat);
+  omfree( strat->sevS );
+  omfree( strat->ecartS );
+  omfree( strat->T );
+  omfree( strat->sevT );
+  omfree( strat->R );
+  omfree( strat->S_2_R );
+  omfree( strat->L );
+  omfree( strat->B );
+  omfree( strat->fromQ );
+  idDelete( &strat->Shdl );
+  delete( strat );
 #if F5EDEBUG3
   Print("CLEARSTRAT - END\n");
 #endif
