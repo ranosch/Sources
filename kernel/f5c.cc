@@ -21,28 +21,56 @@
  **/
 /*****************************************************************************/
 
-#include "mod2.h"
+#include <kernel/mod2.h>
+
 #ifdef HAVE_F5C
+#include <omalloc/omalloc.h>
+#include <kernel/options.h>
+#include <kernel/kutil.h>
+#include <kernel/kInline.cc>
+#include <kernel/polys.h>
+#include <kernel/febase.h>
+#include <kernel/kstd1.h>
+#include <kernel/khstd.h>
+#include <kernel/stairc.h>
+#include <kernel/weight.h>
+//#include "cntrlc.h"
+#include <kernel/intvec.h>
+#include <kernel/ideals.h>
+//#include "../Singular/ipid.h"
+#include <kernel/timer.h>
+
+//#include "ipprint.h"
+
+#ifdef HAVE_PLURAL
+#include <kernel/sca.h>
+#endif
 #include <unistd.h>
-#include "options.h"
 #include "structs.h"
-#include "omalloc.h"
-#include "polys.h"
-#include "timer.h"
-#include "p_polys.h"
-#include "p_Procs.h"
-#include "ideals.h"
-#include "febase.h"
-#include "kstd1.h"
-#include "khstd.h"
 #include "kbuckets.h"
-#include "weight.h"
-#include "intvec.h"
 #include "prCopy.h"
 #include "p_MemCmp.h"
 #include "pInline2.h"
-#include "sca.h"
-#include "f5c.h"
+#include <kernel/f5c.h>
+
+
+// define if tailrings should be used
+#define HAVE_TAIL_RING
+
+// define if buckets should be used
+#define MORA_USE_BUCKETS
+
+#ifndef NDEBUG
+# define MYTEST 0
+#else /* ifndef NDEBUG */
+# define MYTEST 0
+#endif /* ifndef NDEBUG */
+
+#if MYTEST 
+#ifdef HAVE_TAIL_RING
+#undef HAVE_TAIL_RING
+#endif /* ifdef HAVE_TAIL_RING */
+#endif /* if MYTEST */
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -78,7 +106,8 @@ unsigned long zeroReductions    = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
-ideal f5cMain (ideal F,ideal Q,tHomog h,intvec ** w,intvec *hilb,int syzComp,int newIdeal,intvec *vw)
+ideal f5cMain(ideal F, ideal Q, tHomog h,intvec ** w, intvec *hilb,int syzComp,
+          int newIdeal, intvec *vw)
 {
   if(idIs0(F))
     return idInit(1,F->rank);
@@ -182,9 +211,9 @@ ideal f5cMain (ideal F,ideal Q,tHomog h,intvec ** w,intvec *hilb,int syzComp,int
     else
     {
       if (w!=NULL)
-        r=doF5(F,Q,*w,hilb,strat);
+        r=bba2(F,Q,*w,hilb,strat);
       else
-        r=doF5(F,Q,NULL,hilb,strat);
+        r=bba2(F,Q,NULL,hilb,strat);
     }
   }
 #ifdef KDEBUG
@@ -205,7 +234,7 @@ ideal f5cMain (ideal F,ideal Q,tHomog h,intvec ** w,intvec *hilb,int syzComp,int
 
 
 
-ideal doF5 (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
+ideal bba2 (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat)
 {
 #ifdef KDEBUG
   f5_count++;

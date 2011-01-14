@@ -4829,33 +4829,27 @@ static BOOLEAN jjRPAR(leftv res, leftv v)
 static BOOLEAN jjF5C(leftv res, leftv v)
 {
   ideal result;
-  ideal v_id  = (ideal) v->Data();
-  intvec *w   = (intvec *) atGet( v, "isHomog", INTVEC_CMD );
-  tHomog hom  = testHomog;
-  if( w!=NULL )
+  ideal v_id=(ideal)v->Data();
+  intvec *w=(intvec *)atGet(v,"isHomog",INTVEC_CMD);
+  tHomog hom=testHomog;
+  if (w!=NULL)
   {
-    if( !idTestHomModule(v_id,currQuotient,w) )
+    if (!idTestHomModule(v_id,currQuotient,w))
     {
       WarnS("wrong weights");
-      w = NULL;
+      w=NULL;
     }
     else
     {
-      hom = isHomog;
-      w   = ivCopy( w );
+      hom=isHomog;
+      w=ivCopy(w);
     }
   }
-  result  = f5cMain( v_id, currQuotient, hom, &w );
-  idSkipZeroes( result );
-  res->data = (char *) result;
-  if( !TEST_OPT_DEGBOUND ) 
-  {
-    setFlag( res, FLAG_STD );
-  }
-  if( w!=NULL )
-  {
-    atSet( res, omStrDup("isHomog"), w, INTVEC_CMD );
-  }
+  result=f5cMain(v_id,currQuotient,hom,&w);
+  idSkipZeroes(result);
+  res->data = (char *)result;
+  if(!TEST_OPT_DEGBOUND) setFlag(res,FLAG_STD);
+  if (w!=NULL) atSet(res,omStrDup("isHomog"),w,INTVEC_CMD);
   return FALSE;
 }
 
@@ -6845,6 +6839,7 @@ static BOOLEAN jjADDADJ2(leftv res, leftv u, leftv v, leftv w)
   return FALSE;
 }*/
 #endif /* HAVE_FANS */
+
 static BOOLEAN jjSTD_HILB_W(leftv res, leftv u, leftv v, leftv w)
 {
   intvec *vw=(intvec *)w->Data(); // weights of vars
@@ -7952,6 +7947,8 @@ static BOOLEAN jjQRDS(leftv res, leftv INPUT)
                                     (number)(x->Data()));
   return FALSE;
 }
+
+
 static BOOLEAN jjSTD_HILB_WP(leftv res, leftv INPUT)
 { ideal result;
   leftv u = INPUT;    /* an ideal, weighted homogeneous and standard */
