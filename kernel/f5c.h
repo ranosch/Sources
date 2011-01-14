@@ -170,10 +170,17 @@ struct CpairDegBound
 /// combined with the variant F5+ (for a guaranteed termination of the
 /// algorithm).
 /// @return ideal which represents the Groebner basis of the input ideal \c F
-ideal f5cMain (
-  ideal F,        ///<[in]  ideal for which a Groebner basis is computed
-  ideal Q = NULL  ///<[in]  the quotient ring, if not specified it is NULL
-              ); 
+/// @sa kstd
+ideal f5cMain ( 
+  ideal F,              ///<[in] input ideal for Groebner basis computation
+  ideal Q,              ///<[in] quotient ring
+  tHomog h,             ///<[in] label: homogeneous or not
+  intvec ** w,          ///<[in] weight vectors for orderings
+  intvec *hilb  = NULL, ///<[in] hilbert series
+  int syzComp   = 0,    ///<[in]
+  int newIdeal  = 0,    ///<[in]
+  intvec *vw    = NULL  ///<[in]
+              );
 
  
 

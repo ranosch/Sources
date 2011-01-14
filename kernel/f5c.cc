@@ -41,6 +41,7 @@
 #include "prCopy.h"
 #include "p_MemCmp.h"
 #include "pInline2.h"
+#include "sca.h"
 #include "f5c.h"
 
 #ifdef NDEBUG
@@ -70,73 +71,131 @@ unsigned long zeroReductions    = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
-ideal f5cMain(ideal F, ideal Q) 
+ideal f5cMain ( 
+                ideal F, ideal Q, tHomog h,intvec ** w, intvec *hilb,
+                int syzComp, int newIdeal, intvec *vw
+              )
 {
-  if(idIs0(F)) 
-  {
-    return idInit(1, F->rank);
-  }
-  ideal FRed      = idCopy( F );
+  if(idIs0(F))
+    return idInit(1,F->rank);
 
-  /// define the variables for fast exponent vector
-  /// reading/writing/comparison
-  int i = 0;
-  /// declaration of global variables used for exponent vector
-  int numVariables                  = currRing->N;
-  /// reading/writing/comparison
-  int* shift                        = (int*) omAlloc((currRing->N+1)*sizeof(int));
-  unsigned long* negBitmaskShifted  = (unsigned long*) omAlloc((currRing->N+1)*
-                                      sizeof(unsigned long));
-  int* offsets                      = (int*) omAlloc((currRing->N+1)*sizeof(int));
-  const unsigned long _bitmasks[4]  = {-1, 0x7fff, 0x7f, 0x3};
-  for( ; i<currRing->N+1; i++)
+  ideal r;
+  BOOLEAN b=pLexOrder,toReset=FALSE;
+  BOOLEAN delete_w=(w==NULL);
+  kStrategy strat=new skStrategy;
+
+  if(!TEST_OPT_RETURN_SB)
+    strat->syzComp = syzComp;
+  if (TEST_OPT_SB_1)
+    strat->newIdeal = newIdeal;
+  if (rField_has_simple_inverse())
+    strat->LazyPass=20;
+  else
+    strat->LazyPass=2;
+  strat->LazyDegree = 1;
+  strat->enterOnePair=enterOnePairNormal;
+  strat->chainCrit=chainCritNormal;
+  strat->ak = idRankFreeModule(F);
+  strat->kModW=kModW=NULL;
+  strat->kHomW=kHomW=NULL;
+  if (vw != NULL)
   {
-    shift[i]                = currRing->VarOffset[i] >> 24;
-    negBitmaskShifted[i]    = ~(currRing->bitmask << shift[i]);
-    offsets[i]              = (currRing->VarOffset[i] & 0xffffff);
+    pLexOrder=FALSE;
+    strat->kHomW=kHomW=vw;
+    pFDegOld = pFDeg;
+    pLDegOld = pLDeg;
+    pSetDegProcs(kHomModDeg);
+    toReset = TRUE;
   }
-  
-  ideal r = idInit(1, FRed->rank);
-  // save the first element in ideal r, initialization of iteration process
-  r->m[0] = FRed->m[0];
-  pNorm(r->m[0]);
-  // counter over the remaining generators of the input ideal F
-  for( i=1; i<IDELEMS(FRed); i++ ) 
+  if (h==testHomog)
   {
-    // computation of r: a groebner basis of <F[0],...,F[gen]> = <r,F[gen]>
-    r = f5cIter( FRed->m[i], r, numVariables, shift, negBitmaskShifted, offsets );
-    // the following interreduction is the essential idea of F5e.
-    // NOTE that we do not need the old rules from previous iteration steps
-    // => we only interreduce the polynomials and forget about their labels
-    ideal rTemp = kInterRed(r);
-    idDelete( &r );
-    r           = rTemp;
-#if F5EDEBUG3
-    for( k=0; k<IDELEMS(r); k++ )
+    if (strat->ak == 0)
     {
-      pTest( r->m[k] );
-      Print("TESTS after interred: %p ",r->m[k]);
-      pWrite(i r->m[k] );
+      h = (tHomog)idHomIdeal(F,Q);
+      w=NULL;
     }
-#endif
+    else if (!TEST_OPT_DEGBOUND)
+    {
+      h = (tHomog)idHomModule(F,Q,w);
+    }
   }
-  omFree( shift );
-  omFree( negBitmaskShifted );
-  omFree( offsets );
-#if F5EDEBUG00
-  Print("--------------------------------------------------\n");
-  Print("Number of Reductions:   %ld\n",number1Reductions);
-  Print("# Reduction steps:      %ld\n",numberReductions);
-  Print("# Zero Reductions:      %ld\n", zeroReductions);
-  Print("--------------------------------------------------\n");
+  pLexOrder=b;
+  if (h==isHomog)
+  {
+    if (strat->ak > 0 && (w!=NULL) && (*w!=NULL))
+    {
+      strat->kModW = kModW = *w;
+      if (vw == NULL)
+      {
+        pFDegOld = pFDeg;
+        pLDegOld = pLDeg;
+        pSetDegProcs(kModDeg);
+        toReset = TRUE;
+      }
+    }
+    pLexOrder = TRUE;
+    if (hilb==NULL) strat->LazyPass*=2;
+  }
+  strat->homog=h;
+#ifdef KDEBUG
+  idTest(F);
+  idTest(Q);
+
+#if MYTEST
+  if (TEST_OPT_DEBUG)
+  {
+    PrintS("// kSTD: currRing: ");
+    rWrite(currRing);
+  }
 #endif
-  create_count_f5   = 0;
-  rewRulesSize      = 0;
-  f5RulesSize       = 0;
-  stratSize         = 0;
-  numberReductions  = 0;
-  number1Reductions = 0;
-  zeroReductions    = 0;
+
+#endif
+#ifdef HAVE_PLURAL
+  if (rIsPluralRing(currRing))
+  {
+    const BOOLEAN bIsSCA  = rIsSCA(currRing) && strat->z2homog; // for Z_2 prod-crit
+    strat->no_prod_crit   = ! bIsSCA;
+    if (w!=NULL)
+      r = nc_GB(F, Q, *w, hilb, strat);
+    else
+      r = nc_GB(F, Q, NULL, hilb, strat);
+  }
+  else
+#endif
+#ifdef HAVE_RINGS
+  if (rField_is_Ring(currRing)) 
+    r=bba(F,Q,NULL,hilb,strat); 
+  else
+#endif
+  {
+    if (pOrdSgn==-1)
+    {
+      if (w!=NULL)
+        r=mora(F,Q,*w,hilb,strat);
+      else
+        r=mora(F,Q,NULL,hilb,strat);
+    }
+    else
+    {
+      if (w!=NULL)
+        r=bba(F,Q,*w,hilb,strat);
+      else
+        r=bba(F,Q,NULL,hilb,strat);
+    }
+  }
+#ifdef KDEBUG
+  idTest(r);
+#endif
+  if (toReset)
+  {
+    kModW = NULL;
+    pRestoreDegProcs(pFDegOld, pLDegOld);
+  }
+  pLexOrder = b;
+//Print("%d reductions canceled \n",strat->cel);
+  HCord=strat->HCord;
+  delete(strat);
+  if ((delete_w)&&(w!=NULL)&&(*w!=NULL)) delete *w;
   return r;
 }
 
