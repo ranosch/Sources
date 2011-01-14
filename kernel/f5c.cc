@@ -166,7 +166,6 @@ ideal f5cIter (
 #endif  
   // create the reduction structure "strat" which is needed for all 
   // reductions with redGB in this iteration step
-  Print("HERE\n");
   kStrategy strat   = new skStrategy;
   prepRedGBReduction( strat, redGB );
 #if F5EDEBUG3
@@ -1483,7 +1482,7 @@ void computeSpols (
     gCurrTemp2 = gCurrTemp2->next;
   }
   Print("COMPUTESPOLS-END\n");
-    Print("HERE1 -- %p -- %p\n", (*rewRules), (*rewRules)->label[0]);
+  Print("HERE1 -- %p -- %p\n", (*rewRules), (*rewRules)->label[0]);
 #endif
   // free memory
   omFree( multTemp );
@@ -2046,18 +2045,13 @@ void currReduction  (
         // copy data from critical pair rule to rewRule
         register unsigned long _length  = currRing->N+1;
         register unsigned long _i       = 0;
-  Print("HERE\n");
         register int* _d                = f5Rules->label[f5Rules->size];
-  Print("HERE %p\n", f5Rules->label[f5Rules->size]);
         register int* _s                = rewRules->label[rewRulesCurr];
-  Print("HERE %ld\n", rewRulesCurr);
         while( _i<_length )
         {
-          Print("%ld\n",_i);
           _d[_i]  = _s[_i];
           _i++;
         }
-  Print("HERE\n");
         f5Rules->slabel[f5Rules->size]  = rewRules->slabel[rewRulesCurr];
         f5Rules->size++;
       }
@@ -2892,6 +2886,10 @@ void clearStrat(kStrategy strat, ideal F, ideal Q)
   Print("CLEARSTRAT - BEGINNING\n");
 #endif
   /*- release temp data------------------------------- -*/
+  if (Q!=NULL) updateResult(strat->Shdl,Q,strat);
+  kModW = NULL;
+  pRestoreDegProcs(pFDegOld, pLDegOld);
+  HCord=strat->HCord;
   omfree(strat->sevS);
   omfree(strat->ecartS);
   omfree(strat->T);
@@ -2902,6 +2900,7 @@ void clearStrat(kStrategy strat, ideal F, ideal Q)
   omfree(strat->B);
   omfree(strat->fromQ);
   idDelete(&strat->Shdl);
+  delete(strat);
 #if F5EDEBUG3
   Print("CLEARSTRAT - END\n");
 #endif
