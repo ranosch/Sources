@@ -165,8 +165,16 @@ struct CpairDegBound
 /// Singular kernel. 
 /// @return ideal which represents the Groebner basis of the input ideal \c F
 /// @sa kstd
-ideal f5cMain(ideal F, ideal Q, tHomog h, intvec ** mw,intvec *hilb=NULL,
-          int syzComp=0,int newIdeal=0, intvec *vw=NULL);
+ideal f5cMain (
+  ideal F,              ///<[in] intial ideal to compute the Groebner basis for
+  ideal Q,              ///<[in] quotient ring
+  tHomog h,             ///<[in] homogeneous or inhomogeneous?
+  intvec ** mw,         ///<[in] weight vector for ordering
+  intvec *hilb  = NULL, ///<[in] hilbert polynomial?
+  int syzComp   = 0,    ///<[in] syzygy computation?
+  int newIdeal  = 0,    ///<[in]
+  intvec *vw    = NULL  ///<[in]
+              );
 
 
 
@@ -180,7 +188,13 @@ ideal f5cMain(ideal F, ideal Q, tHomog h, intvec ** mw,intvec *hilb=NULL,
 /// algorithm).
 /// @return ideal which represents the Groebner basis of the input ideal \c F
 /// @sa bba, mora
-ideal bba2 (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat);
+ideal doF5  (
+  ideal F,        ///<[in] initial ideal for Groebner basis computation
+  ideal Q,        ///<[in] quotient ring
+  intvec *w,      ///<[in] weight for ordering
+  intvec *hilb,   ///<[in] hilbert polynomial?
+  kStrategy strat ///<[in] strategy for fast reduction, etc.
+            );
  
 
 
