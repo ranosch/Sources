@@ -34,20 +34,16 @@
 #include <kernel/khstd.h>
 #include <kernel/stairc.h>
 #include <kernel/weight.h>
-//#include "cntrlc.h"
 #include <kernel/intvec.h>
 #include <kernel/ideals.h>
-//#include "../Singular/ipid.h"
 #include <kernel/timer.h>
 #include <kernel/kbuckets.h>
-
-//#include "ipprint.h"
+#include <kernel/f5c.h>
+#include <unistd.h>
 
 #ifdef HAVE_PLURAL
 #include <kernel/sca.h>
 #endif
-#include <unistd.h>
-#include <kernel/f5c.h>
 
 
 // define if tailrings should be used
@@ -135,8 +131,8 @@ ideal f5cMain ( ideal F, ideal Q, tHomog h,intvec ** w, intvec *hilb,
   strat->enterOnePair = enterOnePairNormal;
   strat->chainCrit    = chainCritNormal;
   strat->ak           = idRankFreeModule(F);
-  strat->kModW        =kModW  = NULL;
-  strat->kHomW        =kHomW  = NULL;
+  strat->kModW        = kModW  = NULL;
+  strat->kHomW        = kHomW  = NULL;
   if( vw != NULL )
   {
     pLexOrder     = FALSE;
