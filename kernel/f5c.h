@@ -195,6 +195,18 @@ ideal doF5  (
   intvec *hilb,   ///<[in] hilbert polynomial?
   kStrategy strat ///<[in] strategy for fast reduction, etc.
             );
+
+
+
+/// @brief \c initF5() initializes all data stored in strat used for the
+/// computation of the Groebner basis of \c F. This is a special, i.e. 
+/// incremental version of \c initBuchMora().
+/// @sa initBuchMora, doF5
+void initF5 ( 
+  ideal F,        ///<[in] initial ideal for Groebner basis computation
+  ideal Q,        ///<[in] quotient ring
+  kStrategy strat ///<[in] strategy for fast reduction, etc.
+            );
  
 
 
