@@ -259,11 +259,15 @@ public:
   ideal D; /*V(S) is in D(D)*/
   ideal M; /*set of minimal generators*/
   polyset S;
+  polyset RewRules;   /* for f5c.cc */
+  polyset extF5Rules; /* for f5c.cc */
   intset ecartS;
   intset lenS;
   wlen_set lenSw; /* for tgb.ccc */
   intset fromQ;
   unsigned long* sevS;
+  unsigned long* sevRewRules;   /* for f5c.cc */
+  unsigned long* sevExtF5Rules; /* for f5c.cc */
   unsigned long* sevT;
   TSet T;
   LSet L;
