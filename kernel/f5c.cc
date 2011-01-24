@@ -723,7 +723,7 @@ void initF5 ( ideal F, ideal Q, kStrategy strat )
       P->m[i-strat->newIdeal] = F->m[i];
       F->m[i]                 = NULL;
     }
-    initSSpecial( F, Q, P, strat );
+    initSF5( F, Q, P, strat );
     for( i=strat->newIdeal; i<IDELEMS(F); i++ )
     {
       F->m[i]                 = P->m[i-strat->newIdeal];
@@ -747,6 +747,421 @@ void initF5 ( ideal F, ideal Q, kStrategy strat )
     omFreeSize( strat->fromQ, IDELEMS(strat->Shdl)*sizeof(int) );
   }
   strat->fromQ  = NULL;
+}
+
+
+
+void initSF5( ideal F, ideal Q, ideal P,kStrategy strat )
+{
+  int i,  pos;
+
+  if( Q!=NULL ) 
+  {
+    i = ( (IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc ) * setmaxTinc;
+  }
+  else 
+  {
+    i = setmaxT;
+  }
+  i             = ( (i+IDELEMS(F)+IDELEMS(P)+15)/16 ) * 16;
+  strat->ecartS = (intset) omAlloc( i*sizeof(int) );
+  strat->sevS   = (unsigned long*) omAlloc0( i*sizeof(unsigned long) );
+  strat->S_2_R  = (int*) omAlloc0( i*sizeof(int) );
+  strat->fromQ  = NULL;
+  strat->Shdl   = idInit( i, F->rank );
+  strat->S      = strat->Shdl->m;
+
+  /*- put polys into S -*/
+  if( Q!=NULL )
+  {
+    strat->fromQ  = (intset) omAlloc( i*sizeof(int) );
+    memset( strat->fromQ, 0, i*sizeof(int) );
+    for( i=0; i<IDELEMS(Q); i++ )
+    {
+      if( Q->m[i]!=NULL )
+      {
+        LObject h;
+        h.p = pCopy( Q->m[i] );
+
+        if( pOrdSgn==-1 )
+        {
+          deleteHC( &h, strat );
+        }
+        if( h.p!=NULL )
+        {
+          strat->initEcart( &h );
+          if( strat->sl==-1 )
+          {
+            pos = 0;
+          }
+          else
+          {
+            pos = posInS( strat, strat->sl, h.p, h.ecart );
+          }
+          h.sev = pGetShortExpVector( h.p );
+          strat->enterS( h, pos, strat, strat->tl+1 );
+          enterT( h, strat );
+          strat->fromQ[pos] = 1;
+        }
+      }
+    }
+  }
+  /*- put polys into S -*/
+  for( i=0; i<IDELEMS(F); i++ )
+  {
+    if( F->m[i]!=NULL )
+    {
+      LObject h;
+      h.p = pCopy( F->m[i] );
+      if( pOrdSgn==-1 )
+      {
+        deleteHC( &h, strat );
+      }
+      else
+      {
+        h.p = redtailBba( h.p, strat->sl, strat );
+      }
+      if( h.p!=NULL )
+      {
+        strat->initEcart( &h );
+        if( strat->sl==-1 )
+        {
+          pos = 0;
+        }
+        else
+        {
+          pos = posInS( strat, strat->sl, h.p, h.ecart );
+        }
+        h.sev = pGetShortExpVector( h.p );
+        strat->enterS( h, pos, strat, strat->tl+1 );
+        enterT( h, strat );
+      }
+    }
+  }
+  for( i=0; i<IDELEMS(P); i++ )
+  {
+    if( P->m[i]!=NULL )
+    {
+      LObject h;
+      h.p = pCopy( P->m[i] );
+      if( TEST_OPT_INTSTRATEGY )
+      {
+        h.pCleardenom();
+      }
+      else
+      {
+        h.pNorm();
+      }
+      if( strat->sl>=0 )
+      {
+        if( pOrdSgn==1 )
+        {
+          h.p = redGlobalF5( h.p, strat->sl, strat );
+          if( h.p!=NULL )
+          {
+            h.p = redtailBba( h.p, strat->sl, strat );
+          }
+        }
+        else
+        {
+          h.p = redLocalF5( h.p, strat->sl, strat );
+        }
+        if( h.p!=NULL )
+        {
+          strat->initEcart( &h );
+          if( TEST_OPT_INTSTRATEGY )
+          {
+            h.pCleardenom();
+          }
+          else
+          {
+            h.is_normalized = 0;
+            h.pNorm();
+          }
+          h.sev = pGetShortExpVector( h.p );
+          h.SetpFDeg();
+          pos = posInS( strat, strat->sl, h.p, h.ecart );
+          enterPairsF5( h.p, strat->sl, h.ecart, pos, strat, strat->tl+1 );
+          strat->enterS( h, pos, strat, strat->tl+1 );
+          enterT( h, strat );
+        }
+      }
+      else
+      {
+        h.sev = pGetShortExpVector( h.p );
+        strat->initEcart( &h );
+        strat->enterS( h, 0, strat, strat->tl+1 );
+        enterT( h, strat );
+      }
+    }
+  }
+}
+
+
+
+void enterPairsF5( poly h, int k, int ecart, int pos, kStrategy strat, int atR )
+{
+  int j;
+  const int iCompH = pGetComp( h );
+
+  for( j=0; j<=k; j++ )
+  {
+    const int iCompSj = pGetComp( strat->S[j] );
+    if( (iCompH==iCompSj)
+        || (0==iCompH) // TODO: what about this case???
+        || (0==iCompSj) )
+    {
+      enterOnePairF5( j, h, ecart, strat, atR );
+    }
+  }
+
+  if( strat->noClearS ) 
+  {
+    return;
+  }
+
+  j = pos;
+  loop
+  {
+    unsigned long h_sev = pGetShortExpVector( h );
+    if( j>k ) 
+    {
+      break;
+    }
+    clearS( h, h_sev, &j, &k, strat );
+    j++;
+  }
+}
+
+
+
+void enterOnePairF5( int i, poly p, int ecart, kStrategy strat, int atR )
+{
+  if( pHasNotCF(p,strat->S[i]) )
+  {
+    //PrintS("prod-crit\n");
+    if( ALLOW_PROD_CRIT(strat) )
+    {
+      //PrintS("prod-crit\n");
+      strat->cp++;
+      return;
+    }
+  }
+
+  int l,j,compare;
+  LObject  Lp;
+  Lp.i_r = -1;
+
+  Lp.lcm = pInit();
+  pLcm( p, strat->S[i], Lp.lcm );
+  pSetm( Lp.lcm );
+  for( j=strat->Ll; j>=0; j-- )
+  {
+    compare = pDivComp( strat->L[j].lcm, Lp.lcm );
+    if( (compare==1) || (pLmEqual(strat->L[j].lcm, Lp.lcm)) )
+    {
+      //PrintS("c3-crit\n");
+      strat->c3++;
+      pLmFree( Lp.lcm );
+      return;
+    }
+    else 
+    {
+      if( compare==-1 )
+      {
+        //Print("c3-crit with L[%d]\n",j);
+        deleteInL( strat->L, &strat->Ll, j, strat );
+        strat->c3++;
+      }
+    }
+  }
+  /*-  compute the short s-polynomial -*/
+
+  #ifdef HAVE_PLURAL
+  if( rIsPluralRing(currRing) )
+  {
+    Lp.p = nc_CreateShortSpoly( strat->S[i], p ); // ??? strat->tailRing?
+  }
+  else
+  #endif
+    Lp.p = ksCreateShortSpoly( strat->S[i], p, strat->tailRing );
+
+  if( Lp.p==NULL )
+  {
+     //PrintS("short spoly==NULL\n");
+     pLmFree( Lp.lcm );
+  }
+  else
+  {
+    /*- the pair (S[i],p) enters L -*/
+    Lp.p1 = strat->S[i];
+    Lp.p2 = p;
+    if( atR>=0 )
+    {
+      Lp.i_r1 = strat->S_2_R[i];
+      Lp.i_r2 = atR;
+    }
+    else
+    {
+      Lp.i_r1 = -1;
+      Lp.i_r2 = -1;
+    }
+    assume( pNext(Lp.p)==NULL );
+    pNext( Lp.p ) = strat->tail;
+    strat->initEcartPair( &Lp, strat->S[i], p, strat->ecartS[i], ecart );
+    if( TEST_OPT_INTSTRATEGY )
+    {
+      nDelete( &(Lp.p->coef) );
+    }
+    l = strat->posInL( strat->L, strat->Ll, &Lp, strat );
+    //Print("-> L[%d]\n",l);
+    enterL( &strat->L, &strat->Ll, &strat->Lmax, Lp, l );
+  }
+}
+
+
+
+static inline int pDivComp( poly p, poly q )
+{
+  if( pGetComp(p)==pGetComp(q) )
+  {
+#ifdef HAVE_RATGRING
+    if( rIsRatGRing(currRing) )
+    {
+      if( _p_LmDivisibleByPart(p, currRing, q, currRing, currRing->real_var_start, 
+                               currRing->real_var_end) )
+      {
+        return 0;
+      }
+      return pLmCmp(q,p); // ONLY FOR GLOBAL ORDER!
+    }
+#endif
+    BOOLEAN a = FALSE, b  = FALSE;
+    int i;
+    unsigned long la, lb;
+    unsigned long divmask = currRing->divmask;
+    for( i=0; i<currRing->VarL_Size; i++ )
+    {
+      la = p->exp[currRing->VarL_Offset[i]];
+      lb = q->exp[currRing->VarL_Offset[i]];
+      if( la!=lb )
+      {
+        if( la<lb )
+        {
+          if( b ) 
+          {
+            return 0;
+          }
+          if( ((la & divmask) ^ (lb & divmask)) != ((lb - la) & divmask) )
+          {
+            return 0;
+          }
+          a = TRUE;
+        }
+        else
+        {
+          if( a ) 
+          {
+            return 0;
+          }
+          if( ((la & divmask) ^ (lb & divmask)) != ((la - lb) & divmask) )
+          {
+            return 0;
+          }
+          b = TRUE;
+        }
+      }
+    }
+    if( a ) 
+    { 
+      return 1; 
+    }
+    if( b ) 
+    {
+      return -1; 
+    }
+  }
+  return 0;
+}
+
+
+
+static poly redGlobalF5( poly h, int maxIndex, kStrategy strat )
+{
+  int j = 0;
+  unsigned long not_sev = ~ pGetShortExpVector( h );
+
+  while( j<=maxIndex )
+  {
+    if( pLmShortDivisibleBy(strat->S[j], strat->sevS[j], h, not_sev) )
+    {
+      h = ksOldSpolyRed( strat->S[j], h, strat->kNoetherTail() );
+      if( h==NULL ) 
+      {
+        return NULL;
+      }
+      j       = 0;
+      not_sev = ~ pGetShortExpVector( h );    
+    }
+    else 
+    {
+      j++;
+    }
+  }
+  return h;
+}
+
+
+
+static poly redLocalF5( poly h, int maxIndex, kStrategy strat )
+{
+  int j = 0;
+  int  e, l;
+  unsigned long not_sev = ~ pGetShortExpVector( h );
+
+  if( maxIndex>=0 )
+  {
+    e = pLDeg( h, &l, currRing ) - pFDeg( h, currRing );
+    do
+    {
+      if( pLmShortDivisibleBy(strat->S[j], strat->sevS[j], h, not_sev)
+          && ((e>=strat->ecartS[j]) || strat->kHEdgeFound) )
+      {
+#ifdef KDEBUG
+        if( TEST_OPT_DEBUG )
+        {
+          PrintS( "reduce " );
+          wrp( h );
+          Print( " with S[%d] (", j );
+          wrp( strat->S[j] );
+        }
+#endif
+        h = ksOldSpolyRed( strat->S[j], h, strat->kNoetherTail() );
+#ifdef KDEBUG
+        if( TEST_OPT_DEBUG )
+        {
+          PrintS( ")\nto " ); 
+          wrp( h ); 
+          PrintLn();
+        }
+#endif
+        // pDelete(&h);
+        if( h==NULL ) 
+        {
+          return NULL;
+        }
+        e       = pLDeg( h, &l, currRing ) - pFDeg( h, currRing );
+        j       = 0;
+        not_sev = ~ pGetShortExpVector( h );
+      }
+      else 
+      {
+        j++;
+      }
+    }
+    while( j<=maxIndex );
+  }
+  return h;
 }
 
 
