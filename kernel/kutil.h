@@ -318,6 +318,7 @@ public:
   BOOLEAN kHEdgeFound;
   BOOLEAN honey,sugarCrit;
   BOOLEAN Gebauer,noTailReduction;
+  BOOLEAN f5;
   BOOLEAN fromT;
   BOOLEAN noetherSet;
   BOOLEAN update;
@@ -450,12 +451,14 @@ void initBuchMoraCrit(kStrategy strat);
 void initHilbCrit(ideal F, ideal Q, intvec **hilb,kStrategy strat);
 void initBuchMoraPos(kStrategy strat);
 void initBuchMora (ideal F, ideal Q,kStrategy strat);
+void initF5 ( kStrategy strat );
 void exitBuchMora (kStrategy strat);
 void updateResult(ideal r,ideal Q,kStrategy strat);
 void completeReduce (kStrategy strat, BOOLEAN withT=FALSE);
 void kFreeStrat(kStrategy strat);
 void enterOnePairNormal (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR);
 void chainCritNormal (poly p,int ecart,kStrategy strat);
+void critF5 (poly p,int ecart,kStrategy strat);
 BOOLEAN homogTest(polyset F, int Fmax);
 BOOLEAN newHEdge(polyset S, kStrategy strat);
 // returns index of p in TSet, or -1 if not found
