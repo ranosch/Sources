@@ -258,8 +258,18 @@ public:
   ideal Shdl;
   ideal D; /*V(S) is in D(D)*/
   ideal M; /*set of minimal generators*/
+  // RewRules & S are synchronised, i.e.
+  // strat->S[i] has corresponding rule RewRules[i]
+  // NOTE that up to a given bound strat->S & strat->sevS
+  // is just our data for F5 Criterion check:
+  // The bound is just given by all elements computed in a 
+  // previous iteration step.
   polyset S;
   polyset RewRules;   /* for f5c.cc */
+  // these are the rules coming from zero reductions in F5
+  // => adding them to the F5 Criterion check improves F5 for 
+  // highly non-regular input
+  // This idea is adopted from GGV et al. 
   polyset extF5Rules; /* for f5c.cc */
   intset ecartS;
   intset lenS;
