@@ -5135,7 +5135,186 @@ void initS (ideal F, ideal Q, kStrategy strat)
   }
 }
 
-void initSL (ideal F, ideal Q,kStrategy strat)
+void addSL (int ctr, ideal F, ideal Q, kStrategy strat)
+{
+  int   i,pos;
+
+  if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
+  else i=setmaxT;
+  //////////////////////////////////////////
+  // THE FOLLOWING STUFF IS ALREADY SET!! //
+  //////////////////////////////////////////
+  //strat->ecartS=initec(i);
+  //strat->sevS=initsevS(i);
+  //strat->S_2_R=initS_2_R(i);
+  //strat->fromQ=NULL;
+  //strat->Shdl=idInit(i,F->rank);
+  //strat->S=strat->Shdl->m;
+  /*- put polys into S -*/
+    if (F->m[ctr]!=NULL)
+    {
+      LObject h;
+      h.p = pCopy(F->m[ctr]);
+      h.tailRing  = currRing;
+      if (h.p!=NULL)
+      {
+        if (pOrdSgn==-1)
+        {
+          cancelunit(&h);  /*- tries to cancel a unit -*/
+          deleteHC(&h, strat);
+        }
+        if (h.p!=NULL)
+        {
+          if (TEST_OPT_INTSTRATEGY)
+          {
+            //pContent(h.p);
+            h.pCleardenom(); // also does a pContent
+          }
+          else
+          {
+            h.pNorm();
+          }
+          strat->initEcart(&h);
+          if (strat->Ll==-1)
+            pos =0;
+          else
+            pos = strat->posInL(strat->L,strat->Ll,&h,strat);
+          h.sev = pGetShortExpVector(h.p);
+          enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
+        }
+      }
+    }
+  /*- test, if a unit is in F -*/
+
+  if ((strat->Ll>=0)
+#ifdef HAVE_RINGS
+       && nIsUnit(pGetCoeff(strat->L[strat->Ll].p))
+#endif
+       && pIsConstant(strat->L[strat->Ll].p))
+  {
+    while (strat->Ll>0) deleteInL(strat->L,&strat->Ll,strat->Ll-1,strat);
+  }
+
+  if (strat->fromQ!=NULL) omFreeSize(strat->fromQ,IDELEMS(strat->Shdl)*sizeof(int));
+  strat->fromQ=NULL;
+  pShallowCopyDeleteProc p_shallow_copy_delete
+    = pGetShallowCopyDeleteProc(strat->tailRing, strat->tailRing);
+  
+  for (i=0; i<=strat->Ll; i++)
+  {
+    assume(strat->L[i].p != NULL);
+    if (pNext(strat->L[i].p) != strat->tail)
+      strat->L[i].ShallowCopyDelete(strat->tailRing, p_shallow_copy_delete);
+  }
+  /*
+  if (strat->P.t_p != NULL ||
+      (strat->P.p != NULL && pNext(strat->P.p) != strat->tail))
+    strat->P.ShallowCopyDelete(strat->tailRing, p_shallow_copy_delete);
+  */
+}
+
+void initSLF5 (ideal F, ideal Q, kStrategy strat)
+{
+  int   i,pos;
+
+  if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
+  else i=setmaxT;
+  strat->ecartS=initec(i);
+  strat->sevS=initsevS(i);
+  strat->S_2_R=initS_2_R(i);
+  strat->fromQ=NULL;
+  strat->Shdl=idInit(i,F->rank);
+  strat->S=strat->Shdl->m;
+  /*- put polys into S -*/
+  if (Q!=NULL)
+  {
+    strat->fromQ=initec(i);
+    memset(strat->fromQ,0,i*sizeof(int));
+    for (i=0; i<IDELEMS(Q); i++)
+    {
+      if (Q->m[i]!=NULL)
+      {
+        LObject h;
+        h.p = pCopy(Q->m[i]);
+        if (pOrdSgn==-1)
+        {
+          deleteHC(&h,strat);
+        }
+        if (TEST_OPT_INTSTRATEGY)
+        {
+          //pContent(h.p);
+          h.pCleardenom(); // also does a pContent
+        }
+        else
+        {
+          h.pNorm();
+        }
+        if (h.p!=NULL)
+        {
+          strat->initEcart(&h);
+          if (strat->sl==-1)
+            pos =0;
+          else
+          {
+            pos = posInS(strat,strat->sl,h.p,h.ecart);
+          }
+          h.sev = pGetShortExpVector(h.p);
+          strat->enterS(h,pos,strat,-1);
+          strat->fromQ[pos]=1;
+        }
+      }
+    }
+  }
+  for (i=0; i<2; i++)
+  {
+    if (F->m[i]!=NULL)
+    {
+      LObject h;
+      h.p = pCopy(F->m[i]);
+      if (h.p!=NULL)
+      {
+        if (pOrdSgn==-1)
+        {
+          cancelunit(&h);  /*- tries to cancel a unit -*/
+          deleteHC(&h, strat);
+        }
+        if (h.p!=NULL)
+        {
+          if (TEST_OPT_INTSTRATEGY)
+          {
+            //pContent(h.p);
+            h.pCleardenom(); // also does a pContent
+          }
+          else
+          {
+            h.pNorm();
+          }
+          strat->initEcart(&h);
+          if (strat->Ll==-1)
+            pos =0;
+          else
+            pos = strat->posInL(strat->L,strat->Ll,&h,strat);
+          h.sev = pGetShortExpVector(h.p);
+          enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
+        }
+      }
+    }
+  }
+  /*- test, if a unit is in F -*/
+
+  if ((strat->Ll>=0)
+#ifdef HAVE_RINGS
+       && nIsUnit(pGetCoeff(strat->L[strat->Ll].p))
+#endif
+       && pIsConstant(strat->L[strat->Ll].p))
+  {
+    while (strat->Ll>0) deleteInL(strat->L,&strat->Ll,strat->Ll-1,strat);
+  }
+}
+
+
+
+void initSL (ideal F, ideal Q, kStrategy strat)
 {
   int   i,pos;
 
@@ -5491,6 +5670,7 @@ static poly redQ (poly h, int j, kStrategy strat)
 static poly redBba (poly h,int maxIndex,kStrategy strat)
 {
   int j = 0;
+  Print("!!!!!!\n");
   unsigned long not_sev = ~ pGetShortExpVector(h);
 
   while (j <= maxIndex)
@@ -5865,7 +6045,7 @@ void enterT(LObject p, kStrategy strat, int atT)
   // do not put an LObject twice into T:
   for(i=strat->tl;i>=0;i--)
   {
-    if (p.p==strat->T[i].p)
+     if (p.p==strat->T[i].p)
     {
       printf("already in T at pos %d of %d, atT=%d\n",i,strat->tl,atT);
       return;
@@ -6141,6 +6321,74 @@ void initF5 ( kStrategy strat )
     else              PrintS("ideal/module is not homogeneous\n");
   }
   #endif
+}
+
+
+
+void initSTLF5 (ideal F,ideal Q,kStrategy strat)
+{
+  strat->interpt = BTEST1(OPT_INTERRUPT);
+  strat->kHEdge=NULL;
+  if (pOrdSgn==1) strat->kHEdgeFound=FALSE;
+  /*- creating temp data structures------------------- -*/
+  strat->cp = 0;
+  strat->c3 = 0;
+  strat->tail = pInit();
+  /*- set s -*/
+  strat->sl = -1;
+  /*- set L -*/
+  strat->Lmax = ((IDELEMS(F)+setmaxLinc-1)/setmaxLinc)*setmaxLinc;
+  strat->Ll = -1;
+  strat->L = initL(((IDELEMS(F)+setmaxLinc-1)/setmaxLinc)*setmaxLinc);
+  /*- set B -*/
+  strat->Bmax = setmaxL;
+  strat->Bl = -1;
+  strat->B = initL();
+  /*- set T -*/
+  strat->tl = -1;
+  strat->tmax = setmaxT;
+  strat->T = initT();
+  strat->R = initR();
+  strat->sevT = initsevT();
+  /*- init local data struct.---------------------------------------- -*/
+  strat->P.ecart=0;
+  strat->P.length=0;
+  if (pOrdSgn==-1)
+  {
+    if (strat->kHEdge!=NULL) pSetComp(strat->kHEdge, strat->ak);
+    if (strat->kNoether!=NULL) pSetComp(strat->kNoetherTail(), strat->ak);
+  }
+  if(TEST_OPT_SB_1)
+  {
+    int i;
+    ideal P=idInit(IDELEMS(F)-strat->newIdeal,F->rank);
+    for (i=strat->newIdeal;i<IDELEMS(F);i++)
+    {
+      P->m[i-strat->newIdeal] = F->m[i];
+      F->m[i] = NULL;
+    }
+    initSSpecial(F,Q,P,strat);
+    for (i=strat->newIdeal;i<IDELEMS(F);i++)
+    {
+      F->m[i] = P->m[i-strat->newIdeal];
+      P->m[i-strat->newIdeal] = NULL;
+    }
+    idDelete(&P);
+  }
+  else
+  {
+    /*Shdl=*/initSLF5(F, Q,strat); /*sets also S, ecartS, fromQ */
+    // /*Shdl=*/initS(F, Q,strat); /*sets also S, ecartS, fromQ */
+  }
+  strat->kIdeal = NULL;
+  strat->fromT = FALSE;
+  strat->noTailReduction = !TEST_OPT_REDTAIL;
+  if (!TEST_OPT_SB_1)
+  {
+    updateS(TRUE,strat);
+  }
+  if (strat->fromQ!=NULL) omFreeSize(strat->fromQ,IDELEMS(strat->Shdl)*sizeof(int));
+  strat->fromQ=NULL;
 }
 
 

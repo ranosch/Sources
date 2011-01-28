@@ -277,7 +277,7 @@ ideal doF5( ideal F, ideal Q, intvec *w, intvec *hilb, kStrategy strat )
   initHilbCrit( F, Q, &hilb, strat );
   initBba( F, strat );
   // set enterS, spSpolyShort, reduce, red, initEcart, initEcartPair
-  initBuchMora( F, Q, strat );
+  initSTLF5( F, Q, strat );
   if( strat->minim>0 ) 
   {
     strat->M  = idInit( IDELEMS(F), F->rank );
@@ -337,6 +337,9 @@ ideal doF5( ideal F, ideal Q, intvec *w, intvec *hilb, kStrategy strat )
   kDebugPrint( strat );
 #endif
   /* compute------------------------------------------------------- */
+  for( int _ctr=1; _ctr<IDELEMS(F); _ctr++ )
+  {
+  Print( "ITERATION %d\n", _ctr );
   while( strat->Ll>=0 )
   {
     if( strat->Ll>lrmax ) 
@@ -578,6 +581,12 @@ ideal doF5( ideal F, ideal Q, intvec *w, intvec *hilb, kStrategy strat )
     memset( &(strat->P), 0, sizeof(strat->P) );
 #endif /* KDEBUG */
     kTest_TS( strat );
+  }
+      //////////////////////////////////////////////
+      // ADDING NEW POLY TO STRAT: NEXT ITERATION //
+      //////////////////////////////////////////////
+    addSL( _ctr+1, F, Q, strat );
+
   }
 #ifdef KDEBUG
 #if MYTEST
