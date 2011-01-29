@@ -5197,11 +5197,18 @@ void addSL (int ctr, ideal F, ideal Q, kStrategy strat)
 
   if (strat->fromQ!=NULL) omFreeSize(strat->fromQ,IDELEMS(strat->Shdl)*sizeof(int));
   strat->fromQ=NULL;
+
   pShallowCopyDeleteProc p_shallow_copy_delete
     = pGetShallowCopyDeleteProc(strat->tailRing, strat->tailRing);
   
+  for (i=0; i<=strat->tl; i++)
+  {
+    strat->T[i].ShallowCopyDelete(strat->tailRing, strat->tailBin,
+                                  p_shallow_copy_delete);
+  }
   for (i=0; i<=strat->Ll; i++)
   {
+    //Print( "%d\n",i );
     assume(strat->L[i].p != NULL);
     if (pNext(strat->L[i].p) != strat->tail)
       strat->L[i].ShallowCopyDelete(strat->tailRing, p_shallow_copy_delete);
@@ -5265,12 +5272,10 @@ void initSLF5 (ideal F, ideal Q, kStrategy strat)
       }
     }
   }
-  for (i=0; i<2; i++)
-  {
-    if (F->m[i]!=NULL)
+    if (F->m[0]!=NULL)
     {
       LObject h;
-      h.p = pCopy(F->m[i]);
+      h.p = pCopy(F->m[0]);
       if (h.p!=NULL)
       {
         if (pOrdSgn==-1)
@@ -5299,7 +5304,6 @@ void initSLF5 (ideal F, ideal Q, kStrategy strat)
         }
       }
     }
-  }
   /*- test, if a unit is in F -*/
 
   if ((strat->Ll>=0)

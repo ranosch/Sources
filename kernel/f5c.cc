@@ -339,9 +339,17 @@ ideal doF5( ideal F, ideal Q, intvec *w, intvec *hilb, kStrategy strat )
   /* compute------------------------------------------------------- */
   for( int _ctr=1; _ctr<IDELEMS(F); _ctr++ )
   {
+      //////////////////////////////////////////////
+      // ADDING NEW POLY TO STRAT: NEXT ITERATION //
+      //////////////////////////////////////////////
+    pWrite( F->m[_ctr] );
+    Print("HERE\n");
+    addSL( _ctr, F, Q, strat );
+    Print("HERE\n");
   Print( "ITERATION %d\n", _ctr );
   while( strat->Ll>=0 )
   {
+    Print("START WHILE\n");
     if( strat->Ll>lrmax ) 
     {
       // stat.
@@ -443,6 +451,7 @@ ideal doF5( ideal F, ideal Q, intvec *w, intvec *hilb, kStrategy strat )
       }
   
       /* reduction of the element choosen from L */
+
       red_result = strat->red( &strat->P, strat );
       if( errorreported )  
       { 
@@ -581,11 +590,8 @@ ideal doF5( ideal F, ideal Q, intvec *w, intvec *hilb, kStrategy strat )
     memset( &(strat->P), 0, sizeof(strat->P) );
 #endif /* KDEBUG */
     kTest_TS( strat );
+    Print("END WHILE\n");
   }
-      //////////////////////////////////////////////
-      // ADDING NEW POLY TO STRAT: NEXT ITERATION //
-      //////////////////////////////////////////////
-    addSL( _ctr+1, F, Q, strat );
 
   }
 #ifdef KDEBUG
