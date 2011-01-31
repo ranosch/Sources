@@ -259,13 +259,13 @@ public:
   ideal D; /*V(S) is in D(D)*/
   ideal M; /*set of minimal generators*/
   // RewRules & S are synchronised, i.e.
-  // strat->S[i] has corresponding rule RewRules[i]
+  // strat->S[i] has corresponding rule rewRules[i]
   // NOTE that up to a given bound strat->S & strat->sevS
   // is just our data for F5 Criterion check:
   // The bound is just given by all elements computed in a 
   // previous iteration step.
   polyset S;
-  polyset RewRules;   /* for f5c.cc */
+  polyset rewRules;   /* for f5c.cc */
   // these are the rules coming from zero reductions in F5
   // => adding them to the F5 Criterion check improves F5 for 
   // highly non-regular input
@@ -376,6 +376,7 @@ static inline LSet initL (int nr=setmaxL)
 void deleteInL(LSet set, int *length, int j,kStrategy strat);
 void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at);
 void enterSBba (LObject p,int atS,kStrategy strat, int atR = -1);
+void enterSF5 (LObject p,int atS,kStrategy strat, int atR = -1);
 void initEcartPairBba (LObject* Lp,poly f,poly g,int ecartF,int ecartG);
 void initEcartPairMora (LObject* Lp,poly f,poly g,int ecartF,int ecartG);
 int posInS (const kStrategy strat, const int length, const poly p, 
@@ -465,11 +466,12 @@ void initHilbCrit(ideal F, ideal Q, intvec **hilb,kStrategy strat);
 void initBuchMoraPos(kStrategy strat);
 void initBuchMora (ideal F, ideal Q,kStrategy strat);
 void initSTLF5 (ideal F, ideal Q,kStrategy strat);
-void initF5 ( kStrategy strat );
+void initF5Crit ( kStrategy strat );
 void exitBuchMora (kStrategy strat);
 void updateResult(ideal r,ideal Q,kStrategy strat);
 void completeReduce (kStrategy strat, BOOLEAN withT=FALSE);
 void kFreeStrat(kStrategy strat);
+void enterOnePairF5 (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR);
 void enterOnePairNormal (int i,poly p,int ecart, int isFromQ,kStrategy strat, int atR);
 void chainCritNormal (poly p,int ecart,kStrategy strat);
 void critF5 (poly p,int ecart,kStrategy strat);
@@ -550,6 +552,7 @@ poly kFindZeroPoly(poly input_p, ring leadRing, ring tailRing);
 ideal bba (ideal F, ideal Q,intvec *w,intvec *hilb,kStrategy strat);
 poly kNF2 (ideal F, ideal Q, poly q, kStrategy strat, int lazyReduce);
 ideal kNF2 (ideal F,ideal Q,ideal q, kStrategy strat, int lazyReduce);
+void initF5(ideal F,kStrategy strat);
 void initBba(ideal F,kStrategy strat);
 
 /***************************************************************

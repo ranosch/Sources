@@ -1040,6 +1040,67 @@ void enterSMoraNF (LObject p, int atS,kStrategy strat, int atR = -1)
     strat->kHEdgeFound = TRUE;
 }
 
+void initF5(ideal F,kStrategy strat)
+{
+  int i;
+  idhdl h;
+ /* setting global variables ------------------- */
+  strat->enterS = enterSF5;
+    strat->red = redHoney;
+  if (strat->honey)
+    strat->red = redHoney;
+  else if (pLexOrder && !strat->homog)
+    strat->red = redLazy;
+  else
+  {
+    strat->LazyPass *=4;
+    strat->red = redHomog;
+  }
+#ifdef HAVE_RINGS  //TODO Oliver
+  if (rField_is_Ring(currRing))
+  {
+    strat->red = redRing;
+  }
+#endif
+  if (pLexOrder && strat->honey)
+    strat->initEcart = initEcartNormal;
+  else
+    strat->initEcart = initEcartBBA;
+  if (strat->honey)
+    strat->initEcartPair = initEcartPairMora;
+  else
+    strat->initEcartPair = initEcartPairBba;
+  strat->kIdeal = NULL;
+  //if (strat->ak==0) strat->kIdeal->rtyp=IDEAL_CMD;
+  //else              strat->kIdeal->rtyp=MODUL_CMD;
+  //strat->kIdeal->data=(void *)strat->Shdl;
+  if ((TEST_OPT_WEIGHTM)&&(F!=NULL))
+  {
+    //interred  machen   Aenderung
+    pFDegOld=pFDeg;
+    pLDegOld=pLDeg;
+    //h=ggetid("ecart");
+    //if ((h!=NULL) /*&& (IDTYP(h)==INTVEC_CMD)*/)
+    //{
+    //  ecartWeights=iv2array(IDINTVEC(h));
+    //}
+    //else
+    {
+      ecartWeights=(short *)omAlloc((pVariables+1)*sizeof(short));
+      /*uses automatic computation of the ecartWeights to set them*/
+      kEcartWeights(F->m,IDELEMS(F)-1,ecartWeights);
+    }
+    pRestoreDegProcs(totaldegreeWecart, maxdegreeWecart);
+    if (TEST_OPT_PROT)
+    {
+      for(i=1; i<=pVariables; i++)
+        Print(" %d",ecartWeights[i]);
+      PrintLn();
+      mflush();
+    }
+  }
+}
+
 void initBba(ideal F,kStrategy strat)
 {
   int i;

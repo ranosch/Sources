@@ -128,7 +128,7 @@ ideal f5cMain ( ideal F, ideal Q, tHomog h,intvec ** w, intvec *hilb,
     strat->LazyPass = 2;
   }
   strat->LazyDegree   = 1;
-  strat->enterOnePair = enterOnePairNormal;
+  strat->enterOnePair = enterOnePairF5;
   strat->chainCrit    = critF5;
   strat->ak           = idRankFreeModule(F);
   strat->kModW        = kModW  = NULL;
@@ -272,10 +272,10 @@ ideal doF5( ideal F, ideal Q, intvec *w, intvec *hilb, kStrategy strat )
   BOOLEAN withT = FALSE;
 
   // set Gebauer-Moeller, honey, sugarCrit
-  initF5( strat ); 
+  initF5Crit( strat ); 
   initBuchMoraPos( strat );
   initHilbCrit( F, Q, &hilb, strat );
-  initBba( F, strat );
+  initF5( F, strat );
   // set enterS, spSpolyShort, reduce, red, initEcart, initEcartPair
   initSTLF5( F, Q, strat );
   if( strat->minim>0 ) 
@@ -343,13 +343,10 @@ ideal doF5( ideal F, ideal Q, intvec *w, intvec *hilb, kStrategy strat )
       // ADDING NEW POLY TO STRAT: NEXT ITERATION //
       //////////////////////////////////////////////
     pWrite( F->m[_ctr] );
-    Print("HERE\n");
     addSL( _ctr, F, Q, strat );
-    Print("HERE\n");
   Print( "ITERATION %d\n", _ctr );
   while( strat->Ll>=0 )
   {
-    Print("START WHILE\n");
     if( strat->Ll>lrmax ) 
     {
       // stat.
@@ -590,7 +587,6 @@ ideal doF5( ideal F, ideal Q, intvec *w, intvec *hilb, kStrategy strat )
     memset( &(strat->P), 0, sizeof(strat->P) );
 #endif /* KDEBUG */
     kTest_TS( strat );
-    Print("END WHILE\n");
   }
 
   }
