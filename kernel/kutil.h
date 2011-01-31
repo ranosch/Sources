@@ -308,6 +308,10 @@ public:
   int cp,c3;
   int cv; // in shift bases: counting V criterion
   int sl,mu;
+  // gl is the number of elements in strat->S after an iteration step of F5
+  // has finished. This is needed to distinguish between elements of previous
+  // and current index
+  int gl;
   int tl,tmax;
   int Ll,Lmax;
   int Bl,Bmax;

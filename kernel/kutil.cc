@@ -5508,6 +5508,11 @@ void addSL (int ctr, ideal F, ideal Q, kStrategy strat)
       (strat->P.p != NULL && pNext(strat->P.p) != strat->tail))
     strat->P.ShallowCopyDelete(strat->tailRing, p_shallow_copy_delete);
   */
+  
+  // Set gl to be the number of elements already in gPrev. Up to this element
+  // the elements in strat->S represent the F5 Rules for the upcoming iteration
+  // step.  
+  strat->gl = strat->sl;
 }
 
 void initSLF5 (ideal F, ideal Q, kStrategy strat)
@@ -6741,6 +6746,11 @@ void initSTLF5 (ideal F,ideal Q,kStrategy strat)
   strat->tail = pInit();
   /*- set s -*/
   strat->sl = -1;
+  /*- set gl -*/
+  // We start this at 0 since the first element will always be an F5 Rule, i.e.
+  // when the first critical pair between the 2nd element and the first one is
+  // built we have the first element in strat->S to be an F5 Rule.
+  strat->gl = 0;
   /*- set L -*/
   strat->Lmax = ((IDELEMS(F)+setmaxLinc-1)/setmaxLinc)*setmaxLinc;
   strat->Ll = -1;

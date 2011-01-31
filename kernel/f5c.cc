@@ -339,255 +339,256 @@ ideal doF5( ideal F, ideal Q, intvec *w, intvec *hilb, kStrategy strat )
   /* compute------------------------------------------------------- */
   for( int _ctr=1; _ctr<IDELEMS(F); _ctr++ )
   {
-      //////////////////////////////////////////////
-      // ADDING NEW POLY TO STRAT: NEXT ITERATION //
-      //////////////////////////////////////////////
+    //////////////////////////////////////////////
+    // ADDING NEW POLY TO STRAT: NEXT ITERATION //
+    //////////////////////////////////////////////
+
     pWrite( F->m[_ctr] );
     addSL( _ctr, F, Q, strat );
-  Print( "ITERATION %d\n", _ctr );
-  while( strat->Ll>=0 )
-  {
-    if( strat->Ll>lrmax ) 
+    Print( "ITERATION %d\n", _ctr );
+    while( strat->Ll>=0 )
     {
-      // stat.
-      lrmax =strat->Ll;
-    }
-#ifdef KDEBUG
-    loop_count++;
-    if( TEST_OPT_DEBUG ) 
-    {
-      messageSets( strat );
-    }
-#endif
-    if( strat->Ll==0 ) 
-    {
-      strat->interpt  = TRUE;
-    }
-    if( TEST_OPT_DEGBOUND && 
-        ((strat->honey && (strat->L[strat->Ll].ecart+pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))
-        || ((!strat->honey) && (pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))) )
-    {
-      /*
-       *stops computation if
-       * 24 IN test and the degree +ecart of L[strat->Ll] is bigger then
-       *a predefined number Kstd1_deg
-       */
-      while ( (strat->Ll>=0) && 
-              (strat->L[strat->Ll].p1!=NULL) && (strat->L[strat->Ll].p2!=NULL) && 
-              ((strat->honey && (strat->L[strat->Ll].ecart+pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))
-              || ((!strat->honey) && (pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg)))
-            )
+      if( strat->Ll>lrmax ) 
       {
-        deleteInL( strat->L, &strat->Ll, strat->Ll, strat );
+        // stat.
+        lrmax =strat->Ll;
       }
-      if( strat->Ll<0 ) 
+#ifdef KDEBUG
+      loop_count++;
+      if( TEST_OPT_DEBUG ) 
       {
-        break;
+        messageSets( strat );
+      }
+#endif
+      if( strat->Ll==0 ) 
+      {
+        strat->interpt  = TRUE;
+      }
+      if( TEST_OPT_DEGBOUND && 
+          ((strat->honey && (strat->L[strat->Ll].ecart+pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))
+           || ((!strat->honey) && (pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))) )
+      {
+        /*
+         *stops computation if
+         * 24 IN test and the degree +ecart of L[strat->Ll] is bigger then
+         *a predefined number Kstd1_deg
+         */
+        while ( (strat->Ll>=0) && 
+            (strat->L[strat->Ll].p1!=NULL) && (strat->L[strat->Ll].p2!=NULL) && 
+            ((strat->honey && (strat->L[strat->Ll].ecart+pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg))
+             || ((!strat->honey) && (pFDeg(strat->L[strat->Ll].p,currRing)>Kstd1_deg)))
+            )
+        {
+          deleteInL( strat->L, &strat->Ll, strat->Ll, strat );
+        }
+        if( strat->Ll<0 ) 
+        {
+          break;
+        }
+        else 
+        {
+          strat->noClearS = TRUE;
+        }
+      }
+      /* picks the last element from the lazyset L */
+      strat->P = strat->L[strat->Ll];
+      strat->Ll--;
+
+      if( pNext(strat->P.p)==strat->tail )
+      {
+        // deletes the short spoly
+#ifdef HAVE_RINGS
+        if( rField_is_Ring(currRing) )
+        {
+          pLmDelete( strat->P.p );
+        }
+        else
+#endif
+          pLmFree( strat->P.p );
+        strat->P.p  = NULL;
+        poly m1     = NULL, m2 = NULL;
+
+        // check that spoly creation is ok
+        while( strat->tailRing != currRing &&
+            !kCheckSpolyCreation(&(strat->P), strat, m1, m2) )
+        {
+          assume( m1==NULL && m2==NULL );
+          // if not, change to a ring where exponents are at least
+          // large enough
+          if( !kStratChangeTailRing(strat) )
+          {
+            WerrorS( "OVERFLOW..." );
+            break;
+          }
+        }
+        // create the real one
+        ksCreateSpoly(  &(strat->P), NULL, strat->use_buckets,
+            strat->tailRing, m1, m2, strat->R );
       }
       else 
       {
-        strat->noClearS = TRUE;
+        if( strat->P.p1==NULL )
+        {
+          if( strat->minim>0 )
+            strat->P.p2 = p_Copy( strat->P.p, currRing, strat->tailRing );
+          // for input polys, prepare reduction
+          strat->P.PrepareRed( strat->use_buckets );
+        }
       }
-    }
-    /* picks the last element from the lazyset L */
-    strat->P = strat->L[strat->Ll];
-    strat->Ll--;
 
-    if( pNext(strat->P.p)==strat->tail )
-    {
-      // deletes the short spoly
-#ifdef HAVE_RINGS
-      if( rField_is_Ring(currRing) )
+      if( (strat->P.p==NULL) && (strat->P.t_p==NULL) )
       {
-        pLmDelete( strat->P.p );
+        red_result = 0;
       }
       else
-#endif
-        pLmFree( strat->P.p );
-      strat->P.p  = NULL;
-      poly m1     = NULL, m2 = NULL;
-
-      // check that spoly creation is ok
-      while( strat->tailRing != currRing &&
-             !kCheckSpolyCreation(&(strat->P), strat, m1, m2) )
       {
-        assume( m1==NULL && m2==NULL );
-        // if not, change to a ring where exponents are at least
-        // large enough
-        if( !kStratChangeTailRing(strat) )
+        if( TEST_OPT_PROT )
         {
-          WerrorS( "OVERFLOW..." );
+          message(  (strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
+              &olddeg, &reduc, strat, red_result  );
+        }
+
+        /* reduction of the element choosen from L */
+
+        red_result = strat->red( &strat->P, strat );
+        if( errorreported )  
+        { 
           break;
         }
       }
-      // create the real one
-      ksCreateSpoly(  &(strat->P), NULL, strat->use_buckets,
-                      strat->tailRing, m1, m2, strat->R );
-    }
-    else 
-    {
-      if( strat->P.p1==NULL )
+
+      if( strat->overflow )
       {
-        if( strat->minim>0 )
-          strat->P.p2 = p_Copy( strat->P.p, currRing, strat->tailRing );
-        // for input polys, prepare reduction
-        strat->P.PrepareRed( strat->use_buckets );
+        if( !kStratChangeTailRing(strat) ) 
+        { 
+          Werror("OVERFLOW.."); 
+          break;
+        }
       }
-    }
-  
-    if( (strat->P.p==NULL) && (strat->P.t_p==NULL) )
-    {
-      red_result = 0;
-    }
-    else
-    {
-      if( TEST_OPT_PROT )
+
+      // reduction to non-zero new poly
+      if( red_result==1 )
       {
-        message(  (strat->honey ? strat->P.ecart : 0) + strat->P.pFDeg(),
-                  &olddeg, &reduc, strat, red_result  );
-      }
-  
-      /* reduction of the element choosen from L */
+        // get the polynomial (canonicalize bucket, make sure P.p is set)
+        strat->P.GetP( strat->lmBin );
 
-      red_result = strat->red( &strat->P, strat );
-      if( errorreported )  
-      { 
-        break;
-      }
-    }
+        /* statistic */
+        if( TEST_OPT_PROT ) 
+        {
+          PrintS( "s" );
+        }
 
-    if( strat->overflow )
-    {
-      if( !kStratChangeTailRing(strat) ) 
-      { 
-        Werror("OVERFLOW.."); 
-        break;
-      }
-    }
-
-    // reduction to non-zero new poly
-    if( red_result==1 )
-    {
-      // get the polynomial (canonicalize bucket, make sure P.p is set)
-      strat->P.GetP( strat->lmBin );
-
-      /* statistic */
-      if( TEST_OPT_PROT ) 
-      {
-        PrintS( "s" );
-      }
-
-      int pos = posInS( strat, strat->sl, strat->P.p, strat->P.ecart );
+        int pos = posInS( strat, strat->sl, strat->P.p, strat->P.ecart );
 
 #ifdef KDEBUG
 #if MYTEST
-      PrintS( "New S: " ); 
-      pDebugPrint( strat->P.p ); 
-      PrintLn();
-#endif /* MYTEST */
-#endif /* KDEBUG */
-
-      // reduce the tail and normalize poly
-      // in the ring case we cannot expect LC(f) = 1,
-      // therefore we call pContent instead of pNorm
-      if( (TEST_OPT_INTSTRATEGY) || (rField_is_Ring(currRing)) )
-      {
-        strat->P.pCleardenom();
-        if( (TEST_OPT_REDSB) || (TEST_OPT_REDTAIL) )
-        {
-          strat->P.p = redtailBba( &(strat->P), pos-1, strat, withT );
-          strat->P.pCleardenom();
-        }
-      }
-      else
-      {
-        strat->P.pNorm();
-        if( (TEST_OPT_REDSB) || (TEST_OPT_REDTAIL) )
-        {
-          strat->P.p  = redtailBba( &(strat->P), pos-1, strat, withT );
-        }
-      }
-
-#ifdef KDEBUG
-      if( TEST_OPT_DEBUG )
-      {
-        PrintS( "new s:" );
-        strat->P.wrp();
+        PrintS( "New S: " ); 
+        pDebugPrint( strat->P.p ); 
         PrintLn();
-      }
-#if MYTEST
-      PrintS("New (reduced) S: "); 
-      pDebugPrint(strat->P.p); 
-      PrintLn();
 #endif /* MYTEST */
 #endif /* KDEBUG */
 
-      // min_std stuff
-      if( (strat->P.p1==NULL) && (strat->minim>0) )
-      {
-        if( strat->minim==1 )
+        // reduce the tail and normalize poly
+        // in the ring case we cannot expect LC(f) = 1,
+        // therefore we call pContent instead of pNorm
+        if( (TEST_OPT_INTSTRATEGY) || (rField_is_Ring(currRing)) )
         {
-          strat->M->m[minimcnt] = p_Copy( strat->P.p, currRing, strat->tailRing );
-          p_Delete( &strat->P.p2, currRing, strat->tailRing );
+          strat->P.pCleardenom();
+          if( (TEST_OPT_REDSB) || (TEST_OPT_REDTAIL) )
+          {
+            strat->P.p = redtailBba( &(strat->P), pos-1, strat, withT );
+            strat->P.pCleardenom();
+          }
         }
         else
         {
-          strat->M->m[minimcnt] = strat->P.p2;
-          strat->P.p2 = NULL;
+          strat->P.pNorm();
+          if( (TEST_OPT_REDSB) || (TEST_OPT_REDTAIL) )
+          {
+            strat->P.p  = redtailBba( &(strat->P), pos-1, strat, withT );
+          }
         }
-        if( (strat->tailRing!=currRing) && pNext(strat->M->m[minimcnt])!=NULL )
-        {
-          pNext( strat->M->m[minimcnt] )  = strat->p_shallow_copy_delete(
-                                                pNext(strat->M->m[minimcnt]),
-                                                strat->tailRing, currRing,
-                                                currRing->PolyBin       );
-        }
-        minimcnt++;
-      }
 
-      // enter into S, L, and T
-      enterT( strat->P, strat );
-#ifdef HAVE_RINGS
-      if( rField_is_Ring(currRing) )
-      {
-        superenterpairs(  strat->P.p, strat->sl, strat->P.ecart, 
-                          pos, strat, strat->tl );
-      }
-      else
-#endif
-      enterpairs( strat->P.p, strat->sl, strat->P.ecart, pos, strat, strat->tl );
-      // posInS only depends on the leading term
-      strat->enterS( strat->P, pos, strat, strat->tl );
-
-      if( hilb!=NULL ) 
-      {
-        khCheck( Q, w, hilb, hilbeledeg, hilbcount, strat );
-      }
-      if( strat->P.lcm!=NULL )
-      {
-#ifdef HAVE_RINGS
-        pLmDelete( strat->P.lcm );
-#else
-        pLmFree( strat->P.lcm );
-#endif
-      }
-      if( strat->sl>srmax ) 
-      {
-        srmax = strat->sl;
-      }
-    }
-    else 
-    {
-      if( (strat->P.p1==NULL) && (strat->minim>0) )
-      {
-        p_Delete( &strat->P.p2, currRing, strat->tailRing );
-      }
-    }
 #ifdef KDEBUG
-    memset( &(strat->P), 0, sizeof(strat->P) );
+        if( TEST_OPT_DEBUG )
+        {
+          PrintS( "new s:" );
+          strat->P.wrp();
+          PrintLn();
+        }
+#if MYTEST
+        PrintS("New (reduced) S: "); 
+        pDebugPrint(strat->P.p); 
+        PrintLn();
+#endif /* MYTEST */
 #endif /* KDEBUG */
-    kTest_TS( strat );
-  }
+
+        // min_std stuff
+        if( (strat->P.p1==NULL) && (strat->minim>0) )
+        {
+          if( strat->minim==1 )
+          {
+            strat->M->m[minimcnt] = p_Copy( strat->P.p, currRing, strat->tailRing );
+            p_Delete( &strat->P.p2, currRing, strat->tailRing );
+          }
+          else
+          {
+            strat->M->m[minimcnt] = strat->P.p2;
+            strat->P.p2 = NULL;
+          }
+          if( (strat->tailRing!=currRing) && pNext(strat->M->m[minimcnt])!=NULL )
+          {
+            pNext( strat->M->m[minimcnt] )  = strat->p_shallow_copy_delete(
+                pNext(strat->M->m[minimcnt]),
+                strat->tailRing, currRing,
+                currRing->PolyBin       );
+          }
+          minimcnt++;
+        }
+
+        // enter into S, L, and T
+        enterT( strat->P, strat );
+#ifdef HAVE_RINGS
+        if( rField_is_Ring(currRing) )
+        {
+          superenterpairs(  strat->P.p, strat->sl, strat->P.ecart, 
+              pos, strat, strat->tl );
+        }
+        else
+#endif
+          enterpairs( strat->P.p, strat->sl, strat->P.ecart, pos, strat, strat->tl );
+        // posInS only depends on the leading term
+        strat->enterS( strat->P, pos, strat, strat->tl );
+
+        if( hilb!=NULL ) 
+        {
+          khCheck( Q, w, hilb, hilbeledeg, hilbcount, strat );
+        }
+        if( strat->P.lcm!=NULL )
+        {
+#ifdef HAVE_RINGS
+          pLmDelete( strat->P.lcm );
+#else
+          pLmFree( strat->P.lcm );
+#endif
+        }
+        if( strat->sl>srmax ) 
+        {
+          srmax = strat->sl;
+        }
+      }
+      else 
+      {
+        if( (strat->P.p1==NULL) && (strat->minim>0) )
+        {
+          p_Delete( &strat->P.p2, currRing, strat->tailRing );
+        }
+      }
+#ifdef KDEBUG
+      memset( &(strat->P), 0, sizeof(strat->P) );
+#endif /* KDEBUG */
+      kTest_TS( strat );
+    }
 
   }
 #ifdef KDEBUG
