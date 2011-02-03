@@ -67,6 +67,7 @@ unsigned long stratSize         = 0;
 unsigned long numberReductions  = 0;
 unsigned long number1Reductions = 0;
 unsigned long zeroReductions    = 0;
+long maxdeg                     = 0;
  
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -308,6 +309,7 @@ ideal f5cIter (
   omFreeSize( rewRules->label, rewRulesSize*sizeof(int*) );
   omFreeSize( rewRules, sizeof(RewRules) );
   clearStrat( strat, redGB );
+  maxdeg  = 0;
   
   return redGB;
 }
@@ -359,7 +361,7 @@ void criticalPairInit (
     // steps, i.e. elements already in redGB
     cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = 0; 
     cpTemp->mult2[0]    = 0; 
-    critPairDeg         = 0;
+    cpTemp->deg         = 0;
     for(j=1; j<=currRing->N; j++)
     {
       temp  = expVecNewElement[j] - f5Rules.label[i][j];
@@ -371,7 +373,7 @@ void criticalPairInit (
         cpTemp->mult1[j]    =   -temp;  
         cpTemp->mult2[j]    =   0; 
         cpTemp->mLabel1[j]  =   - temp;
-        critPairDeg         +=  (- temp); 
+        cpTemp->deg         +=  (- temp); 
       }
       else
       {
@@ -426,7 +428,7 @@ void criticalPairInit (
   // steps, i.e. elements already in redGB
   cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetComp(cpTemp->p1); 
   cpTemp->mult2[0]    = pGetComp(strat->S[strat->sl]); 
-  critPairDeg         = 0;
+  cpTemp->deg         = 0;
   for(j=1; j<=currRing->N; j++)
   {
     temp  = expVecNewElement[j] - f5Rules.label[strat->sl][j];
@@ -438,7 +440,7 @@ void criticalPairInit (
       cpTemp->mult1[j]    =   -temp;  
       cpTemp->mult2[j]    =   0; 
       cpTemp->mLabel1[j]  =   -temp;
-      critPairDeg         +=  (- temp);
+      cpTemp->deg         +=  (- temp);
     }
     else
     {
@@ -527,7 +529,7 @@ void criticalPairPrev (
     // steps, i.e. elements already in redGB
     cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
     cpTemp->mult2[0]    = pGetExp(strat->S[i], 0); 
-    critPairDeg         = 0;
+    cpTemp->deg         = 0;
     for(j=1; j<=currRing->N; j++)
     {
       temp  = expVecNewElement[j] - f5Rules.label[i][j];
@@ -536,14 +538,14 @@ void criticalPairPrev (
         cpTemp->mult1[j]    =   -temp;  
         cpTemp->mult2[j]    =   0; 
         cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
-        critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
+        cpTemp->deg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
       }
       else
       {
         cpTemp->mult1[j]    =   0;  
         cpTemp->mult2[j]    =   temp;  
         cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j];
-        critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j]; 
+        cpTemp->deg         +=  rewRules.label[cpTemp->rewRule1][j]; 
       }
     }
     cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
@@ -594,7 +596,7 @@ void criticalPairPrev (
   // steps, i.e. elements already in redGB
   cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
   cpTemp->mult2[0]    = pGetExp(strat->S[strat->sl], 0); 
-  critPairDeg         = 0;
+  cpTemp->deg         = 0;
   for(j=1; j<=currRing->N; j++)
   {
     temp  = expVecNewElement[j] - f5Rules.label[strat->sl][j];
@@ -603,14 +605,14 @@ void criticalPairPrev (
       cpTemp->mult1[j]    =   -temp;  
       cpTemp->mult2[j]    =   0; 
       cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
-      critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
+      cpTemp->deg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
     }
     else
     {
       cpTemp->mult1[j]    =   0;  
       cpTemp->mult2[j]    =   temp;  
       cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j];
-      critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j]; 
+      cpTemp->deg         +=  rewRules.label[cpTemp->rewRule1][j]; 
     }
   }
   cpTemp->smLabel1 = ~getShortExpVecFromArray(cpTemp->mLabel1);
@@ -713,7 +715,7 @@ void criticalPairCurr (
     // steps, i.e. elements already in redGB
     cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
     cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetExp(cpTemp->p2, 0); 
-    critPairDeg         = 0;
+    cpTemp->deg         = 0;
     for(j=1; j<currRing->N+1; j++)
     {
       temp  = expVecNewElement[j] - expVecTemp[j];
@@ -724,7 +726,7 @@ void criticalPairCurr (
         cpTemp->mult2[j]    =   0; 
         cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
         cpTemp->mLabel2[j]  =   rewRules.label[cpTemp->rewRule2][j];
-        critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
+        cpTemp->deg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
       }
       else
       {
@@ -732,7 +734,7 @@ void criticalPairCurr (
         cpTemp->mult2[j]    =   temp;  
         cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j];
         cpTemp->mLabel2[j]  =   rewRules.label[cpTemp->rewRule2][j] + temp;
-        critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j]; 
+        cpTemp->deg         +=  rewRules.label[cpTemp->rewRule1][j]; 
       }
     }
     // compute only if there is a "real" multiple of p1 needed
@@ -827,7 +829,7 @@ void criticalPairCurr (
   cpTemp->mLabel1[0]  = cpTemp->mult1[0]  = pGetExp(cpTemp->p1, 0); 
   cpTemp->rewRule2    = gCurrIter->rewRule;
   cpTemp->mLabel2[0]  = cpTemp->mult2[0]  = pGetExp(gCurrIter->p, 0); 
-  critPairDeg         = 0;
+  cpTemp->deg         = 0;
   for(j=1; j<=currRing->N; j++)
   {
     temp  = expVecNewElement[j] - expVecTemp[j];
@@ -838,7 +840,7 @@ void criticalPairCurr (
       cpTemp->mult2[j]    =   0; 
       cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j] - temp;
       cpTemp->mLabel2[j]  =   rewRules.label[cpTemp->rewRule2][j];
-      critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
+      cpTemp->deg         +=  rewRules.label[cpTemp->rewRule1][j] - temp; 
     }
     else
     {
@@ -846,7 +848,7 @@ void criticalPairCurr (
       cpTemp->mult2[j]    =   temp;  
       cpTemp->mLabel1[j]  =   rewRules.label[cpTemp->rewRule1][j];
       cpTemp->mLabel2[j]  =   rewRules.label[cpTemp->rewRule2][j] + temp;
-      critPairDeg         +=  rewRules.label[cpTemp->rewRule1][j]; 
+      cpTemp->deg         +=  rewRules.label[cpTemp->rewRule1][j]; 
     }
   }
   if( pairNeeded )
@@ -1242,6 +1244,8 @@ void computeSpols (
   Cpair* tempDel              = NULL;
   Lpoly** gCurrLast           = (Lpoly**) omAlloc( sizeof(Lpoly*) );
   *gCurrLast                  = *gCurr;
+  Lpoly** firstOfDeg          = (Lpoly**) omAlloc( sizeof(Lpoly*) );
+  *firstOfDeg                 = NULL;
   // rewRulesCurr stores the index of the first rule of the current degree step
   // Note that if there are higher label reductions taking place in currReduction() 
   // one has access to the last actual rewrite rule via rewRules->size.
@@ -1400,6 +1404,11 @@ void computeSpols (
         if( temp->p2 )
         { 
           // compute s-polynomial and reduce it w.r.t. redGB
+          if( maxdeg<temp->deg )
+          {
+            *firstOfDeg = NULL;
+            maxdeg      = temp->deg;
+          }
           sp  = reduceByRedGBCritPair ( 
                                         temp, strat, numVariables, shift, 
                                         negBitmaskShifted, offsets 
@@ -1422,7 +1431,7 @@ void computeSpols (
           currReduction ( 
               strat, sp, temp->mLabelExp, rewRules, rewRulesCurr, 
               redGB, &cp, *gCurr, gCurrLast, f5Rules, multTemp, multLabelTemp, 
-              numVariables, shift, negBitmaskShifted, offsets
+              numVariables, shift, negBitmaskShifted, offsets, firstOfDeg
               );
           // store the s-polynomial in the linked list for further
           // reductions in currReduction()
@@ -1537,7 +1546,8 @@ void currReduction  (
                       Lpoly** gCurrLast,
                       F5Rules** f5RulesP, int* multTemp, 
                       int* multLabelTemp, int numVariables, int* shift, 
-                      unsigned long* negBitmaskShifted, int* offsets
+                      unsigned long* negBitmaskShifted, int* offsets,
+                      Lpoly** firstOfDeg
                     )
 
 {
@@ -1673,89 +1683,130 @@ void currReduction  (
 
         }
       }*/
-      if( isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
+      if( temp != *firstOfDeg && isDivisibleGetMult( temp->p, temp->sExp, kBucketGetLm( bucket ), 
             bucketExp, &multTemp, &isMult
             ) 
         )
       {
-        redundant = TRUE;
-        // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
-        // multTemp and check this multiple by both criteria
+          redundant = TRUE;
+          // if isMult => lm(sp) > lm(temp->p) => we need to multiply temp->p by 
+          // multTemp and check this multiple by both criteria
 #if F5EDEBUG1
-        Print("ISMULT %d\n",isMult);
+          Print("ISMULT %d\n",isMult);
 #endif
-        if( isMult )
-        {
-          // compute the multiple of the rule of temp & multTemp
-          for( i=1;i<(currRing->N)+1; i++ )
+          if( isMult )
           {
-            multLabelTemp[i]  = multTemp[i] + rewRules->label[temp->rewRule][i];
-          }
-          multLabelTemp[0]    = rewRules->label[temp->rewRule][0];
-          multLabelShortExp   = ~getShortExpVecFromArray( multLabelTemp );
-          
-          // test the multiplied label by both criteria 
-          if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules, strat ) && 
-              !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
-            )
-          { 
-            static unsigned long* multTempExp = (unsigned long*) 
-                            omAlloc0( NUMVARS*sizeof(unsigned long) );
-            poly multLabelTempExp = pOne(); 
-            getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
-                                shift, negBitmaskShifted, offsets
-                              );   
-            // if a higher label reduction takes place we need to create
-            // a new Lpoly with the higher label and store it in a different 
-            // linked list for later reductions
+            // compute the multiple of the rule of temp & multTemp
+            for( i=1;i<(currRing->N)+1; i++ )
+            {
+              multLabelTemp[i]  = multTemp[i] + rewRules->label[temp->rewRule][i];
+            }
+            multLabelTemp[0]    = rewRules->label[temp->rewRule][0];
+            multLabelShortExp   = ~getShortExpVecFromArray( multLabelTemp );
 
-            if( pLmCmp( multLabelTempExp, spLabelExp ) == 1 )
-            {            
-              isMult    = FALSE;
-              redundant = TRUE;
-              temp      = temp->next;
-              if( temp )
+            // test the multiplied label by both criteria 
+            if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules, strat ) && 
+                !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
+              )
+            { 
+              static unsigned long* multTempExp = (unsigned long*) 
+                omAlloc0( NUMVARS*sizeof(unsigned long) );
+              poly multLabelTempExp = pOne(); 
+              getExpFromIntArray( multLabelTemp, multLabelTempExp, numVariables,
+                  shift, negBitmaskShifted, offsets
+                  );   
+              // if a higher label reduction takes place we need to create
+              // a new Lpoly with the higher label and store it in a different 
+              // linked list for later reductions
+
+              if( pLmCmp( multLabelTempExp, spLabelExp ) == 1 )
+              {            
+                isMult    = FALSE;
+                redundant = TRUE;
+                temp      = temp->next;
+                if( temp )
+                {
+                  goto startagainTop;
+                }
+                else
+                {
+                  break;
+                }
+              }
+              // else we can go on and reduce sp
+              // The multiplied reducer will be reduced w.r.t. strat before the 
+              // bucket reduction starts!
+              static poly multiplier = pOne();
+              static poly multReducer;
+              getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
+                  negBitmaskShifted, offsets
+                  );
+              // throw away the leading monomials of reducer and bucket
+              pSetm( multiplier );
+              p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+              kBucketExtractLm(bucket);
+              // build the multiplied reducer (note that we do not need the leading
+              // term at all!
+#if F5EDEBUG2
+              Print("MULT: %p\n", multiplier );
+              pWrite( multiplier );
+#endif
+              multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
+#if F5EDEBUG2
+              Print("MULTRED BEFORE: %p\n", *multReducer );
+              pWrite( pHead(multReducer) );
+#endif
+              multReducer = reduceByRedGBPoly( multReducer, strat );
+#if F5EDEBUG2
+              Print("MULTRED AFTER: %p\n", *multReducer );
+              pWrite( pHead(multReducer) );
+#endif
+              //  length must be computed after the reduction with 
+              //  redGB!
+              tempLength = pLength( multReducer );
+
+              kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+              numberReductions++;
+#if F5EDEBUG2
+              Print("AFTER REDUCTION STEP: ");
+              pWrite( kBucketGetLm(bucket) );
+#endif
+              if( canonicalize++ % 40 )
               {
-                goto startagainTop;
+                kBucketCanonicalize( bucket );
+                canonicalize = 0;
+              }
+              isMult    = FALSE;
+              redundant = FALSE;
+              if( kBucketGetLm( bucket ) )
+              {
+                temp  = gCurrFirst;
               }
               else
               {
                 break;
               }
+              bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
+              goto startagainTop;
             }
-            // else we can go on and reduce sp
-            // The multiplied reducer will be reduced w.r.t. strat before the 
-            // bucket reduction starts!
-            static poly multiplier = pOne();
-            static poly multReducer;
-            getExpFromIntArray( multTemp, multiplier, numVariables, shift, 
-                                negBitmaskShifted, offsets
-                              );
+          }
+          // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
+          // criterion again => go on with reduction steps
+          else
+          {
+            number coeff  = pGetCoeff(kBucketGetLm(bucket));
+            static poly tempNeg  = pInit();
             // throw away the leading monomials of reducer and bucket
-            pSetm( multiplier );
-            p_SetCoeff( multiplier, pGetCoeff(kBucketGetLm(bucket)), currRing );
+            tempNeg       = pCopy( temp->p );
+            tempLength    = pLength( tempNeg->next );
+            p_Mult_nn( tempNeg, coeff, currRing );
+            pSetm( tempNeg );
             kBucketExtractLm(bucket);
-            // build the multiplied reducer (note that we do not need the leading
-            // term at all!
 #if F5EDEBUG2
-            Print("MULT: %p\n", multiplier );
-            pWrite( multiplier );
+            Print("REDUCTION WITH: ");
+            pWrite( temp->p );
 #endif
-            multReducer = pp_Mult_mm( temp->p->next, multiplier, currRing );
-#if F5EDEBUG2
-            Print("MULTRED BEFORE: %p\n", *multReducer );
-            pWrite( pHead(multReducer) );
-#endif
-            multReducer = reduceByRedGBPoly( multReducer, strat );
-#if F5EDEBUG2
-            Print("MULTRED AFTER: %p\n", *multReducer );
-            pWrite( pHead(multReducer) );
-#endif
-            //  length must be computed after the reduction with 
-            //  redGB!
-            tempLength = pLength( multReducer );
-            
-            kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+            kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
             numberReductions++;
 #if F5EDEBUG2
             Print("AFTER REDUCTION STEP: ");
@@ -1766,24 +1817,23 @@ void currReduction  (
               kBucketCanonicalize( bucket );
               canonicalize = 0;
             }
-            isMult    = FALSE;
             redundant = FALSE;
             if( kBucketGetLm( bucket ) )
             {
               temp  = gCurrFirst;
+              bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
+              goto startagainTop;
             }
             else
             {
               break;
             }
-            bucketExp = ~( pGetShortExpVector(kBucketGetLm(bucket)) );
-            goto startagainTop;
           }
         }
-        // isMult = 0 => multTemp = 1 => we do not need to test temp->p by any
-        // criterion again => go on with reduction steps
-        else
+        if( temp == *firstOfDeg && pLmEqual(temp->p, kBucketGetLm(bucket)) ) 
         {
+          //pWrite( kBucketGetLm(bucket) );
+          //pWrite( pHead(temp->p) );
           number coeff  = pGetCoeff(kBucketGetLm(bucket));
           static poly tempNeg  = pInit();
           // throw away the leading monomials of reducer and bucket
@@ -1818,8 +1868,8 @@ void currReduction  (
           {
             break;
           }
-        } 
-      }
+
+        }
       temp  = temp->next;
     }
     // we know that sp = 0 at this point!
@@ -1995,11 +2045,17 @@ void currReduction  (
       newElement->sExp      = pGetShortExpVector(sp); 
       newElement->rewRule   = rewRulesCurr; 
       newElement->redundant = redundant;
+      // adjust firstOfDeg
+      if( *firstOfDeg == NULL || pDeg((*gCurrLast)->p)<pDeg(sp) )
+      {
+        *firstOfDeg = newElement;
+      }    
+  
       // update pointer to last element in gCurr list
           (*gCurrLast)->next    = newElement;
           *gCurrLast            = newElement;
 #if F5EDEBUG0
-      Print("ELEMENT ADDED TO GCURR: ");
+      Print("ADDED TO BASIS: ");
       pWrite( pHead((*gCurrLast)->p) );
       poly pSig = pOne(); 
       for( int lale = 1; lale < (currRing->N+1); lale++ )
@@ -2009,6 +2065,7 @@ void currReduction  (
       pWrite( pSig );
       pTest( (*gCurrLast)->p );
       pDelete( &pSig );
+      Print("%p\n",*firstOfDeg);
 #endif
       criticalPairPrev( 
                         *gCurrLast, gCurrFirst, strat, *f5Rules, *rewRules, cp, numVariables, 

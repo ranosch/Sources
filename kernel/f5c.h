@@ -118,6 +118,7 @@ struct Spoly
 struct Cpair 
 {
   Cpair*          next;       ///<  next critical pair sorted by label
+  long            deg;        ///<  degree of the critical pair
   poly            mLabelExp;  ///<  exponent vector of the label of 
                               ///   the critical pair: this element is needed
                               ///   for sorting the critical pairs in 
@@ -395,7 +396,8 @@ void currReduction  (
   int numVariables,       ///<[in]  global stuff for faster exponent computations
   int* shift,             ///<[in]  global stuff for faster exponent computations
   unsigned long* negBit,  ///<[in]  global stuff for faster exponent computations
-  int* offsets           ///<[in]  global stuff for faster exponent computations
+  int* offsets,           ///<[in]  global stuff for faster exponent computations
+  Lpoly** firstOfDeg      ///<[in,out] first element of a given degree step
                     );
 
 
