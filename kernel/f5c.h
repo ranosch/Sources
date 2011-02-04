@@ -56,8 +56,8 @@ struct F5Rules
 /// ( hopefully ) better Rewritten Criterion check.
 struct RewRuList
 {
-  RewRules*   rule; ///< rewrite rule
-  RewRuList*  next; ///< next element in rule list
+  unsigned long rule; ///< rewrite rule
+  RewRuList*    next; ///< next element in rule list
 };
 
  
@@ -71,8 +71,8 @@ struct RewRules
   unsigned long   size;   ///< current number of rules in the list
   int**           label;  ///< array of exponent vectors of the rules
   unsigned long*  slabel; ///< array of short exponent vecotrs of the rules
-  RewRules**      parent; ///< parent of this rule
-  RewRuList**      childs; ///< children of this rule
+  unsigned long*  parent; ///< parent of this rule
+  RewRuList**     childs; ///< children of this rule
 };
 
 

@@ -200,7 +200,7 @@ ideal f5cIter (
   // malloc two times the size of the previous Groebner basis
   // Note that we possibly need more memory in this iteration step!
   rewRules->label     = (int**) omAlloc((rewRulesSize)*sizeof(int*));
-  rewRules->parent    = (RewRules**) omAlloc((rewRulesSize)*sizeof(RewRules*));
+  rewRules->parent    = (unsigned long*) omAlloc((rewRulesSize)*sizeof(unsigned long));
   rewRules->childs    = (RewRuList**) omAlloc((rewRulesSize)*sizeof(RewRuList*));
   rewRules->slabel    = (unsigned long*) omAlloc((rewRulesSize)*
                         sizeof(unsigned long)); 
@@ -211,7 +211,7 @@ ideal f5cIter (
   // (b) Note also that the size of strat is >=1.
   rewRules->label[0]        = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
   rewRules->slabel[0]       = 0;
-  rewRules->parent[0]       = NULL;
+  rewRules->parent[0]       = -1;
   rewRules->childs[0]       = NULL; 
   for(i=1; i<rewRulesSize; i++) 
   {
@@ -1311,14 +1311,14 @@ void computeSpols (
             _i++;
           }
           (*rewRules)->slabel[(*rewRules)->size]      = ~temp->smLabel1;
-          (*rewRules)->parent[(*rewRules)->size]      = &(*rewRules)[temp->rewRule1];
+          (*rewRules)->parent[(*rewRules)->size]      = temp->rewRule1;
           
           ////////////////////////////////////////////////////////////////
           // TODO: HOW TO ALLOCATE THIS STUFF CORRECTLY ???             //
           ////////////////////////////////////////////////////////////////
           RewRuList* newRewRuList                     = (RewRuList*) omAlloc( sizeof(RewRuList) );
           Print("%p --\n", (*rewRules)->childs[temp->rewRule1] ); 
-          newRewRuList->rule                          = &(*rewRules)[(*rewRules)->size];
+          newRewRuList->rule                          = (*rewRules)->size;
           newRewRuList->next                          = (*rewRules)->childs[temp->rewRule1];
           (*rewRules)->childs[temp->rewRule1]         = newRewRuList;
           Print("%p -- %p\n", (*rewRules)->childs[temp->rewRule1], (*rewRules)->childs[temp->rewRule1]->next ); 
@@ -1337,7 +1337,7 @@ void computeSpols (
           RewRules* newRules              = (RewRules*) omAlloc( sizeof(RewRules) );
           newRules->label                 = (int**) omAlloc( rewRulesSize*sizeof(int*) );
           newRules->slabel                = (unsigned long*)omAlloc( rewRulesSize*sizeof(unsigned long) );
-          newRules->parent                = (RewRules**) omAlloc((rewRulesSize)*sizeof(RewRules*));
+          newRules->parent                = (unsigned long*) omAlloc((rewRulesSize)*sizeof(unsigned long));
           newRules->childs                = (RewRuList**) omAlloc((rewRulesSize)*sizeof(RewRuList*));
           newRules->size                  = (*rewRules)->size;
           register unsigned long _length  = currRing->N+1;
@@ -1380,15 +1380,16 @@ void computeSpols (
             _i++;
           }
           (*rewRules)->slabel[(*rewRules)->size]      = ~temp->smLabel1;
-          (*rewRules)->parent[(*rewRules)->size]      = &(*rewRules)[temp->rewRule1];
+          (*rewRules)->parent[(*rewRules)->size]      = temp->rewRule1;
           RewRuList* newRewRuList                     = (RewRuList*) omAlloc( sizeof(RewRuList) );
           Print("%p --\n", (*rewRules)->childs[temp->rewRule1] ); 
-          newRewRuList->rule                          = &(*rewRules)[(*rewRules)->size];
+          newRewRuList->rule                          = (*rewRules)->size;
           newRewRuList->next                          = (*rewRules)->childs[temp->rewRule1];
           (*rewRules)->childs[temp->rewRule1]         = newRewRuList;
           Print("%p -- %p\n", (*rewRules)->childs[temp->rewRule1], (*rewRules)->childs[temp->rewRule1]->next ); 
 
-          (*rewRules)->childs[(*rewRules)->size]  = NULL;
+          (*rewRules)->parent[(*rewRules)->size]      = temp->rewRule1;
+          (*rewRules)->childs[(*rewRules)->size]      = NULL;
     
           (*rewRules)->size++;
 
@@ -1404,7 +1405,11 @@ void computeSpols (
         while( tempRuL )
         {
           Print("%p\n", *tempRuL);
-          Print("%p\n", *(tempRuL->rule) );
+        for( int _l=0; _l<currRing->N+1; _l++ )
+        {
+          Print("%d  ",(*rewRules)->label[tempRuL->rule][_l]);
+        }
+          Print("\n%p\n", tempRuL->rule );
           tempRuL = tempRuL->next;
         }
         Print("\n-------------------------------------\n");
