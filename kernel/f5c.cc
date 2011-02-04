@@ -200,6 +200,8 @@ ideal f5cIter (
   // malloc two times the size of the previous Groebner basis
   // Note that we possibly need more memory in this iteration step!
   rewRules->label     = (int**) omAlloc((rewRulesSize)*sizeof(int*));
+  rewRules->parent    = (RewRules**) omAlloc((rewRulesSize)*sizeof(RewRules*));
+  rewRules->childs    = (RewRuList**) omAlloc((rewRulesSize)*sizeof(RewRuList*));
   rewRules->slabel    = (unsigned long*) omAlloc((rewRulesSize)*
                         sizeof(unsigned long)); 
   // Initialize a first (dummy) rewrite rule for the initial polynomial of this
@@ -207,8 +209,10 @@ ideal f5cIter (
   // (a) Note that we are allocating & setting all entries to zero for this first 
   //     rewrite rule.
   // (b) Note also that the size of strat is >=1.
-  rewRules->label[0]    = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
-  rewRules->slabel[0]   = 0;
+  rewRules->label[0]        = (int*) omAlloc0( (currRing->N+1)*sizeof(int) );
+  rewRules->slabel[0]       = 0;
+  rewRules->parent[0]       = NULL;
+  rewRules->childs[0]       = NULL; 
   for(i=1; i<rewRulesSize; i++) 
   {
     rewRules->label[i]  =  (int*) omAlloc( (currRing->N+1)*sizeof(int) );
@@ -1306,7 +1310,21 @@ void computeSpols (
             _d[_i]  = _s[_i];
             _i++;
           }
-          (*rewRules)->slabel[(*rewRules)->size]  = ~temp->smLabel1;
+          (*rewRules)->slabel[(*rewRules)->size]      = ~temp->smLabel1;
+          (*rewRules)->parent[(*rewRules)->size]      = &(*rewRules)[temp->rewRule1];
+          
+          ////////////////////////////////////////////////////////////////
+          // TODO: HOW TO ALLOCATE THIS STUFF CORRECTLY ???             //
+          ////////////////////////////////////////////////////////////////
+          RewRuList* newRewRuList                     = (RewRuList*) omAlloc( sizeof(RewRuList) );
+          Print("%p --\n", (*rewRules)->childs[temp->rewRule1] ); 
+          newRewRuList->rule                          = &(*rewRules)[(*rewRules)->size];
+          newRewRuList->next                          = (*rewRules)->childs[temp->rewRule1];
+          (*rewRules)->childs[temp->rewRule1]         = newRewRuList;
+          Print("%p -- %p\n", (*rewRules)->childs[temp->rewRule1], (*rewRules)->childs[temp->rewRule1]->next ); 
+
+          (*rewRules)->childs[(*rewRules)->size]  = NULL;
+    
           (*rewRules)->size++;
         }
         else
@@ -1319,6 +1337,8 @@ void computeSpols (
           RewRules* newRules              = (RewRules*) omAlloc( sizeof(RewRules) );
           newRules->label                 = (int**) omAlloc( rewRulesSize*sizeof(int*) );
           newRules->slabel                = (unsigned long*)omAlloc( rewRulesSize*sizeof(unsigned long) );
+          newRules->parent                = (RewRules**) omAlloc((rewRulesSize)*sizeof(RewRules*));
+          newRules->childs                = (RewRuList**) omAlloc((rewRulesSize)*sizeof(RewRuList*));
           newRules->size                  = (*rewRules)->size;
           register unsigned long _length  = currRing->N+1;
           register unsigned long ctr      = 0;
@@ -1335,6 +1355,8 @@ void computeSpols (
             }
             omFreeSize( (*rewRules)->label[ctr], (currRing->N+1)*sizeof(int) );
             newRules->slabel[ctr] = (*rewRules)->slabel[ctr];
+            newRules->parent[ctr] = (*rewRules)->parent[ctr];
+            newRules->childs[ctr] = (*rewRules)->childs[ctr];
           }
           omFreeSize( (*rewRules)->slabel, old*sizeof(unsigned long) );
           for( ; ctr<rewRulesSize; ctr++ )
@@ -1357,18 +1379,36 @@ void computeSpols (
             _d[_i]  = _s[_i];
             _i++;
           }
-          (*rewRules)->slabel[(*rewRules)->size]  = ~temp->smLabel1;
+          (*rewRules)->slabel[(*rewRules)->size]      = ~temp->smLabel1;
+          (*rewRules)->parent[(*rewRules)->size]      = &(*rewRules)[temp->rewRule1];
+          RewRuList* newRewRuList                     = (RewRuList*) omAlloc( sizeof(RewRuList) );
+          Print("%p --\n", (*rewRules)->childs[temp->rewRule1] ); 
+          newRewRuList->rule                          = &(*rewRules)[(*rewRules)->size];
+          newRewRuList->next                          = (*rewRules)->childs[temp->rewRule1];
+          (*rewRules)->childs[temp->rewRule1]         = newRewRuList;
+          Print("%p -- %p\n", (*rewRules)->childs[temp->rewRule1], (*rewRules)->childs[temp->rewRule1]->next ); 
+
+          (*rewRules)->childs[(*rewRules)->size]  = NULL;
+    
           (*rewRules)->size++;
 
         } 
-#if F5EDEBUG1
+//#if F5EDEBUG1
         Print("RULE #%d: ",(*rewRules)->size);
         for( int _l=0; _l<currRing->N+1; _l++ )
         {
           Print("%d  ",(*rewRules)->label[(*rewRules)->size-1][_l]);
         }
+        Print("CHILDS FOR %d:\n", temp->rewRule1);
+        RewRuList* tempRuL  = (*rewRules)->childs[temp->rewRule1];
+        while( tempRuL )
+        {
+          Print("%p\n", *tempRuL);
+          Print("%p\n", *(tempRuL->rule) );
+          tempRuL = tempRuL->next;
+        }
         Print("\n-------------------------------------\n");
-#endif
+//#endif
         // from this point on, rewRulesLast != NULL, thus we do not need to test this
         // again in the following iteration over the list of critical pairs
         

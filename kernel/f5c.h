@@ -34,6 +34,8 @@
 //------------------------------------------------------------------------------
 //------------------------------ STRUCTURES ------------------------------------
 //------------------------------------------------------------------------------
+struct RewRuList;
+struct RewRules;
 
 /// @struct \c F5Rules
 /// \c F5Rules is the structure of an array of rules checked in the F5 criterion
@@ -49,6 +51,17 @@ struct F5Rules
 
  
 
+/// @struct \c RewRuList
+/// @brief \c RewRuList is the list of rewrite rules. It is needed for a 
+/// ( hopefully ) better Rewritten Criterion check.
+struct RewRuList
+{
+  RewRules*   rule; ///< rewrite rule
+  RewRuList*  next; ///< next element in rule list
+};
+
+ 
+
 /// @struct \c RewRules
 /// @brief \c RewRules is the structure of a rule checked in the Rewritten criterion
 /// representing a monomial by an integer vector resp a long, the short
@@ -58,9 +71,11 @@ struct RewRules
   unsigned long   size;   ///< current number of rules in the list
   int**           label;  ///< array of exponent vectors of the rules
   unsigned long*  slabel; ///< array of short exponent vecotrs of the rules
+  RewRules**      parent; ///< parent of this rule
+  RewRuList**      childs; ///< children of this rule
 };
 
- 
+
 
 /// @struct \c Lpoly 
 /// @brief \c Lpoly is the structure of a linked list of labeled polynomials, 
