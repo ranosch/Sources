@@ -1161,67 +1161,96 @@ inline BOOLEAN criterion2 (
                             const RewRules* rewRules, const unsigned long rewRulePos
                           )
 {
-  unsigned long i   = rewRulePos + 1;
-  unsigned long end = rewRules->size;
-  int j             = currRing->N;
-#if F5EDEBUG1
-    Print("CRITERION2-BEGINNING\nTested Element: ");
-#endif
-#if F5EDEBUG1
-    while( j )
-    {
-      Print("%d ",mLabel[(currRing->N)-j]);
-      j--;
-    }
-    poly pTestRule = pOne();   
-    for( int ctr=0; ctr<=currRing->N; ctr++ )
-    {
-      pSetExp( pTestRule, ctr, mLabel[ctr] );
-    }
-    j = currRing->N;
-    Print("\n %ld\n",smLabel);
-    pWrite( pTestRule );
-    pDelete( &pTestRule ); 
-#endif
-  nextElement:
-  for( ; i < end; i++)
+  ////////////////////////////////////////////////////
+  // in the 1st round:    i = tempR
+  // 2nd round and later: i = special child of tempR
+  ////////////////////////////////////////////////////
+  unsigned long i     = rewRulePos;
+  unsigned long end   = rewRules->size;
+  int j               = currRing->N;
+  unsigned long tempR = i;
+  RewRuList* tempL;
+//#if F5EDEBUG1
+  Print("CRITERION2-BEGINNING\nTested Element: ");
+  while( j )
   {
-#if F5EDEBUG1
-    Print("Rewrite Rule: ");
-    while( j )
+    Print("%d ",mLabel[(currRing->N)-j]);
+    j--;
+  }
+  poly pTestRule = pOne();   
+  for( int ctr=0; ctr<=currRing->N; ctr++ )
+  {
+    pSetExp( pTestRule, ctr, mLabel[ctr] );
+  }
+  j = currRing->N;
+  Print("\n %ld\n",smLabel);
+  pWrite( pTestRule );
+  while( j )
+  {
+    Print("%d ",rewRules->label[i][(currRing->N)-j]);
+    j--;
+  }
+  for( int ctr=0; ctr<=currRing->N; ctr++ )
+  {
+    pSetExp( pTestRule, ctr, rewRules->label[i][ctr] );
+  }
+  j = currRing->N;
+  Print("\nRule Index: %ld\n", i);
+  pWrite( pTestRule );
+  pDelete( &pTestRule ); 
+//#endif
+//nextElement:
+  //for( ; i < end; i++)
+  while( tempR != -1 )
+  {
+    tempL = rewRules->childs[tempR];
+    nextElement:
+    while( tempL )
     {
-      Print("%d ",rewRules->label[i][(currRing->N)-j]);
-      j--;
-    }
-    j = currRing->N;
-    Print("\n %ld\n",rewRules->slabel[i]);
-#endif
-    if(!(smLabel & rewRules->slabel[i]))
-    {
-      while(j)
+      Print("TempL Rule: %ld -- TempR: %ld\n", tempL->rule, tempR);
+      if( tempL->rule != i )
       {
-        if(mLabel[j] < rewRules->label[i][j])
-        {
-          j = currRing->N;
-          i++;
-          goto nextElement;
-        }
-        j--;
-      }
 #if F5EDEBUG1
-    Print("Rewrite Rule: ");
-    j = currRing->N;
-    while( j )
-    {
-      Print("%d ",rewRules->label[i][(currRing->N)-j]);
-      j--;
-    }
-    j = currRing->N;
-    Print("\n %ld\n",rewRules->slabel[i]);
-        Print("CRITERION2-END-DETECTED \n");
+        Print("Rewrite Rule: ");
+        while( j )
+        {
+          Print("%d ",rewRules->label[tempL->rule][(currRing->N)-j]);
+          j--;
+        }
+        j = currRing->N;
+        Print("\n %ld\n",rewRules->slabel[tempL->rule]);
 #endif
-      return TRUE;
-    }
+        if(!(smLabel & rewRules->slabel[tempL->rule]))
+        {
+          while(j)
+          {
+            if(mLabel[j] < rewRules->label[tempL->rule][j])
+            {
+              j = currRing->N;
+              tempL = tempL->next;
+              goto nextElement;
+            }
+            j--;
+          }
+//#if F5EDEBUG1
+          Print("Rewrite Rule: ");
+          j = currRing->N;
+          while( j )
+          {
+            Print("%d ",rewRules->label[tempL->rule][(currRing->N)-j]);
+            j--;
+          }
+          j = currRing->N;
+          Print("\n%ld\n%ld\n",rewRules->slabel[tempL->rule], tempL->rule);
+          Print("CRITERION2-END-DETECTED \n");
+//#endif
+          return TRUE;
+        }
+      }
+      tempL = tempL->next;
+    }    
+    i     = tempR;
+    tempR = rewRules->parent[i];
   }
 #if F5EDEBUG1
   Print("CRITERION2-END \n");
@@ -1313,15 +1342,10 @@ void computeSpols (
           (*rewRules)->slabel[(*rewRules)->size]      = ~temp->smLabel1;
           (*rewRules)->parent[(*rewRules)->size]      = temp->rewRule1;
           
-          ////////////////////////////////////////////////////////////////
-          // TODO: HOW TO ALLOCATE THIS STUFF CORRECTLY ???             //
-          ////////////////////////////////////////////////////////////////
           RewRuList* newRewRuList                     = (RewRuList*) omAlloc( sizeof(RewRuList) );
-          Print("%p --\n", (*rewRules)->childs[temp->rewRule1] ); 
           newRewRuList->rule                          = (*rewRules)->size;
           newRewRuList->next                          = (*rewRules)->childs[temp->rewRule1];
           (*rewRules)->childs[temp->rewRule1]         = newRewRuList;
-          Print("%p -- %p\n", (*rewRules)->childs[temp->rewRule1], (*rewRules)->childs[temp->rewRule1]->next ); 
 
           (*rewRules)->childs[(*rewRules)->size]  = NULL;
     
@@ -1382,11 +1406,9 @@ void computeSpols (
           (*rewRules)->slabel[(*rewRules)->size]      = ~temp->smLabel1;
           (*rewRules)->parent[(*rewRules)->size]      = temp->rewRule1;
           RewRuList* newRewRuList                     = (RewRuList*) omAlloc( sizeof(RewRuList) );
-          Print("%p --\n", (*rewRules)->childs[temp->rewRule1] ); 
           newRewRuList->rule                          = (*rewRules)->size;
           newRewRuList->next                          = (*rewRules)->childs[temp->rewRule1];
           (*rewRules)->childs[temp->rewRule1]         = newRewRuList;
-          Print("%p -- %p\n", (*rewRules)->childs[temp->rewRule1], (*rewRules)->childs[temp->rewRule1]->next ); 
 
           (*rewRules)->parent[(*rewRules)->size]      = temp->rewRule1;
           (*rewRules)->childs[(*rewRules)->size]      = NULL;
@@ -1400,16 +1422,27 @@ void computeSpols (
         {
           Print("%d  ",(*rewRules)->label[(*rewRules)->size-1][_l]);
         }
-        Print("CHILDS FOR %d:\n", temp->rewRule1);
+        Print("\nCHILDS FOR %d:\n", temp->rewRule1);
         RewRuList* tempRuL  = (*rewRules)->childs[temp->rewRule1];
         while( tempRuL )
         {
-          Print("%p\n", *tempRuL);
-        for( int _l=0; _l<currRing->N+1; _l++ )
-        {
-          Print("%d  ",(*rewRules)->label[tempRuL->rule][_l]);
+          for( int _l=0; _l<currRing->N+1; _l++ )
+          {
+            Print("%d ",(*rewRules)->label[tempRuL->rule][_l]);
+          }
+          Print("\n%ld\n", tempRuL->rule);
+          tempRuL = tempRuL->next;
         }
-          Print("\n%p\n", tempRuL->rule );
+        Print("\n-------------------------------------\n");
+        Print("\nCHILDS FOR %d:\n", (*rewRules)->size-1);
+        tempRuL  = (*rewRules)->childs[((*rewRules)->size)-1];
+        while( tempRuL )
+        {
+          for( int _l=0; _l<currRing->N+1; _l++ )
+          {
+            Print("%d ",(*rewRules)->label[tempRuL->rule][_l]);
+          }
+          Print("\n%ld\n", tempRuL->rule);
           tempRuL = tempRuL->next;
         }
         Print("\n-------------------------------------\n");

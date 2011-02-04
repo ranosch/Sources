@@ -56,8 +56,8 @@ struct F5Rules
 /// ( hopefully ) better Rewritten Criterion check.
 struct RewRuList
 {
-  unsigned long rule; ///< rewrite rule
-  RewRuList*    next; ///< next element in rule list
+  unsigned long   rule; ///< rewrite rule
+  RewRuList*      next; ///< next element in rule list
 };
 
  
