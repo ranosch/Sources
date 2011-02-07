@@ -450,6 +450,8 @@ ideal doF5( ideal F, ideal Q, intvec *w, intvec *hilb, kStrategy strat )
 
         /* reduction of the element choosen from L */
 
+        Print("TO BE REDUCED ");
+        pWrite( pHead(strat->P.p) );
         red_result = strat->red( &strat->P, strat );
         if( errorreported )  
         { 

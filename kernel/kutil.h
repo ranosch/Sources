@@ -273,7 +273,7 @@ public:
   polyset extF5Rules; /* for f5c.cc */
   intset ecartS;
   intset lenS;
-  wlen_set lenSw; /* for tgb.ccc */
+  wlen_set lenSw; /* for tgb.cc */
   intset fromQ;
   unsigned long* sevS;
   unsigned long* sevRewRules;   /* for f5c.cc */
@@ -308,6 +308,8 @@ public:
   int cp,c3;
   int cv; // in shift bases: counting V criterion
   int sl,mu;
+  // rl resp. el denote the number of elements in rewRules resp. extF5Rules
+  int rl, el;
   // sgl is the number of elements in strat->S after an iteration step of F5
   // has finished. This is needed to distinguish between elements of previous
   // and current index
