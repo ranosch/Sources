@@ -353,6 +353,7 @@ void yyerror(const char * fmt)
 %left '(' ')'
 %left PLUSPLUS MINUSMINUS
 %left COLONCOLON
+%left '.'
 
 %%
 lines:
@@ -503,6 +504,10 @@ elemexpr:
           {
             if(iiExprArith2(&$$, &$1, COLONCOLON, &$3)) YYERROR;
           }
+        | elemexpr '.' elemexpr
+          {
+            if(iiExprArith2(&$$, &$1, '.', &$3)) YYERROR;
+          }
         | elemexpr '('  ')'
           {
             if(iiExprArith1(&$$,&$1,'(')) YYERROR;
@@ -583,6 +588,10 @@ elemexpr:
             memset(&$$,0,sizeof($$));
             $$.rtyp  = STRING_CMD;
             $$.data = $1;
+          }
+        | PROC_CMD '(' expr ')'
+          {
+            if(iiExprArith1(&$$,&$3,$1)) YYERROR;
           }
         ;
 

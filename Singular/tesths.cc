@@ -32,6 +32,8 @@
 #include <Singular/slInit.h>
 #include <Singular/ssiLink.h>
 #include <Singular/bigintm.h>
+#include <Singular/pyobject_setup.h>
+
 
 #ifdef HAVE_FACTORY
 #define SI_DONT_HAVE_GLOBAL_VARS
@@ -168,6 +170,7 @@ int main(          /* main entry to Singular */
     iiLibCmd(omStrDup("standard.lib"), TRUE,TRUE,TRUE);
     verbose=vv;
   }
+  pyobject_setup();
   errorreported = 0;
 
   // and again, ifdef OM_NDEBUG this call is undef'ed

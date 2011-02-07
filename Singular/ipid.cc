@@ -183,12 +183,18 @@ idhdl idrec::set(const char * s, int lev, int t, BOOLEAN init)
        case POLY_CMD:
        case VECTOR_CMD:
        case QRING_CMD:
+#ifdef HAVE_FANS
+       case FAN_CMD:
+       case CONE_CMD:
+#endif
          break;
        default:
          {
 	   if (t>MAX_TOK)
 	   {
+#ifdef BLACKBOX_DEVEL
              Print("bb-type %d\n",t);
+#endif
 	     blackbox *bb=getBlackboxStuff(t);
 	     if (bb!=NULL)
 	       IDSTRING(h)=(char *)bb->blackbox_Init(bb);
