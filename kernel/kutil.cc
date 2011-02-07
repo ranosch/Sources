@@ -5518,24 +5518,30 @@ void addSL (int ctr, ideal F, ideal Q, kStrategy strat)
      */
 }
 
-void initSLF5 (ideal F, ideal Q, kStrategy strat)
+void initSLREF5 (ideal F, ideal Q, kStrategy strat)
 {
   int   i,pos;
 
   if (Q!=NULL) i=((IDELEMS(Q)+(setmaxTinc-1))/setmaxTinc)*setmaxTinc;
   else i=setmaxT;
-  strat->ecartS         = initec(i);
-  strat->sevS           = initsevS(i);
-  strat->sevRewRules    = initsevS(i);
-  strat->sevExtF5Rules  = initsevS(i);
-  strat->S_2_R          = initS_2_R(i);
-  strat->fromQ          = NULL;
-  strat->Shdl           = idInit(i,F->rank);
-  strat->S              = strat->Shdl->m;
-  strat->Shdl           = idInit(i,F->rank);
-  strat->rewRules       = strat->Shdl->m;
-  strat->Shdl           = idInit(i,F->rank);
-  strat->extF5Rules     = strat->Shdl->m;
+  strat->ecartS = initec(i);
+  strat->sevS   = initsevS(i);
+  strat->sevRew = initsevS(i);
+  strat->sevExt = initsevS(i);
+  strat->S_2_R  = initS_2_R(i);
+  strat->fromQ  = NULL;
+  strat->Shdl   = idInit(i,F->rank);
+  strat->S      = strat->Shdl->m;
+  strat->Shdl   = idInit(i,F->rank);
+  strat->Rew    = strat->Shdl->m;
+  strat->Shdl   = idInit(i,F->rank);
+  strat->Ext    = strat->Shdl->m;
+
+  // enter 1st rewrite rule:
+  // this will be the same in every iteration step,
+  // i.e. the constant polynomial
+  enterRewF5( pOne(), strat );
+  
   /*- put polys into S -*/
   if (Q!=NULL)
   {
@@ -6339,6 +6345,36 @@ void enterSF5 (LObject p,int atS,kStrategy strat, int atR)
 * -puts p to the standardbasis s at position at
 * -saves the result in S
 */
+void enterRewF5 ( poly p, kStrategy strat )
+{
+  int i;
+  unsigned long sev;
+  strat->news = TRUE;
+  /*- puts p to the standardbasis s at position at -*/
+  if (strat->rl == IDELEMS(strat->Shdl)-1)
+  {
+    strat->sevRew = (unsigned long*) omRealloc0Size(strat->sevS,
+                                    IDELEMS(strat->Shdl)*sizeof(unsigned long),
+                                    (IDELEMS(strat->Shdl)+setmaxTinc)
+                                                  *sizeof(unsigned long));
+    pEnlargeSet(&strat->Rew,IDELEMS(strat->Shdl),setmaxTinc);
+    IDELEMS(strat->Shdl)+=setmaxTinc;
+    strat->Shdl->m=strat->Rew;
+  }
+
+  /*- save result -*/
+  strat->Rew[strat->rl] = p;
+  sev = pGetShortExpVector(p);
+  assume(sev == pGetShortExpVector(p));
+  strat->sevRew[strat->rl] = sev;
+  strat->rl++;
+}
+
+
+/*2
+* -puts p to the standardbasis s at position at
+* -saves the result in S
+*/
 void enterSBba (LObject p,int atS,kStrategy strat, int atR)
 {
   int i;
@@ -6753,12 +6789,7 @@ void initSTLF5 (ideal F,ideal Q,kStrategy strat)
   // We start this at 0 since the first element will always be an F5 Rule, i.e.
   // when the first critical pair between the 2nd element and the first one is
   // built we have the first element in strat->S to be an F5 Rule.
-  strat->sgl = 0;
-  /*- set tgl -*/
-  // We start this at 0 since the first element will always be an F5 Rule, i.e.
-  // when the first critical pair between the 2nd element and the first one is
-  // built we have the first element in strat->T to be an F5 Rule.
-  strat->tgl = 0;
+  strat->sgl = -1;
   /*- set L -*/
   strat->Lmax = ((IDELEMS(F)+setmaxLinc-1)/setmaxLinc)*setmaxLinc;
   strat->Ll = -1;
@@ -6769,6 +6800,11 @@ void initSTLF5 (ideal F,ideal Q,kStrategy strat)
   strat->B = initL();
   /*- set T -*/
   strat->tl = -1;
+  /*- set tgl -*/
+  // We start this at 0 since the first element will always be an F5 Rule, i.e.
+  // when the first critical pair between the 2nd element and the first one is
+  // built we have the first element in strat->T to be an F5 Rule.
+  strat->tgl = -1;
   strat->tmax = setmaxT;
   strat->T = initT();
   strat->R = initR();
@@ -6800,7 +6836,7 @@ void initSTLF5 (ideal F,ideal Q,kStrategy strat)
   }
   else
   {
-    /*Shdl=*/initSLF5(F, Q,strat); /*sets also S, ecartS, fromQ */
+    /*Shdl=*/initSLREF5(F, Q,strat); /*sets also S, ecartS, fromQ */
     // /*Shdl=*/initS(F, Q,strat); /*sets also S, ecartS, fromQ */
   }
   strat->kIdeal = NULL;

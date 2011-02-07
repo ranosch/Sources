@@ -265,19 +265,19 @@ public:
   // The bound is just given by all elements computed in a 
   // previous iteration step.
   polyset S;
-  polyset rewRules;   /* for f5c.cc */
+  polyset Rew;   /* for f5c.cc */
   // these are the rules coming from zero reductions in F5
   // => adding them to the F5 Criterion check improves F5 for 
   // highly non-regular input
   // This idea is adopted from GGV et al. 
-  polyset extF5Rules; /* for f5c.cc */
+  polyset Ext; /* for f5c.cc */
   intset ecartS;
   intset lenS;
   wlen_set lenSw; /* for tgb.cc */
   intset fromQ;
   unsigned long* sevS;
-  unsigned long* sevRewRules;   /* for f5c.cc */
-  unsigned long* sevExtF5Rules; /* for f5c.cc */
+  unsigned long* sevRew;   /* for f5c.cc */
+  unsigned long* sevExt; /* for f5c.cc */
   unsigned long* sevT;
   TSet T;
   LSet L;
@@ -308,7 +308,7 @@ public:
   int cp,c3;
   int cv; // in shift bases: counting V criterion
   int sl,mu;
-  // rl resp. el denote the number of elements in rewRules resp. extF5Rules
+  // rl resp. el denote the number of elements in R resp. E
   int rl, el;
   // sgl is the number of elements in strat->S after an iteration step of F5
   // has finished. This is needed to distinguish between elements of previous
@@ -385,6 +385,7 @@ static inline LSet initL (int nr=setmaxL)
 { return (LSet)omAlloc(nr*sizeof(LObject)); };
 void deleteInL(LSet set, int *length, int j,kStrategy strat);
 void enterL (LSet *set,int *length, int *LSetmax, LObject p,int at);
+void enterRewF5 ( poly p, kStrategy strat );
 void enterSBba (LObject p,int atS,kStrategy strat, int atR = -1);
 void enterSF5 (LObject p,int atS,kStrategy strat, int atR = -1);
 void initEcartPairBba (LObject* Lp,poly f,poly g,int ecartF,int ecartG);
@@ -465,7 +466,7 @@ void initEcartNormal (LObject* h);
 void initEcartBBA (LObject* h);
 void initS (ideal F, ideal Q,kStrategy strat);
 void initSL (ideal F, ideal Q,kStrategy strat);
-void initSLF5 (ideal F, ideal Q,kStrategy strat);
+void initSLREF5 (ideal F, ideal Q,kStrategy strat);
 void addSL (int ctr, ideal F, ideal Q,kStrategy strat);
 void updateS(BOOLEAN toT,kStrategy strat);
 void updateSInc(BOOLEAN toT,kStrategy strat);

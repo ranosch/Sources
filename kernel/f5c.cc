@@ -346,6 +346,8 @@ ideal doF5( ideal F, ideal Q, intvec *w, intvec *hilb, kStrategy strat )
     pWrite( F->m[_ctr] );
     addSL( _ctr, F, Q, strat );
     Print( "ITERATION %d\n", _ctr );
+    Print( "Rewrite Rule: %ld -- ", strat->sevRew[0] );
+    pWrite( strat->Rew[0] );
     while( strat->Ll>=0 )
     {
       if( strat->Ll>lrmax ) 
