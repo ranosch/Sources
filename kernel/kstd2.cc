@@ -366,6 +366,127 @@ int redRing (LObject* h,kStrategy strat)
 *  reduction procedure for the homogeneous case
 *  and the case of a degree-ordering
 */
+int redF5Homog (LObject* h,kStrategy strat)
+{
+  if (strat->tl<0) return 1;
+  //if (h->GetLmTailRing()==NULL) return 0; // HS: SHOULD NOT BE NEEDED!
+  assume(h->FDeg == h->pFDeg());
+
+  poly h_p;
+  int i,j,at,pass, ii;
+  unsigned long not_sev;
+  long reddeg,d;
+
+  pass = j = 0;
+  d = reddeg = h->GetpFDeg();
+  h->SetShortExpVector();
+  int li;
+  h_p = h->GetLmTailRing();
+  not_sev = ~ h->sev;
+  loop
+  {
+    j = kFindDivisibleByInT(strat->T, strat->sevT, strat->tgl, h);
+    if (j < 0) return 1;
+
+    li = strat->T[j].pLength;
+    ii = j;
+    /*
+     * the polynomial to reduce with (up to the moment) is;
+     * pi with length li
+     */
+    i = j;
+#if 1
+    if (TEST_OPT_LENGTH)
+    loop
+    {
+      /*- search the shortest possible with respect to length -*/
+      i++;
+      if (i > strat->tgl)
+        break;
+      if (li<=1)
+        break;
+      if ((strat->T[i].pLength < li)
+         &&
+          p_LmShortDivisibleBy(strat->T[i].GetLmTailRing(), strat->sevT[i],
+                               h_p, not_sev, strat->tailRing))
+      {
+        /*
+         * the polynomial to reduce with is now;
+         */
+        li = strat->T[i].pLength;
+        ii = i;
+      }
+    }
+#endif
+
+    /*
+     * end of search: have to reduce with pi
+     */
+#ifdef KDEBUG
+    if (TEST_OPT_DEBUG)
+    {
+      PrintS("red:");
+      h->wrp();
+      PrintS(" with ");
+      strat->T[ii].wrp();
+    }
+#endif
+    assume(strat->fromT == FALSE);
+
+    ksReducePoly(h, &(strat->T[ii]), NULL, NULL, strat);
+
+#ifdef KDEBUG
+    if (TEST_OPT_DEBUG)
+    {
+      PrintS("\nto ");
+      h->wrp();
+      PrintLn();
+    }
+#endif
+
+    h_p = h->GetLmTailRing();
+    if (h_p == NULL)
+    {
+      if (h->lcm!=NULL) pLmFree(h->lcm);
+#ifdef KDEBUG
+      h->lcm=NULL;
+#endif
+      return 0;
+    }
+    h->SetShortExpVector();
+    not_sev = ~ h->sev;
+    /*
+     * try to reduce the s-polynomial h
+     *test first whether h should go to the lazyset L
+     *-if the degree jumps
+     *-if the number of pre-defined reductions jumps
+     */
+    pass++;
+    if (!TEST_OPT_REDTHROUGH && (strat->Ll >= 0) && (pass > strat->LazyPass))
+    {
+      h->SetLmCurrRing();
+      at = strat->posInL(strat->L,strat->Ll,h,strat);
+      if (at <= strat->Ll)
+      {
+        int dummy=strat->sl;
+        if (kFindDivisibleByInS(strat, &dummy, h) < 0)
+          return 1;
+        enterL(&strat->L,&strat->Ll,&strat->Lmax,*h,at);
+#ifdef KDEBUG
+        if (TEST_OPT_DEBUG)
+          Print(" lazy: -> L%d\n",at);
+#endif
+        h->Clear();
+        return -1;
+      }
+    }
+  }
+}
+
+/*2
+*  reduction procedure for the homogeneous case
+*  and the case of a degree-ordering
+*/
 int redHomog (LObject* h,kStrategy strat)
 {
   if (strat->tl<0) return 1;

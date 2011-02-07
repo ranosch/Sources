@@ -5441,46 +5441,54 @@ void addSL (int ctr, ideal F, ideal Q, kStrategy strat)
   //strat->Shdl=idInit(i,F->rank);
   //strat->S=strat->Shdl->m;
   /*- put polys into S -*/
-    if (F->m[ctr]!=NULL)
+
+  /////////////////////////////////////////
+  // set lengths of lists of lower index //
+  // reducers                            //
+  /////////////////////////////////////////
+  strat->sgl  = strat->sl;
+  strat->tgl  = strat->tl;
+
+  if (F->m[ctr]!=NULL)
+  {
+    LObject h;
+    h.p = pCopy(F->m[ctr]);
+    h.tailRing  = currRing;
+    if (h.p!=NULL)
     {
-      LObject h;
-      h.p = pCopy(F->m[ctr]);
-      h.tailRing  = currRing;
+      if (pOrdSgn==-1)
+      {
+        cancelunit(&h);  /*- tries to cancel a unit -*/
+        deleteHC(&h, strat);
+      }
       if (h.p!=NULL)
       {
-        if (pOrdSgn==-1)
+        if (TEST_OPT_INTSTRATEGY)
         {
-          cancelunit(&h);  /*- tries to cancel a unit -*/
-          deleteHC(&h, strat);
+          //pContent(h.p);
+          h.pCleardenom(); // also does a pContent
         }
-        if (h.p!=NULL)
+        else
         {
-          if (TEST_OPT_INTSTRATEGY)
-          {
-            //pContent(h.p);
-            h.pCleardenom(); // also does a pContent
-          }
-          else
-          {
-            h.pNorm();
-          }
-          strat->initEcart(&h);
-          if (strat->Ll==-1)
-            pos =0;
-          else
-            pos = strat->posInL(strat->L,strat->Ll,&h,strat);
-          h.sev = pGetShortExpVector(h.p);
-          enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
+          h.pNorm();
         }
+        strat->initEcart(&h);
+        if (strat->Ll==-1)
+          pos =0;
+        else
+          pos = strat->posInL(strat->L,strat->Ll,&h,strat);
+        h.sev = pGetShortExpVector(h.p);
+        enterL(&strat->L,&strat->Ll,&strat->Lmax,h,pos);
       }
     }
+  }
   /*- test, if a unit is in F -*/
 
   if ((strat->Ll>=0)
 #ifdef HAVE_RINGS
-       && nIsUnit(pGetCoeff(strat->L[strat->Ll].p))
+      && nIsUnit(pGetCoeff(strat->L[strat->Ll].p))
 #endif
-       && pIsConstant(strat->L[strat->Ll].p))
+      && pIsConstant(strat->L[strat->Ll].p))
   {
     while (strat->Ll>0) deleteInL(strat->L,&strat->Ll,strat->Ll-1,strat);
   }
@@ -5490,11 +5498,11 @@ void addSL (int ctr, ideal F, ideal Q, kStrategy strat)
 
   pShallowCopyDeleteProc p_shallow_copy_delete
     = pGetShallowCopyDeleteProc(strat->tailRing, strat->tailRing);
-  
+
   for (i=0; i<=strat->tl; i++)
   {
     strat->T[i].ShallowCopyDelete(strat->tailRing, strat->tailBin,
-                                  p_shallow_copy_delete);
+        p_shallow_copy_delete);
   }
   for (i=0; i<=strat->Ll; i++)
   {
@@ -5504,15 +5512,10 @@ void addSL (int ctr, ideal F, ideal Q, kStrategy strat)
       strat->L[i].ShallowCopyDelete(strat->tailRing, p_shallow_copy_delete);
   }
   /*
-  if (strat->P.t_p != NULL ||
-      (strat->P.p != NULL && pNext(strat->P.p) != strat->tail))
-    strat->P.ShallowCopyDelete(strat->tailRing, p_shallow_copy_delete);
-  */
-  
-  // Set gl to be the number of elements already in gPrev. Up to this element
-  // the elements in strat->S represent the F5 Rules for the upcoming iteration
-  // step.  
-  strat->gl = strat->sl;
+     if (strat->P.t_p != NULL ||
+     (strat->P.p != NULL && pNext(strat->P.p) != strat->tail))
+     strat->P.ShallowCopyDelete(strat->tailRing, p_shallow_copy_delete);
+     */
 }
 
 void initSLF5 (ideal F, ideal Q, kStrategy strat)
@@ -6746,11 +6749,16 @@ void initSTLF5 (ideal F,ideal Q,kStrategy strat)
   strat->tail = pInit();
   /*- set s -*/
   strat->sl = -1;
-  /*- set gl -*/
+  /*- set sgl -*/
   // We start this at 0 since the first element will always be an F5 Rule, i.e.
   // when the first critical pair between the 2nd element and the first one is
   // built we have the first element in strat->S to be an F5 Rule.
-  strat->gl = 0;
+  strat->sgl = 0;
+  /*- set tgl -*/
+  // We start this at 0 since the first element will always be an F5 Rule, i.e.
+  // when the first critical pair between the 2nd element and the first one is
+  // built we have the first element in strat->T to be an F5 Rule.
+  strat->tgl = 0;
   /*- set L -*/
   strat->Lmax = ((IDELEMS(F)+setmaxLinc-1)/setmaxLinc)*setmaxLinc;
   strat->Ll = -1;

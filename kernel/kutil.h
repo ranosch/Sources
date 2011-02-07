@@ -308,11 +308,15 @@ public:
   int cp,c3;
   int cv; // in shift bases: counting V criterion
   int sl,mu;
-  // gl is the number of elements in strat->S after an iteration step of F5
+  // sgl is the number of elements in strat->S after an iteration step of F5
   // has finished. This is needed to distinguish between elements of previous
   // and current index
-  int gl;
+  int sgl;
   int tl,tmax;
+  // tgl is the number of reducers in strat->T after an iteration step of F5
+  // has finished. This is needed to distinguish between reducers of previous
+  // and current index
+  int tgl;
   int Ll,Lmax;
   int Bl,Bmax;
   int ak,LazyDegree,LazyPass;
@@ -442,6 +446,7 @@ long twoPow(long arg);
 ideal createG0();
 #endif
 int redLazy (LObject* h,kStrategy strat);
+int redF5Homog (LObject* h,kStrategy strat);
 int redHomog (LObject* h,kStrategy strat);
 void enterpairs (poly h, int k, int ec, int pos,kStrategy strat, int atR = -1);
 void entersets (LObject h);

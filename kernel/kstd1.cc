@@ -1053,8 +1053,13 @@ void initF5(ideal F,kStrategy strat)
     strat->red = redLazy;
   else
   {
-    strat->LazyPass *=4;
-    strat->red = redHomog;
+    strat->LazyPass *=  4;
+    // NOT the usual redHomog:
+    // We can only reduce w.r.t. elements of index
+    // smaller than strat->gl. For all other elements
+    // we have to check the criteria before we are allowed
+    // to reduce with them. 
+    strat->red      =   redF5Homog;
   }
 #ifdef HAVE_RINGS  //TODO Oliver
   if (rField_is_Ring(currRing))
