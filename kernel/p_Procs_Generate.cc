@@ -16,7 +16,7 @@
 #include <string.h>
 
 #include <kernel/mod2.h>
-#include <kernel/dError.c>
+#include <kernel/dError.cc>
 
 #ifdef p_Procs_Static
 #include <kernel/p_Procs_Static.h>
