@@ -115,11 +115,11 @@ CXXSOURCES=clapconv.cc \
     pShallowCopyDelete.cc fast_mult.cc digitech.cc \
     tgb.cc tgbgauss.cc ringgb.cc f5data.cc f5lists.cc f5gb.cc \
     f5c.cc F5cLists.cc ratgring.cc shiftgb.cc gfan.cc \
-    linearAlgebra.cc longtrans.cc
+    linearAlgebra.cc longtrans.cc dError.cc
 CXXSOURCES2	= SingularBuilder.cpp
 
 # normal C source files
-CSOURCES=weight0.c fegetopt.c fereadl.c dError.c mmstd.c
+CSOURCES=weight0.c fegetopt.c fereadl.c mmstd.c
 
 # C++ sources which are used if part of the kernel are dynamically linked
 ifeq ($(DL_KERNEL),1)
@@ -368,8 +368,8 @@ CXXG		= ${CXX}
 CXXM		= gcc -MM -MG -DGENERATE_DEPEND
 CCM		= gcc -MM -MG -DGENERATE_DEPEND
 
-CFLAGSG		= -g ${PIPE}
-CXXFLAGSG	= -g ${PIPE}
+CFLAGSG		= -g ${PIPE} -rdynamic
+CXXFLAGSG	= -g ${PIPE} -rdynamic
 DEFSG		= -D@SING_UNAME@ @DEFS@ -DDL_TAIL=$(DL_TAILG)
 
 ##
