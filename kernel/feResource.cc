@@ -28,7 +28,7 @@ extern "C" int setenv(const char *name, const char *value, int overwrite);
 #else
 char* feResource(const char id, int warn = -1);
 char* feResource(const char* key, int warn = -1);
-#include <kernel/dError.c>
+#include <kernel/dError.cc>
 #endif
 
 // define RESOURCE_DEBUG for chattering about resource management

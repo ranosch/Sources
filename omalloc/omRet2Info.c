@@ -37,7 +37,7 @@ void omInitRet_2_Info(const char* argv0)
 {
   char buf[MAXPATHLEN];
 
-  if (argv0 != NULL && omFindExec(argv0, buf))
+  if (argv0 != NULL && omFindExec(argv0, buf)) // BUG???
   {
     strcpy(om_this_prog, buf);
   }
@@ -92,8 +92,9 @@ File:Line
       pclose(pipe);
     }
   }
-#endif
   return filled;
+#endif
+  return j;
 }
 
 int omPrintRetInfo(omRetInfo info, int max, FILE* fd, const char* fmt)
