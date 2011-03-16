@@ -86,12 +86,12 @@ DEFS		= -DNDEBUG -DOM_NDEBUG -D@SING_UNAME@ @DEFS@
 LDFLAGS2	= @LDFLAGS@
 ifneq ($(SINGUNAME),ix86-Win)
 LDFLAGS		= -L@prefix@/kernel -L../kernel -lkernel @LDFLAGS@ 
-LDFLAGSG	= -L@prefix@/kernel -L../kernel -lkernel_g @LDFLAGS@ 
+LDFLAGSG	= -L@prefix@/kernel -L../kernel -lkernel_g @LDFLAGS@ -rdynamic 
 LDFLAGSP	= -L@prefix@/kernel -L../kernel -lkernel_p @LDFLAGS@ 
 else
 ## -L/usr/local/lib -L@prefix@/modules/python --> PySingular
 LDFLAGS		= -L@prefix@/kernel -L/bin -lkernel @LDFLAGS@ -L/usr/local/lib -L../modules/python 
-LDFLAGSG	= -L@prefix@/kernel -L/bin -lkernel_g @LDFLAGS@ 
+LDFLAGSG	= -L@prefix@/kernel -L/bin -lkernel_g @LDFLAGS@ -rdynamic 
 LDFLAGSP	= -L@prefix@/kernel -L/bin -lkernel_p @LDFLAGS@ 
 endif
 LD_DYN_FLAGS	= @LD_DYN_FLAGS@
@@ -718,8 +718,8 @@ CXXG		= ${CXX}
 CXXM		= gcc -MM -MG -DGENERATE_DEPEND
 CCM		= gcc -MM -MG -DGENERATE_DEPEND
 
-CFLAGSG		= -g -Wall -Wno-unused ${PIPE}
-CXXFLAGSG	= -g -Wall -Wno-unused ${PIPE}
+CFLAGSG		= -g -Wall -Wno-unused ${PIPE} -rdynamic
+CXXFLAGSG	= -g -Wall -Wno-unused ${PIPE} -rdynamic
 CXXTEMPLFLAGSG	= -fno-implicit-templates
 DEFSG		= -D@SING_UNAME@ @DEFS@ -DDL_TAIL=$(DL_TAILG)
 
