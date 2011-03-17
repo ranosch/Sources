@@ -34,7 +34,7 @@ void get_next()
     if (strchr(buf,'\r')!=NULL) crlf++;
     if ((buf[LINE_LEN-1]!='\0')||(strlen(buf)>RECOMMENDED_LEN))
     {
-      if (verylong_lines==0) printf("warning: very long line (%d):\n%s\n",lines,buf);
+      printf("warning: very long line (%d):\n%s\n",lines,buf);
       verylong_lines++;
     }
     if ((strstr(buf," \n")!=NULL)||(strstr(buf," \r\n")!=NULL)) trailing_spaces++;
@@ -44,7 +44,7 @@ void get_next()
     {
       if (buf[i]>=127) { non_ascii_found=1;non_ascii++;non_ascii_line=lines; break; }
     }
-    if (non_ascii_found) printf("non-ascii:>>%s<<\n",buf); 
+    if (non_ascii_found) printf("non-ascii in line: %d: >>\n%s\n<<wrong character: '%c' at index: %d: \n", lines, buf, buf[i], i); 
     if (footer==0) /* we are still in the header */
     {
       if (strstr(buf,"@*")!=NULL) star_nl++;
