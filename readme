@@ -1,1 +1,7 @@
-this is an empty branch (no history! unrooted...)
+Scripts:
+
+checkout 'sw.sh': wget "http://git.berlios.de/cgi-bin/cgit.cgi/singular/plain/sw.sh?h=scripts" -O sw.sh -a /dev/null
+
+
+
+
