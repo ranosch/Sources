@@ -8,7 +8,12 @@ CFGOPTIONS="--with-gmp=yes"
 
 # computer specific make options: e.g. -j9
 #MKOPTIONS="-j9"
-MKOPTIONS="" 
+MKOPTIONS=
+
+MAKE=make
+# GNU make?
+#MAKE=gmake
+
 
 D=`date +%y.%m.%d.%H.%M.%S`
 
@@ -28,6 +33,15 @@ echo "SYSTEM: `uname -a`" >> $LOG
 
 CleanUp() 
 {
+  echo "Cleanup upno error....?" >> $LOG
+
+###### no cleanup upon an error...
+#  echo "Deleting tempdir: $SW" >> $LOG
+#  rm -f -R "$SW" 1>> $LOG 2>&1
+}
+
+CleanUpOk() 
+{
   echo "Deleting tempdir: $SW" >> $LOG
   rm -f -R "$SW" 1>> $LOG 2>&1
 }
@@ -40,16 +54,16 @@ Build()
   [ -f ./configure ] || { echo "Error: cannot find './configure'" >> $LOG; return 1; } 
 
   echo "Running './configure \"$CFGOPTIONS\" \"$@\"'... " >> $LOG
-  ./configure "$CFGOPTIONS" "$@" 1>> $LOG 2>&1  || { echo "Error: could not run './configure \"$CFGOPTIONS\" \"$@\"'" >> $LOG; return 1; } 
+  ./configure $CFGOPTIONS $@ 1>> $LOG 2>&1  || { echo "Error: could not run './configure \"$CFGOPTIONS\" \"$@\"'" >> $LOG; return 1; } 
 
   echo "Making... " >> $LOG
-  make "$MKOPTIONS" 1>> $LOG 2>&1  || { echo "Error: could not run 'make \"$MKOPTIONS\"'"5 >> $LOG; return 1; } 
+  $MAKE $MKOPTIONS 1>> $LOG 2>&1  || { echo "Error: could not run 'make \"$MKOPTIONS\"'"5 >> $LOG; return 1; } 
 }
 
 Check()
 {
   echo "Checking... " >> $LOG
-  make -k -i check 1>> $LOG 2>&1
+  $MAKE -k -i check 1>> $LOG 2>&1
 
   echo "Test Result: $?" >> $LOG
 
@@ -69,17 +83,18 @@ Reset()
 
 
 echo "Creating empty tempdir: $SW" >> $LOG
-[ -d $SW ] && { echo "Error: $SW exists... cleaning up..." >> $LOG; mv -f $SW "$SW.moved" 1>> $LOG 2>&1 && { rm -f -R "$SW.moved" 1>> $LOG 2>&1 || echo "Error: could not remove '$SW.moved'"; } || { echo "Error: could not rename '$SW' -> '$SW.moved'"; exit 1; }; }
+[ -d "$SW" ] && { echo "Error: $SW exists... cleaning up..." >> $LOG; mv -f "$SW" "$SW.moved" 1>> $LOG 2>&1 && { rm -f -R "$SW.moved" 1>> $LOG 2>&1 || echo "Error: could not remove '$SW.moved'"; } || { echo "Error: could not rename '$SW' -> '$SW.moved'"; exit 1; }; }
 
-mkdir -p $SW || { echo "Error: cannot create tempdir: $SW" >> $LOG;  exit 1; }
 
-[ -d $SW ] || { echo "Error: cannot find tempdir '$SW'" >> $LOG; CleanUp; exit 1; } 
-[ ! -x $SW ] && { chmod u+rwx $SW 1>> $LOG 2>&1 || { echo "Error: cannot set rxw permissions for $SW" >> $LOG;  exit 1; }; }
+mkdir -p "$SW" || { echo "Error: cannot create tempdir: $SW" >> $LOG;  exit 1; }
+
+[ -d "$SW" ] || { echo "Error: cannot find tempdir '$SW'" >> $LOG; CleanUp; exit 1; } 
+[ ! -x "$SW" ] && { chmod u+rwx $SW 1>> $LOG 2>&1 || { echo "Error: cannot set rxw permissions for $SW" >> $LOG;  exit 1; }; }
 
 echo "Clonning... " >> $LOG
-git clone -v -b $BRANCH --depth 1 -- git://git.berlios.de/singular $SW 1>> $LOG 2>&1 || { echo "Error: cannot git clone..." >> $LOG; CleanUp; exit 1; } 
+git clone -v -b $BRANCH --depth 1 -- git://git.berlios.de/singular "$SW" 1>> $LOG 2>&1 || { echo "Error: cannot git clone..." >> $LOG; CleanUp; exit 1; } 
 
-cd $SW  || { echo "Error: cannot cd to the tempdir: $SW" >> $LOG; CleanUp; exit 1; } 
+cd "$SW"  || { echo "Error: cannot cd to the tempdir: $SW" >> $LOG; CleanUp; exit 1; } 
 
 # latest commit?
 git log -1 HEAD >> $LOG 
@@ -92,17 +107,17 @@ git log -1 HEAD >> $LOG
 #  --enable-p-procs-dynamic Enable dynamically compiled p_Procs-modules
 
 echo "Trying static version... " >> $LOG
-Build "--enable-p-procs-static" && Check || { echo "Error: could not build with '--enable-p-procs-static'" >> $LOG; } 
+Build "--enable-p-procs-static" && Check || { echo "Error: could not build with '--enable-p-procs-static'" >> $LOG; exit 1; } 
 
 # return git repo to the untouched state:
 echo "Resetting the source directory... " >> $LOG
 Reset
 
 echo "Trying dynamic version... " >> $LOG
-Build "--enable-p-procs-dynamic" && Check || { echo "Error: could not build with '--enable-p-procs-dynamic'" >> $LOG; }
+Build "--enable-p-procs-dynamic" && Check || { echo "Error: could not build with '--enable-p-procs-dynamic'" >> $LOG;  exit 1; }
 
 cd - || { CleanUp; exit 1; } 
 
-CleanUp || exit 1
+CleanUpOk || exit 1
 
 exit 0
