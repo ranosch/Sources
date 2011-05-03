@@ -10,10 +10,6 @@ CFGOPTIONS="--with-gmp=yes"
 #MKOPTIONS="-j9"
 MKOPTIONS=
 
-MAKE=make
-# GNU make?
-#MAKE=gmake
-
 
 D=`date +%y.%m.%d.%H.%M.%S`
 
@@ -30,6 +26,12 @@ echo "DATE: `date`" >> $LOG
 echo "HOST: `hostname`" >> $LOG
 echo "SYSTEM: `uname -a`" >> $LOG 
 
+
+echo "Looking for make... " >> $LOG 
+
+[ "x$MAKE" == "x" ] && { locate -l 1 "/bin/gmake" 1>> $LOG 2>&1 && MAKE=`locate -l 1 "/bin/gmake"` || MAKE="make"; }
+
+echo "Using '$MAKE'... " >> $LOG;
 
 CleanUp() 
 {
