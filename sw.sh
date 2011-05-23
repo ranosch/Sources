@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 PWD=`pwd`
 BRANCH="spielwiese"
@@ -7,17 +7,17 @@ BRANCH="spielwiese"
 CFGOPTIONS="--with-gmp=yes"
 
 # computer specific make options: e.g. -j9
-MKOPTIONS="-j9"
-#MKOPTIONS=
+# MKOPTIONS="-j9"
+MKOPTIONS=
 
 
-D="sw`date +%y.%m.%d.%H.%M.%S`"
+D="`hostname`.`date +%y.%m.%d.%H.%M.%S`"
 
 # we try to use log instead of consequent --quiet
-LOG="$PWD/lg_$D"
+LOG="$PWD/$D.log"
 
 # tempdir (absolute path!)
-SW="$PWD/sw_$D"
+SW="$PWD/$D"
 
 # use out of tree building, with clean GIT repository being at:
 GIT="$SW/GIT"
