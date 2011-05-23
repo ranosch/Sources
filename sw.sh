@@ -127,17 +127,11 @@ Reset()
 Prepare
 
 
-
-# test two cases dynamic & static:
-#  --enable-p-procs-static Enable statically compiled p_Procs-modules
-#  --enable-p-procs-dynamic Enable dynamically compiled p_Procs-modules
-
-
 echo "Creating empty tempdir: '$BLD'" >> $LOG
 mkdir -p "$BLD" || { echo "Error: cannot create tempdir: $BLD" >> $LOG; CleanUp; exit 1; }
 cd "$BLD" || { echo "Error: cannot cd to the tempdir: $BLD" >> $LOG; CleanUp; exit 1; } 
 
-echo "Trying static version... " >> $LOG
+echo "Trying default version... " >> $LOG
 Build "--prefix=$OUT" && Check || { echo "Error: could not build with '--prefix=$OUT'" >> $LOG; exit 1; } 
 # --enable-p-procs-static
 
@@ -163,9 +157,24 @@ echo "Running the test... " >> $LOG
 ./test 1>> $LOG 2>&1 || { echo "Error: could not run standalone.test" >> $LOG; CleanUp; exit 1; } 
 
 
+
+cd $PWD || { CleanUp; exit 1; } 
+
+CleanUpOk || exit 1
+
+exit 0
+
+
+
 exit
 quit
 return
+
+
+# test two cases dynamic & static:
+#  --enable-p-procs-static Enable statically compiled p_Procs-modules
+#  --enable-p-procs-dynamic Enable dynamically compiled p_Procs-modules
+
 
 # return git repo to the untouched state:
 echo "Resetting the source directory... " >> $LOG
@@ -174,9 +183,3 @@ Reset
 
 echo "Trying dynamic version... " >> $LOG
 Build "--enable-p-procs-dynamic" && Check || { echo "Error: could not build with '--enable-p-procs-dynamic'" >> $LOG;  exit 1; }
-
-cd - || { CleanUp; exit 1; } 
-
-CleanUpOk || exit 1
-
-exit 0
