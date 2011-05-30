@@ -7,7 +7,7 @@ BRANCH="spielwiese"
 CFGOPTIONS="--with-gmp=yes"
 
 # computer specific make options: e.g. -j9
-# MKOPTIONS="-j9"
+# MKOPTIONS="-j49"
 MKOPTIONS=
 
 
@@ -44,7 +44,7 @@ echo "SYSTEM: `uname -a`" >> $LOG
 
 echo "Looking for make... " >> $LOG 
 
-[ "x$MAKE" == "x" ] && { MAKE="make"; }
+[ -z "$MAKE" ] && { MAKE="make"; }
 
 echo "Using '$MAKE'... " >> $LOG;
 
@@ -71,7 +71,8 @@ CleanUp()
 CleanUpOk() 
 {
   echo "Deleting tempdir: $SW" >> $LOG
-  rm -f -R "$SW" 1>> $LOG 2>&1
+
+#  rm -f -R "$SW" 1>> $LOG 2>&1
 }
 
 Prepare()
@@ -124,38 +125,56 @@ Reset()
 }
 
 
+
+BuildInstallTest()
+{
+  EXT="$1"
+  shift 
+  echo "Creating empty tempdir: '$BLD.$EXT'" >> $LOG
+  mkdir -p "$BLD.$EXT" || { echo "Error: cannot create tempdir: $BLD" >> $LOG; CleanUp; exit 1; }
+  cd "$BLD.$EXT" || { echo "Error: cannot cd to the tempdir: $BLD.$EXT" >> $LOG; CleanUp; exit 1; } 
+
+  echo "Trying the [$EXT] version with [$@]... " >> $LOG
+  Build "--prefix=$OUT.$EXT" "$@" && Check || { echo "Error: could not build with '--prefix=$OUT.$EXT'" >> $LOG; exit 1; }
+
+  echo "Installing into '$OUT.$EXT'... " >> $LOG
+  make install 1>> $LOG 2>&1 
+
+  # let's inspect the installation now:
+  cd "$OUT.$EXT" || { echo "Error: cannot cd to the instalation dir: $OUT.$EXT" >> $LOG; CleanUp; exit 1; } 
+
+  echo "Content of '$OUT.$EXT'... " >> $LOG
+  ls -R "$OUT.$EXT" 1>> $LOG 2>&1 
+
+  # let's test the installation using the standalone test:
+  echo "Going to '$OUT.$EXT/bin'... " >> $LOG
+  cd "$OUT.$EXT/bin" || { echo "Error: cannot cd to '$OUT.$EXT/bin'" >> $LOG; CleanUp; exit 1; } 
+
+  echo "Copying '$GIT/standalone.test' to '$OUT.$EXT/bin'... " >> $LOG
+  cp -vfR $GIT/standalone.test/* "$OUT.$EXT/bin/" 1>> $LOG 2>&1 || { echo "Error: could not copy standalone.test" >> $LOG; CleanUp; exit 1; }
+
+  echo "Building the standalone test... " >> $LOG
+  ./mk 1>> $LOG 2>&1 || { echo "Error: could not build standalone.test" >> $LOG; CleanUp; exit 1; } 
+
+  echo "Running the test... " >> $LOG
+  ./test 1>> $LOG 2>&1 || { echo "Error: could not run standalone.test" >> $LOG; CleanUp; exit 1; } 
+}
+
+########### main code ############
+
+echo "Prepearing the build system... " >> $LOG
 Prepare
 
 
-echo "Creating empty tempdir: '$BLD'" >> $LOG
-mkdir -p "$BLD" || { echo "Error: cannot create tempdir: $BLD" >> $LOG; CleanUp; exit 1; }
-cd "$BLD" || { echo "Error: cannot cd to the tempdir: $BLD" >> $LOG; CleanUp; exit 1; } 
+# test two cases dynamic & static:
+#  --enable-p-procs-static Enable statically compiled p_Procs-modules
+#  --enable-p-procs-dynamic Enable dynamically compiled p_Procs-modules
 
-echo "Trying default version... " >> $LOG
-Build "--prefix=$OUT" && Check || { echo "Error: could not build with '--prefix=$OUT'" >> $LOG; exit 1; } 
-# --enable-p-procs-static
+echo "Trying the default version... " >> $LOG
+BuildInstallTest "default" 1>> $LOG 2>&1 || { echo "Error: could not do the default version... " >> $LOG; CleanUp; } 
 
-echo "Installing into '$OUT'... " >> $LOG
-make install 1>> $LOG 2>&1 
-
-cd "$OUT" || { echo "Error: cannot cd to the instalation dir: $OUT" >> $LOG; CleanUp; exit 1; } 
-
-echo "Content of '$OUT'... " >> $LOG
-ls -R . 1>> $LOG 2>&1 
-
-
-echo "Going to '$OUT/bin'... " >> $LOG
-cd "$OUT/bin" || { echo "Error: cannot cd to '$OUT/bin'" >> $LOG; CleanUp; exit 1; } 
-
-echo "Copying '$GIT/standalone.test' to '$OUT/bin'... " >> $LOG
-cp -vfR $GIT/standalone.test/* "$OUT/bin/" 1>> $LOG 2>&1 || { echo "Error: could not copy standalone.test" >> $LOG; CleanUp; exit 1; } 
-
-echo "Building the test... " >> $LOG
-./mk 1>> $LOG 2>&1 || { echo "Error: could not build standalone.test" >> $LOG; CleanUp; exit 1; } 
-
-echo "Running the test... " >> $LOG
-./test 1>> $LOG 2>&1 || { echo "Error: could not run standalone.test" >> $LOG; CleanUp; exit 1; } 
-
+echo "Trying static version with all features disabled... " >> $LOG
+BuildInstallTest "minimal" "--disable-arith-rings" "--disable-factory" "--disable-plural" "--disable-p-procs-dynamic" "--enable-p-procs-static" 1>> $LOG 2>&1 || { echo "Error: could not do the minimal version... " >> $LOG; CleanUp; } 
 
 
 cd $PWD || { CleanUp; exit 1; } 
@@ -166,20 +185,9 @@ exit 0
 
 
 
-exit
-quit
-return
 
 
-# test two cases dynamic & static:
-#  --enable-p-procs-static Enable statically compiled p_Procs-modules
-#  --enable-p-procs-dynamic Enable dynamically compiled p_Procs-modules
 
 
-# return git repo to the untouched state:
-echo "Resetting the source directory... " >> $LOG
-Reset
 
-
-echo "Trying dynamic version... " >> $LOG
-Build "--enable-p-procs-dynamic" && Check || { echo "Error: could not build with '--enable-p-procs-dynamic'" >> $LOG;  exit 1; }
+	  
