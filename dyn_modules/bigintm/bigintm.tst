@@ -6,12 +6,12 @@ echo = 2;
 if( system("with", "ndebug") )
 {
   "Loading the Release version!";
-  LIB("./bigintm.so");
+  LIB("bigintm.so");
 }
 else
 {
   "Loading the Debug version!";
-  LIB("./bigintm_g.sog");
+  LIB("bigintm_g.sog");
 }
 
 printBlackboxTypes();
