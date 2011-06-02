@@ -415,9 +415,9 @@ struct nc_struct
   matrix D;
 
   // computed data:
-  matrix *MT; // size 0.. (rVar()*rVar()-1)/2
+  matrix *ppMT; // size 0.. (rVar()*rVar()-1)/2
+  int *ppMTsize; // size 0.. (rVar()*rVar()-1)/2
   matrix COM;
-  int *MTsize; // size 0.. (rVar()*rVar()-1)/2
 
   // IsSkewConstant indicates whethere coeffs C_ij are all equal, 
   // effective together with nc_type=nc_skew

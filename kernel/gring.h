@@ -296,6 +296,135 @@ inline poly GetD( const ring r, int i, int j )
 void nc_gr_initBba(ideal F,kStrategy strat); 
 BOOLEAN gnc_InitMultiplication(ring r, bool bSetupQuotient = false); // just for a moment
 
+
+#ifndef HIDEVARIABLE
+# define HIDEVARIABLE(x) UNUSED__ ## x
+#endif
+
+#ifndef UNUSED
+
+# if defined(__GNUC__)
+#   define UNUSED(x) HIDEVARIABLE(x) __attribute__((unused)) 
+# elif defined(__LCLINT__) 
+#  define UNUSED(x) /*@unused@*/ HIDEVARIABLE(x)
+# else 
+#  define UNUSED(x) HIDEVARIABLE(x)
+# endif
+
+#endif
+
+#define UNUSED_ARGUMENT(x) (void) HIDEVARIABLE(x)
+
+
+static inline poly nc_GetMT(const int UNUSED(i), const int UNUSED(j), const matrix MT, const int a = 1, const int b = 1, const ring_const UNUSED(r) = currRing)
+{
+   UNUSED_ARGUMENT(i);   
+   UNUSED_ARGUMENT(j);   
+   UNUSED_ARGUMENT(r);   
+
+   assume(MT != NULL);
+   
+   assume(a > 0 && b > 0);
+   assume(a <= MATROWS(MT));
+   assume(b <= MATCOLS(MT));
+   
+   return MATELEM(MT,a,b);
+}
+
+static inline poly nc_GetMT(const int i, const int j, matrix const *MT, const int a = 1, const int b = 1, const ring_const r = currRing)
+{
+   assume(MT != NULL);
+   assume(j < i);
+   const int N = r->N;
+   assume(0 < j && i <= N);
+
+   const int id = UPMATELEM(j, i, N); ///< Note the reversion!
+
+   if(true)
+   {
+      assume( r->GetNC()->ppMTsize != NULL );
+      const int s = r->GetNC()->ppMTsize[id];
+      assume(a <= s);
+      assume(b <= s);
+   }  
+
+   return nc_GetMT(i, j, MT[id], a, b, r);
+}
+
+
+// get var(i)^a * var(j)^b // x_i = y,  x_j = x !
+// assumes i > j
+// either a = b = 1, or it is in the cache...
+static inline poly nc_GetMT(const int i, const int j, const int a = 1, const int b = 1, const ring_const r = currRing)
+{
+   assume(r != NULL);
+   return nc_GetMT(i, j, r->GetNC()->ppMT, a, b, r);
+}
+
+static inline poly nc_SetMT(const int UNUSED(i), const int UNUSED(j), matrix MT, const int a, const int b, poly p, const ring_const UNUSED(r) = currRing)
+{
+   UNUSED_ARGUMENT(i);   
+   UNUSED_ARGUMENT(j);   
+   UNUSED_ARGUMENT(r);   
+
+   assume(MT != NULL);
+   
+   assume(a > 0 && b > 0);
+   assume(a <= MATROWS(MT));
+   assume(b <= MATCOLS(MT));
+   
+   MATELEM(MT,a,b) = p;
+}
+
+static inline void nc_SetMT(const int i, const int j, matrix *MT, const int a, const int b, poly p, const ring_const r = currRing)
+{
+   assume(MT != NULL);
+   assume(j < i);
+   const int N = r->N;
+   assume(0 < j && i <= N);
+
+   const int id = UPMATELEM(j, i, N); ///< Note the reversion!
+
+   if(true)
+   {
+      assume( r->GetNC()->ppMTsize != NULL );
+      const int s = r->GetNC()->ppMTsize[id];
+      assume(a <= s);
+      assume(b <= s);
+   }  
+
+   nc_SetMT(i, j, MT[id], a, b, p, r);
+}
+
+static inline void nc_SetMT(const int i, const int j, const int a, const int b, poly p, const ring_const r = currRing)
+{
+   assume(r != NULL);
+   nc_SetMT(i, j, r->GetNC()->ppMT, a, b, p, r);
+}
+
+
+static inline int nc_GetMTsize(const int id, int const *MTsize, const ring_const UNUSED(r) = currRing)
+{
+   UNUSED_ARGUMENT(r);
+   assume(MTsize != NULL);
+   const int s = MTsize[id];
+   return s;
+}
+
+static inline int nc_GetMTsize(const int i, const int j, const ring_const r = currRing)
+{
+   assume(r != NULL);
+   assume(j < i);
+   const int N = r->N;
+   assume(0 < j && i <= N);
+
+   const int id = UPMATELEM(j, i, N); ///< Note the reversion!
+
+   return nc_GetMTsize(id, r->GetNC()->ppMTsize, r);
+}
+
+
+
 #endif // PLURAL_INTERNAL_DECLARATIONS
 
 #endif // HAVE_PLURAL :(

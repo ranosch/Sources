@@ -407,7 +407,6 @@ void rWrite(ring r)
     PrintS("\n//   noncommutative relations:");
     if (r==currRing)
     {
-      poly pl=NULL;
       int nl;
       int i,j;
       for (i = 1; i<r->N; i++)
@@ -418,8 +417,7 @@ void rWrite(ring r)
           if ( (MATELEM(r->GetNC()->D,i,j)!=NULL) || (!nl) )
           {
             Print("\n//    %s%s=",r->names[j-1],r->names[i-1]);
-            pl = MATELEM(r->GetNC()->MT[UPMATELEM(i,j,r->N)],1,1);
-            p_Write0(pl, r, r);
+            p_Write0(nc_GetMT(j, i, 1, 1, r), r, r);
           }
         }
       }

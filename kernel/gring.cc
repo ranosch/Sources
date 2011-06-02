@@ -51,6 +51,10 @@
 #endif
 
 
+#ifndef NDEBUG
+# define _COUNTS_
+#endif
+
 
 int  iNCExtensions = 0x00001; // only SCA can be used by default
 
@@ -74,13 +78,24 @@ bool ncExtensions(int iMask) //  = 0x0FFFF
 }
 
 
+#define USE_CONST 
+// #define USE_CONST const
 
-
-static const bool bNoPluralMultiplication = false;  // use only formula shortcuts in my OOP Multiplier
+/// use only formula shortcuts in my OOP Multiplier
+// static 
+USE_CONST BOOLEAN bNoPluralMultiplication = FALSE;
 
 // the following make sense only if bNoPluralMultiplication is false:
-static const bool bNoFormula = true;  // don't use any formula shortcuts
-static const bool bNoCache   = false; // only formula whenever possible, only make sanse if bNoFormula is false!
+
+/// don't use any formula shortcuts 
+/// (only if bNoPluralMultiplication is false)
+// static 
+USE_CONST BOOLEAN bNoFormula = TRUE;
+
+/// only formula whenever possible, only make sanse if bNoFormula is false!
+/// (only if bNoPluralMultiplication is false)
+// static 
+USE_CONST BOOLEAN bNoCache   = FALSE;
 
 
 // false, true, false == old "good" Plural
@@ -982,83 +997,175 @@ poly gnc_mm_Mult_uu(int *F,int jG,int bG, const ring r)
   return (out);
 }
 
+
 poly gnc_uu_Mult_ww_vert (int i, int a, int j, int b, const ring r)
 {
+#ifdef _COUNTS_
+  PrintLn();
+  Print("gnc_uu_Mult_ww_vert: var(%d)^{%d}  *  var(%d)^{%d}", i, a, j, b);
+  PrintLn();
+#endif
+
+   
   int k,m;
   int rN=r->N;
-  const int cMTindex = UPMATELEM(j,i,rN);
-  matrix cMT=r->GetNC()->MT[cMTindex];         /* cMT=current MT */
+   
 
-  poly x=pOne();p_SetExp(x,j,1,r);p_Setm(x,r);
+  poly x=p_One(r);p_SetExp(x,j,1,r);p_Setm(x,r);
 /* var(j); */
-  poly y=pOne();p_SetExp(y,i,1,r);p_Setm(y,r);
+  poly y=p_One(r);p_SetExp(y,i,1,r);p_Setm(y,r);
 /*var(i);  for convenience */
 #ifdef PDEBUG
   p_Test(x,r);
   p_Test(y,r);
 #endif
-  poly t=NULL;
+  poly t=NULL; poly fake;
+ 
+   
 /* ------------ Main Cycles ----------------------------*/
 
-  for (k=2;k<=a;k++)
+  if(!bNoCache)
   {
-     t = MATELEM(cMT,k,1);
+     // assumes that the entry have not been computed yet...
+     assume(nc_GetMT(i,j,a,b,r)==NULL);
 
-     if (t==NULL)   /* not computed yet */
+     
+     
+     // start with computing t = y^2*x (y*x is assumed to be know already)
+     // and proceed with computing t=y*t (a-1 times) and than t=t*x (b-1 times)
+     // while saving every intermediate temporary product for reuse...
+
+     t = NULL;
+     
+     for (k=2; k<=a; k++)
      {
-       t = nc_p_CopyGet(MATELEM(cMT,k-1,1),r);
-       //        t=p_Copy(MATELEM(cMT,k-1,1),r);
-       t = gnc_mm_Mult_p(y,t,r);
-       cMT=r->GetNC()->MT[cMTindex]; // since multiplication can change the MT table...
-       assume( t != NULL );
+	if (nc_GetMT(i,j,k,1,r)==NULL)   /* not computed yet */
+	{
+	   //        t=p_Copy(nc_GetMT(i,j,k-1,1,r),r);
+	   t = gnc_mm_Mult_pp(y,nc_GetMT(i,j,k-1,1,r),r); // induction... in 1st variable
+
+	   assume( t != NULL );
 #ifdef PDEBUG
-       p_Test(t,r);
+	   p_Test(t,r);
 #endif
-       MATELEM(cMT,k,1) = nc_p_CopyPut(t,r);
-       //        omCheckAddr(cMT->m);
-       p_Delete(&t,r);
+	   nc_SetMT(i,j,k,1,t,r); // // nc_p_CopyPut(t,r);
+	   k++;
+	   break;
+	   // // p_Delete(&t,r);
+	   //        omCheckAddr(cMT->m);
+	}
      }
-     t=NULL;
-  }
 
-  for (m=2;m<=b;m++)
-  {
-    t = MATELEM(cMT,a,m);
-    //     t=MATELEM(cMT,a,m);
-    if (t==NULL)   //not computed yet
-    {
-      t = nc_p_CopyGet(MATELEM(cMT,a,m-1),r);
-      assume( t != NULL );
-      //      t=p_Copy(MATELEM(cMT,a,m-1),r);
-      t = gnc_p_Mult_mm(t,x,r);
-      cMT=r->GetNC()->MT[cMTindex]; // since multiplication can change the MT table...
-#ifdef PDEBUG
-      p_Test(t,r);
-#endif
-      MATELEM(cMT,a,m) = nc_p_CopyPut(t,r);
-      //      MATELEM(cMT,a,m) = t;
-      //        omCheckAddr(cMT->m);
-      p_Delete(&t,r);
-    }
-    t=NULL;
-  }
-  p_Delete(&x,r);
-  p_Delete(&y,r);
-  t=MATELEM(cMT,a,b);
-  assume( t != NULL );
+     // normally: k == a+1 && t == NULL 
+     // OR:       k <= a   && t = last product (!= NULL)
+     assume( ((t == NULL) && (k == a+1)) || ((t != NULL) && (k <= (a+1))) );
 
-  t= nc_p_CopyGet(t,r);
+     while(k <= a)
+     {
+	assume( t != NULL );
+	t = gnc_mm_Mult_pp(y,t,r);
+
+	assume( t != NULL );
 #ifdef PDEBUG
-  p_Test(t,r);
+	p_Test(t,r);
 #endif
-  //  return(p_Copy(t,r));
-  /* since the last computed element was cMT[a,b] */
+	nc_SetMT(i,j,k,1, t,r);
+	k++;
+     }
+
+     // either t == NULL || not...
+     m = 2;
+     if( t == NULL )
+     while ( m<=b )
+     {
+	// t=MATELEM(cMT,a,m);
+	if (nc_GetMT(i,j,a,m, r)==NULL)   //not computed yet
+	{
+	   //      t=p_Copy(MATELEM(cMT,a,m-1),r);
+	   t = gnc_pp_Mult_mm(nc_GetMT(i,j,a,m-1, r),x,r,fake);
+#ifdef PDEBUG
+	   p_Test(t,r);
+#endif
+	   nc_SetMT(i,j,a,m, t,r); // // nc_p_CopyPut(t,r);
+	   m++;
+	   break;
+
+//	   MATELEM(cMT,a,m) = nc_p_CopyPut(t,r);
+//	   //      MATELEM(cMT,a,m) = t;
+//	   //        omCheckAddr(cMT->m);
+//	   p_Delete(&t,r); // can be avoided!
+	}
+	m++;
+     }
+
+     // normally: m == b+1 && t == NULL 
+     // OR:       k <= a   && t = last product (!= NULL)
+
+     while(m <= b)
+     {
+	assume( t != NULL );
+	t = gnc_pp_Mult_mm(t,x,r,fake);
+
+	assume( t != NULL );
+#ifdef PDEBUG
+	p_Test(t,r);
+#endif
+	nc_SetMT(i,j,a,m, t,r); // // nc_p_CopyPut(t,r);
+	m++;
+     }
+
+     assume( t != NULL );
+#ifdef PDEBUG
+     p_Test(t,r);
+#endif
+
+     assume( t == nc_GetMT(i,j,a,b,r)  );
+     
+     t = p_Copy(t, r);
+  } else
+  { // no cache?
+     t = p_Copy(nc_GetMT(i,j,1,1,r),r); // rather than use C/D...
+     assume( t != NULL );
+     for (k=2; k<=a; k++)
+     {
+	t = gnc_mm_Mult_p(y,t,r);
+	assume( t != NULL );
+#ifdef PDEBUG
+	p_Test(t,r);
+#endif
+     }
+     for (m=2; m<=b; m++)
+     {
+	t = gnc_p_Mult_mm(t,x,r);
+	assume( t != NULL );
+#ifdef PDEBUG
+	p_Test(t,r);
+#endif
+     }
+  }
+     
+   p_Delete(&x,r);
+   p_Delete(&y,r);
+
+   assume( t != NULL );
+#ifdef PDEBUG
+   p_Test(t,r);
+#endif
+
+   //  return(p_Copy(t,r));
+   /* since the last computed element was cMT[a,b] */
   return(t);
 }
 
-
 static inline poly gnc_uu_Mult_ww_formula (int i, int a, int j, int b, const ring r)
 {
+#ifdef _COUNTS_
+  PrintLn();
+  Print("gnc_uu_Mult_ww_formula: var(%d)^{%d}  *  var(%d)^{%d}", i, a, j, b);
+  PrintLn();
+#endif
+   
+  /// ???
   if(bNoFormula)
     return gnc_uu_Mult_ww_vert(i, a, j, b, r);
 
@@ -1070,46 +1177,55 @@ static inline poly gnc_uu_Mult_ww_formula (int i, int a, int j, int b, const rin
 
 
   if( PairType == _ncSA_notImplemented )
-    return gnc_uu_Mult_ww_vert(i, a, j, b, r);
-
+    return gnc_uu_Mult_ww_vert(i, a, j, b, r); // should also cache if necessary
 
  //    return FormulaMultiplier->Multiply(j, i, b, a);
   poly t = CFormulaPowerMultiplier::Multiply( PairType, j, i, b, a, r);
 
-  int rN=r->N;
-  matrix cMT = r->GetNC()->MT[UPMATELEM(j,i,rN)];         /* cMT=current MT */
-
-
-  MATELEM(cMT, a, b) = nc_p_CopyPut(t,r);
-
-  //  t=MATELEM(cMT,a,b);
-//  t= nc_p_CopyGet(MATELEM(cMT,a,b),r);
-  //  return(p_Copy(t,r));
-  /* since the last computed element was cMT[a,b] */
+  if(!bNoCache)
+     nc_SetMT(i,j,a,b, p_Copy(t, r),r);
+   
   return(t);
 }
-
 
 poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
   /* (x_i)^a times (x_j)^b */
   /* x_i = y,  x_j = x ! */
 {
+#ifdef _COUNTS_
+  static int level = 0;
+  PrintLn();
+  Print("gnc_uu_Mult_ww[%3d]: var(%d)^{%d}  *  var(%d)^{%d}?", level++, i, a, j, b);
+  PrintLn();
+#endif
+   
+   
   /* Check zero exceptions, (q-)commutativity and is there something to do? */
   assume(a!=0);
   assume(b!=0);
-  poly out=pOne();
+
   if (i<=j)
   {
+    poly out=p_One(r);
     p_SetExp(out,i,a,r);
     p_AddExp(out,j,b,r);
     p_Setm(out,r);
+#ifdef _COUNTS_
+    level --;
+#endif
     return(out);
   }/* zero exeptions and usual case */
   /*  if ((a==0)||(b==0)||(i<=j)) return(out); */
+   
+  assume(i > j);
 
   if (MATELEM(r->GetNC()->COM,j,i)!=NULL)
     /* commutative or quasicommutative case */
   {
+#ifdef _COUNTS_
+    level --;
+#endif
+    poly out=p_One(r);
     p_SetExp(out,i,a,r);
     p_AddExp(out,j,b,r);
     p_Setm(out,r);
@@ -1121,47 +1237,63 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
     {
       number tmp_number=p_GetCoeff(MATELEM(r->GetNC()->COM,j,i),r); /* quasicommutative case */
       nPower(tmp_number,a*b,&tmp_number); // BUG! ;-(
-      p_SetCoeff(out,tmp_number,r);
+      p_SetCoeff(out,tmp_number,r); // will destroy the coeff 1, may be avoided... 
       return(out);
     }
   }/* end_of commutative or quasicommutative case */
-  p_Delete(&out,r);
+  poly out;
 
+  // no cache to be used?
+  if(bNoCache)
+  {
+     // use formula?
+     if(!bNoFormula) // don't use cache whenever possible!
+       { // without cache!?
+	  CFormulaPowerMultiplier* FormulaMultiplier = GetFormulaPowerMultiplier(r);
 
-  if(bNoCache && !bNoFormula) // don't use cache whenever possible!
-  { // without cache!?
-    CFormulaPowerMultiplier* FormulaMultiplier = GetFormulaPowerMultiplier(r);
-    Enum_ncSAType PairType = _ncSA_notImplemented;
+	  if( FormulaMultiplier != NULL )
+	    {
+	       Enum_ncSAType PairType = FormulaMultiplier->GetPair(j, i);
 
-     if( FormulaMultiplier != NULL )
-       PairType = FormulaMultiplier->GetPair(j, i);
-
-     if( PairType != _ncSA_notImplemented )
-  // //    return FormulaMultiplier->Multiply(j, i, b, a);
-       return CFormulaPowerMultiplier::Multiply( PairType, j, i, b, a, r);
+	       if( PairType != _ncSA_notImplemented )
+		 {
+		    // //    return FormulaMultiplier->Multiply(j, i, b, a);
+		    out = CFormulaPowerMultiplier::Multiply( PairType, j, i, b, a, r);
+#ifdef _COUNTS_
+		    level --;
+#endif
+		    return out;
+		 }      
+       
+	    }
+       }
   }
-
-
+   
+  if( !bNoCache )
+  {     
+	
   /* we are here if  i>j and variables do not commute or quasicommute */
   /* in fact, now a>=1 and b>=1; and j<i */
   /* now check whether the polynomial is already computed */
-  int rN=r->N;
-  int vik = UPMATELEM(j,i,rN);
-  int cMTsize=r->GetNC()->MTsize[vik];
+  const int rN=r->N;
+  const int vik = UPMATELEM(j,i,rN);
+  int cMTsize=r->GetNC()->ppMTsize[vik];
   int newcMTsize=0;
   newcMTsize=si_max(a,b);
 
-  if (newcMTsize<=cMTsize)
-  {
-    out =  nc_p_CopyGet(MATELEM(r->GetNC()->MT[vik],a,b),r);
-    if (out !=NULL) return (out);
-  }
+  // need bigger cache?
   int k,m;
+
   if (newcMTsize > cMTsize)
   {
     int inM=(((newcMTsize+6)/7)*7);
     assume (inM>=newcMTsize);
     newcMTsize = inM;
+#ifdef _COUNTS_
+    PrintLn();
+    Print("gnc_uu_Mult_ww[%3d]: resizing the cache for [var(%d), var(%d)]: %d^2 -> %d^2!", level, i, j, cMTsize, newcMTsize);
+    PrintLn();
+#endif
     //    matrix tmp = (matrix)omAlloc0(inM*inM*sizeof(poly));
     matrix tmp = mpNew(newcMTsize,newcMTsize);
 
@@ -1169,41 +1301,68 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
     {
       for (m=1;m<=cMTsize;m++)
       {
-        out = MATELEM(r->GetNC()->MT[UPMATELEM(j,i,rN)],k,m);
+        out = MATELEM(r->GetNC()->ppMT[vik],k,m);
+	 
         if ( out != NULL )
         {
-          MATELEM(tmp,k,m) = out;/*MATELEM(r->GetNC()->MT[UPMATELEM(j,i,rN)],k,m)*/
+          MATELEM(tmp,k,m) = out;/*MATELEM(r->GetNC()->MT[vik],k,m)*/
           //           omCheckAddr(tmp->m);
-          MATELEM(r->GetNC()->MT[UPMATELEM(j,i,rN)],k,m)=NULL;
-          //           omCheckAddr(r->GetNC()->MT[UPMATELEM(j,i,rN)]->m);
+          MATELEM(r->GetNC()->ppMT[vik],k,m)=NULL;
+          //           omCheckAddr(r->GetNC()->MT[vik]->m);
           out=NULL;
         }
       }
     }
-    id_Delete((ideal *)&(r->GetNC()->MT[UPMATELEM(j,i,rN)]),r);
-    r->GetNC()->MT[UPMATELEM(j,i,rN)] = tmp;
+    id_Delete((ideal *)&(r->GetNC()->ppMT[vik]),r);
+    r->GetNC()->ppMT[vik] = tmp;
     tmp=NULL;
-    r->GetNC()->MTsize[UPMATELEM(j,i,rN)] = newcMTsize;
+    r->GetNC()->ppMTsize[vik] = newcMTsize;
   }
   /* The update of multiplication matrix is finished */
-
-
-  return gnc_uu_Mult_ww_formula(i, a, j, b, r);
-
-  out = gnc_uu_Mult_ww_vert(i, a, j, b, r);
-  //    out = nc_uu_Mult_ww_horvert(i, a, j, b, r);
-  return(out);
+     
+  // try using the cached value?
+  out =  nc_GetMT(i,j,a,b,r);
+  if (out !=NULL) 
+  {
+#ifdef _COUNTS_
+     PrintLn();
+     Print("gnc_uu_Mult_ww[%3d--]: used cached value for [var(%d)^{%d}  *  var(%d)^{%d}]!", level, i, a, j, b);
+     PrintLn();
+     level --;       
+#endif
+     return (p_Copy(out,r));
+  }
+     
+  } // with cache
+  
+  // no cached result => compute...
+  out = gnc_uu_Mult_ww_formula(i, a, j, b, r); // should also cache it necessary
+#ifdef _COUNTS_
+   level --;
+#endif
+  return out;
+     
+  // out = gnc_uu_Mult_ww_vert(i, a, j, b, r);
+  // //   out = nc_uu_Mult_ww_horvert(i, a, j, b, r);
+  // return(out);
 }
 
+
+#if 0
 poly gnc_uu_Mult_ww_horvert (int i, int a, int j, int b, const ring r)
 
 {
+#ifdef _COUNTS_
+  PrintLn();
+  Print("gnc_uu_Mult_ww_horvert: var(%d)^{%d}  *  var(%d)^{%d}?", i, a, j, b);
+  PrintLn();
+#endif
   int k,m;
   int rN=r->N;
   matrix cMT=r->GetNC()->MT[UPMATELEM(j,i,rN)];         /* cMT=current MT */
 
-  poly x=pOne();p_SetExp(x,j,1,r);p_Setm(x,r);/* var(j); */
-  poly y=pOne();p_SetExp(y,i,1,r);p_Setm(y,r); /*var(i);  for convenience */
+  poly x=p_One(r);p_SetExp(x,j,1,r);p_Setm(x,r);/* var(j); */
+  poly y=p_One(r);p_SetExp(y,i,1,r);p_Setm(y,r); /*var(i);  for convenience */
 #ifdef PDEBUG
   p_Test(x,r);
   p_Test(y,r);
@@ -1384,6 +1543,7 @@ poly gnc_uu_Mult_ww_horvert (int i, int a, int j, int b, const ring r)
   t=p_Copy(MATELEM(cMT,a,b),r);
   return(t);  /* since the last computed element was cMT[a,b] */
 }
+#endif
 
 
 /* ----------------------------- Syzygies ---------------------- */
@@ -2079,7 +2239,7 @@ void gnc_kBucketPolyRed_ZOld(kBucket_pt b, poly p, number *c)
 {
   // b is multiplied by a constant in this impl.
   number ctmp;
-  poly m=pOne();
+  poly m=pOne(); // bucket ring?!
   pExpVectorDiff(m,kBucketGetLm(b),p);
   //pSetm(m);
 #ifdef PDEBUG
@@ -2111,7 +2271,7 @@ void gnc_kBucketPolyRed_ZNew(kBucket_pt b, poly p, number *c)
 {
   // b is multiplied by a constant in this impl.
   number ctmp;
-  poly m=pOne(); // bucket ring?!
+  poly m=pOne();
   pExpVectorDiff(m,kBucketGetLm(b),p);
   //pSetm(m);
 #ifdef PDEBUG
@@ -2627,8 +2787,8 @@ matrix nc_PrintMat(int a, int b, ring r, int metric)
   else {j=a; i=b;}
   /* i<j */
   int rN=r->N;
-  int size=r->GetNC()->MTsize[UPMATELEM(i,j,rN)];
-  matrix M = r->GetNC()->MT[UPMATELEM(i,j,rN)];
+  int size=r->GetNC()->ppMTsize[UPMATELEM(i,j,rN)];
+  matrix M = r->GetNC()->ppMT[UPMATELEM(i,j,rN)];
   /*  return(M); */
   int sizeofres;
   if (metric==0)
@@ -2720,11 +2880,11 @@ void nc_rKill(ring r)
     {
       for(j=i+1;j<=rN;j++)
       {
-        id_Delete((ideal *)&(r->GetNC()->MT[UPMATELEM(i,j,rN)]),r);
+        id_Delete((ideal *)&(r->GetNC()->ppMT[UPMATELEM(i,j,rN)]),r);
       }
     }
-    omFreeSize((ADDRESS)r->GetNC()->MT,rN*(rN-1)/2*sizeof(matrix));
-    omFreeSize((ADDRESS)r->GetNC()->MTsize,rN*(rN-1)/2*sizeof(int));
+    omFreeSize((ADDRESS)r->GetNC()->ppMT,rN*(rN-1)/2*sizeof(matrix));
+    omFreeSize((ADDRESS)r->GetNC()->ppMTsize,rN*(rN-1)/2*sizeof(int));
     id_Delete((ideal *)&(r->GetNC()->COM),r);
   }
   id_Delete((ideal *)&(r->GetNC()->C),r);
@@ -3248,24 +3408,26 @@ BOOLEAN gnc_InitMultiplication(ring r, bool bSetupQuotient)
        && (currRing->GetNC()!=NULL) );   // otherwise we cannot work with all these matrices!
 
   int i,j;
-  r->GetNC()->MT = (matrix *)omAlloc0((r->N*(r->N-1))/2*sizeof(matrix));
-  r->GetNC()->MTsize = (int *)omAlloc0((r->N*(r->N-1))/2*sizeof(int));
+  r->GetNC()->ppMT = (matrix *)omAlloc0((r->N*(r->N-1))/2*sizeof(matrix));
+  r->GetNC()->ppMTsize = (int *)omAlloc0((r->N*(r->N-1))/2*sizeof(int));
   idTest(((ideal)r->GetNC()->C));
   matrix COM = mpCopy(r->GetNC()->C);
   poly p,q;
-  short DefMTsize=7;
   int IsNonComm=0;
   int tmpIsSkewConstant;
+  const short DefMTsize=7; // defalut size of the cache table: 7^2!
 
+  // Create (square) caches for EACH pair of variables (with, at least one entry at [1,1])
   for(i=1; i<r->N; i++)
   {
     for(j=i+1; j<=r->N; j++)
     {
+      // allocate...
       if ( MATELEM(r->GetNC()->D,i,j) == NULL ) /* quasicommutative case */
       {
         /* 1x1 mult.matrix */
-        r->GetNC()->MTsize[UPMATELEM(i,j,r->N)] = 1;
-        r->GetNC()->MT[UPMATELEM(i,j,r->N)] = mpNew(1,1);
+        r->GetNC()->ppMTsize[UPMATELEM(i,j,r->N)] = 1;
+        r->GetNC()->ppMT[UPMATELEM(i,j,r->N)] = mpNew(1,1);
       }
       else /* pure noncommutative case */
       {
@@ -3273,8 +3435,8 @@ BOOLEAN gnc_InitMultiplication(ring r, bool bSetupQuotient)
         IsNonComm = 1;
         p_Delete(&(MATELEM(COM,i,j)),r);
         //MATELEM(COM,i,j) = NULL; // done by p_Delete
-        r->GetNC()->MTsize[UPMATELEM(i,j,r->N)] = DefMTsize; /* default sizes */
-        r->GetNC()->MT[UPMATELEM(i,j,r->N)] = mpNew(DefMTsize, DefMTsize);
+        r->GetNC()->ppMTsize[UPMATELEM(i,j,r->N)] = DefMTsize; /* default sizes */
+        r->GetNC()->ppMT[UPMATELEM(i,j,r->N)] = mpNew(DefMTsize, DefMTsize);
       }
        
       // set MT[i,j,1,1] to c_i_j*x_i*x_j + D_i_j (i.e. x_j * x_i)
@@ -3287,9 +3449,8 @@ BOOLEAN gnc_InitMultiplication(ring r, bool bSetupQuotient)
       p_Test(MATELEM(r->GetNC()->D,i,j),r);
       q =  nc_p_CopyGet(MATELEM(r->GetNC()->D,i,j),r);
       p = p_Add_q(p,q,r);
-      MATELEM(r->GetNC()->MT[UPMATELEM(i,j,r->N)],1,1) = nc_p_CopyPut(p,r);
-      p_Delete(&p,r);
-      // p = NULL;// done by p_Delete
+      MATELEM(r->GetNC()->ppMT[UPMATELEM(i,j,r->N)],1,1) = p; // nc_p_CopyPut(p,r); p_Delete(&p,r);
+      p = NULL;// done by p_Delete
     }
   }
   if (ncRingType(r)==nc_undef)
