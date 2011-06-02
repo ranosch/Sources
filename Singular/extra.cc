@@ -1148,23 +1148,31 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
           {
             a=(int)((long)(h->Data()));
             h=h->next;
-          }
-          else if ((h!=NULL) && (h->Typ()==INT_CMD))
+          } else
+            return TRUE;
+
+          
+	  if ((h!=NULL) && (h->Typ()==INT_CMD))
           {
             b=(int)((long)(h->Data()));
             h=h->next;
-          }
-          else if ((h!=NULL) && (h->Typ()==RING_CMD))
+          } else
+            return TRUE;
+	 
+	 
+          if ((h!=NULL) && (h->Typ()==RING_CMD || h->Typ()==QRING_CMD))
           {
             r=(ring)h->Data();
             h=h->next;
-          }
-          else
+          } else
             return TRUE;
+	 
           if ((h!=NULL) && (h->Typ()==INT_CMD))
           {
             metric=(int)((long)(h->Data()));
-          }
+          } else
+            return TRUE;
+
           res->rtyp=MATRIX_CMD;
           if (rIsPluralRing(r)) res->data=nc_PrintMat(a,b,r,metric);
           else res->data=NULL;

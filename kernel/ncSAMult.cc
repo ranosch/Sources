@@ -250,8 +250,7 @@ static void ggnc_p_ProcsSet(ring rGR, p_Procs_s* p_Procs)
   rGR->GetNC()->p_Procs.mm_Mult_pp  = ggnc_mm_Mult_pp;
 
 }
-
-};
+}
 
 bool ncInitSpecialPairMultiplication(ring r)
 {
@@ -513,7 +512,7 @@ CCommutativeSpecialPairMultiplier::CCommutativeSpecialPairMultiplier(ring r, int
   Print("CCommutativeSpecialPairMultiplier::CCommutativeSpecialPairMultiplier(ring, i: %d, j: %d)!", i, j);
   PrintLn();
 #endif
-};
+}
 
 
 CCommutativeSpecialPairMultiplier::~CCommutativeSpecialPairMultiplier()
@@ -545,7 +544,7 @@ CAntiCommutativeSpecialPairMultiplier::CAntiCommutativeSpecialPairMultiplier(rin
 	Print("CAntiCommutativeSpecialPairMultiplier::CAntiCommutativeSpecialPairMultiplier(ring, i: %d, j: %d)!", i, j);
 	PrintLn();
 #endif
-};
+}
 
 
 CAntiCommutativeSpecialPairMultiplier::~CAntiCommutativeSpecialPairMultiplier()
@@ -579,7 +578,7 @@ CQuasiCommutativeSpecialPairMultiplier::CQuasiCommutativeSpecialPairMultiplier(r
 	PrintS("Parameter q: ");
 	n_Write(q, r);
 #endif
-};
+}
 
 
 CQuasiCommutativeSpecialPairMultiplier::~CQuasiCommutativeSpecialPairMultiplier()
@@ -614,7 +613,7 @@ CWeylSpecialPairMultiplier::CWeylSpecialPairMultiplier(ring r, int i, int j, num
   PrintS("Parameter g: ");
   n_Write(g, r);
 #endif
-};
+}
 
 
 CWeylSpecialPairMultiplier::~CWeylSpecialPairMultiplier()
@@ -652,8 +651,7 @@ CShiftSpecialPairMultiplier::CShiftSpecialPairMultiplier(ring r, int i, int j, i
   PrintLn();
   PrintS("Parameter c: "); n_Write(c, r);
 #endif
-};
-
+}
 
 CShiftSpecialPairMultiplier::~CShiftSpecialPairMultiplier()
 {
@@ -693,7 +691,7 @@ CExternalSpecialPairMultiplier::CExternalSpecialPairMultiplier(ring r, int i, in
   Print("CExternalSpecialPairMultiplier::CExternalSpecialPairMultiplier(ring, i: %d, j: %d, type: %d, c)!", i, j, (int)type);
   PrintLn();
 #endif
-};
+}
 
 
 CExternalSpecialPairMultiplier::~CExternalSpecialPairMultiplier()
@@ -996,10 +994,11 @@ poly CPowerMultiplier::MultiplyEE(const CExponent expLeft, const CExponent expRi
       assume(0);
 
 //      product = NULL;
+      return NULL;  
     }
   }
   
-  return NULL;  
+  return NULL; // reached?
 }
 
 

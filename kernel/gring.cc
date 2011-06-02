@@ -2,9 +2,9 @@
 *  Computer Algebra System SINGULAR     *
 ****************************************/
 /***************************************************************
- *  File:    gring.cc
+ *  File   : gring.cc
  *  Purpose: noncommutative kernel procedures
- *  Author:  levandov (Viktor Levandovsky)
+ *  Authors: levandov, hannes, motsak
  *  Created: 8/00 - 11/00
  *  Version: $Id$
  *******************************************************************/
@@ -484,7 +484,7 @@ poly gnc_mm_Mult_nn(int *F0, int *G0, const ring r)
   while ((F[iF]==0)&&(iF>=1)) iF--; /* last exp_num of F */
   if (iF==0) /* F0 is zero vector */
   {
-    out=pOne();
+    out=p_One(r);
     p_SetExpV(out,G0,r);
     p_Setm(out,r);
     freeT(F,rN);
@@ -496,7 +496,7 @@ poly gnc_mm_Mult_nn(int *F0, int *G0, const ring r)
   iG=rN;
   while ((G[iG]==0)&&(iG>1)) iG--;  /* last exp_num of G */
 
-  out=pOne();
+  out=p_One(r);
 
   if (iF<=jG)
     /* i.e. no mixed exp_num , MERGE case */
@@ -639,7 +639,7 @@ poly gnc_mm_Mult_nn(int *F0, int *G0, const ring r)
   cnt=1;
   int t=0;
   poly w=NULL;
-  poly Pn=pOne();
+  poly Pn=p_One(r);
   p_SetExpV(Pn,On,r);
   p_Setm(Pn,r);
 
@@ -695,7 +695,7 @@ poly gnc_mm_Mult_nn(int *F0, int *G0, const ring r)
 
   /* leadterm and Prv-part */
 
-  Rout=pOne();
+  Rout=p_One(r);
   /* U is lead.monomial */
   U[0]=0;
   p_SetExpV(Rout,U,r);
@@ -826,7 +826,7 @@ poly gnc_mm_Mult_uu(int *F,int jG,int bG, const ring r)
   if (cnt==1) /* Nxt consists of 1 nonzero el-t only */
   {
     int q=lF[1];
-    poly Rout=pOne();
+    poly Rout=p_One(r);
     out=gnc_uu_Mult_ww(q,Nxt[q],jG,bG,r);
 
     freeT(Nxt,rN);  Nxt = NULL;
@@ -1406,7 +1406,7 @@ poly gnc_ReduceSpolyOld(const poly p1, poly p2/*,poly spNoether*/, const ring r)
     return(NULL);
   }
 #endif
-  poly m = pOne();
+  poly m = p_One(r);
   p_ExpVectorDiff(m,p2,p1,r);
   //p_Setm(m,r);
 #ifdef PDEBUG
@@ -1461,7 +1461,7 @@ poly gnc_ReduceSpolyNew(const poly p1, poly p2, const ring r)
     return(NULL);
   }
 
-  poly m = pOne();
+  poly m = p_One(r);
   p_ExpVectorDiff(m, p2, p1, r);
   //p_Setm(m,r);
 #ifdef PDEBUG
@@ -1528,10 +1528,10 @@ poly gnc_CreateSpolyOld(poly p1, poly p2/*,poly spNoether*/, const ring r)
   {
     return(nc_p_Bracket_qq(pCopy(p2),p1));
   }
-  poly pL=pOne();
-  poly m1=pOne();
-  poly m2=pOne();
-  pLcm(p1,p2,pL);
+  poly pL=p_One(r);
+  poly m1=p_One(r);
+  poly m2=p_One(r);
+  pLcm(p1,p2,pL); // r?
   p_Setm(pL,r);
 #ifdef PDEBUG
   p_Test(pL,r);
@@ -1889,7 +1889,7 @@ void gnc_ReduceSpolyTail(poly p1, poly q, poly q2, poly spNoether, const ring r)
   poly a1=p_Head(p1,r);
   poly Q=pNext(q2);
   number cQ=p_GetCoeff(Q,r);
-  poly m=pOne();
+  poly m=p_One(r);
   p_ExpVectorDiff(m,Q,p1,r);
   //  p_SetComp(m,0,r);
   //p_Setm(m,r);
@@ -1969,7 +1969,7 @@ void gnc_kBucketPolyRedOld(kBucket_pt b, poly p, number *c)
   // b will not be multiplied by any constant in this impl.
   // ==> *c=1
   if (c!=NULL) *c=nInit(1);
-  poly m=pOne();
+  poly m=pOne(); // bucket ring...!
   pExpVectorDiff(m,kBucketGetLm(b),p);
   //pSetm(m);
 #ifdef PDEBUG
@@ -2016,7 +2016,7 @@ void gnc_kBucketPolyRedNew(kBucket_pt b, poly p, number *c)
   // b will not be multiplied by any constant in this impl.
   // ==> *c=1
   if (c!=NULL) *c=nInit(1);
-  poly m = pOne();
+  poly m = pOne(); // bucket ring...?
   const poly pLmB = kBucketGetLm(b); // no new copy!
 
   assume( pLmB != NULL );
@@ -2111,7 +2111,7 @@ void gnc_kBucketPolyRed_ZNew(kBucket_pt b, poly p, number *c)
 {
   // b is multiplied by a constant in this impl.
   number ctmp;
-  poly m=pOne();
+  poly m=pOne(); // bucket ring?!
   pExpVectorDiff(m,kBucketGetLm(b),p);
   //pSetm(m);
 #ifdef PDEBUG
@@ -3276,8 +3276,9 @@ BOOLEAN gnc_InitMultiplication(ring r, bool bSetupQuotient)
         r->GetNC()->MTsize[UPMATELEM(i,j,r->N)] = DefMTsize; /* default sizes */
         r->GetNC()->MT[UPMATELEM(i,j,r->N)] = mpNew(DefMTsize, DefMTsize);
       }
-      /* set MT[i,j,1,1] to c_i_j*x_i*x_j + D_i_j */
-      p = p_One(r); /* instead of     p = pOne(); */
+       
+      // set MT[i,j,1,1] to c_i_j*x_i*x_j + D_i_j (i.e. x_j * x_i)
+      p = p_One(r); 
       if (MATELEM(r->GetNC()->C,i,j)!=NULL)
         p_SetCoeff(p,n_Copy(pGetCoeff(MATELEM(r->GetNC()->C,i,j)),r),r);
       p_SetExp(p,i,1,r);

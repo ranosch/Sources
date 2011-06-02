@@ -5246,8 +5246,10 @@ void rKill(ring r)
     {
       if (iiLocalRing[j]==r)
       {
-        if (j<myynest) Warn("killing the basering for level %d",j);
-        iiLocalRing[j]=NULL;
+#ifdef RDEBUG
+        if (j<myynest) Warn("killing the basering for level %d (myynest: %d)",j, myynest);
+#endif
+	iiLocalRing[j]=NULL;
       }
     }
 #else /* USE_IILOCALRING */
@@ -5260,8 +5262,10 @@ void rKill(ring r)
       {
         if (nshdl->cRing==r)
         {
+#ifdef RDEBUG
           Warn("killing the basering for level %d",lev);
-          nshdl->cRing=NULL;
+#endif
+	  nshdl->cRing=NULL;
           nshdl->cRingHdl=NULL;
         }
       }
