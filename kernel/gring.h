@@ -252,7 +252,15 @@ inline ideal nc_GB(const ideal F, const ideal Q, const intvec *w, const intvec *
 
 
 // Macros used to access upper triangle matrices C,D... (which are actually ideals) // afaik
-#define UPMATELEM(i,j,nVar) ( (nVar * ((i)-1) - ((i) * ((i)-1))/2 + (j)-1)-(i) )
+//#define UPMATELEM(i,j,nVar) ( (nVar * ((i)-1) - ((i) * ((i)-1))/2 + (j)-1)-(i) )
+static inline int UPMATELEM(const int i, const int j, const int nVar)
+{
+   assume(i < j);
+   assume(0 < i && j <= nVar);
+
+   return (nVar * ((i)-1) - ((i) * ((i)-1))/2 + (j)-1)-(i);
+}
+
 
 
 // inline const nc_struct* GetNC() const { return GetBasering()->GetNC(); } 

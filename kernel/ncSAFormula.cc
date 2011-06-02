@@ -29,7 +29,7 @@
 #endif
 
 
-#include <ncSAFormula.h> // for CFormulaPowerMultiplier
+#include "ncSAFormula.h" // for CFormulaPowerMultiplier
 
 #include <ring.h>
 #include <p_polys.h>

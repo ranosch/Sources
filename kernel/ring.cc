@@ -11,6 +11,10 @@
 #include <math.h>
 #include <kernel/mod2.h>
 
+#ifdef HAVE_PLURAL
+#define PLURAL_INTERNAL_DECLARATIONS
+#endif
+
 #include <kernel/options.h>
 #include <omalloc/omalloc.h>
 #include <kernel/polys.h>
