@@ -9,7 +9,7 @@
  *  Version: $Id$
  *******************************************************************/
 
-#define MYTEST 0
+#define MYTEST 1
 
 #if MYTEST
 #define OM_CHECK 4
