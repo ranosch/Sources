@@ -2775,6 +2775,33 @@ ideal twostd(ideal I) // works in currRing only!
   } // loop
 }
 
+void nc_PrintMT(const ring r)
+{
+   const int N = r->N;
+   
+   for( int i = 1; i < N; i++ )
+     for( int j = i+1; j <= N; j++ )
+       {
+	  const int id = UPMATELEM(i,j,N);
+	  const int size=r->GetNC()->ppMTsize[id];
+	  const matrix M = r->GetNC()->ppMT[id];
+	  
+	  Print("{i: %d < j: %d} => => MTsize: %d, MT: ", i, j, size); PrintLn();
+
+	  for(int s=1; s<=size; s++)
+	    for(int t=1; t<=size; t++)
+	      {
+		 poly p = MATELEM(M, s,t);
+		 if( p != NULL )
+		 {
+		    Print("   [%3d,%3d]=> len: %4d, size: %4d, deg: %4d, p: ", s, t, pLength(p), pSize(p), pDeg(p,r)); // r == currRing!!!
+		    p_wrp(p, r, r);
+		    PrintLn();
+		 }
+	      }
+       }
+}
+
 
 matrix nc_PrintMat(int a, int b, ring r, int metric)
   /* returns matrix with the info on noncomm multiplication */
