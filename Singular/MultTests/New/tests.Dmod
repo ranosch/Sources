@@ -1,0 +1,142 @@
+in the computation of a global Bernstein-Sato polynomial
+of a hypersurface f in K[X] (char K = 0), we do the following steps
+I. compute Ann_D[s] f^s: left ideal in D[s], D = K<X,D> Weyl algebra;
+it is done by eliminating one variable (proc: SannfsBM)
+II. compute G=GB(Ann_D[s] f^s + <f>) in D[s] wrt any degree ordering (very hard)
+III. run pIntersect (K-linear dependency btw sequence of normal forms of s^i wrt  G) to get the Bernstein-Sato polynomial
+III'. Indeed the old way to approach this problem was to compute
+(Ann_D[s] f^s + <f>) \cap K[s] via elimination (eliminating 2N vars
+out of 2N+1), what is crazily complicated.
+
+The computations are really nontrivial, we can do most
+hypersurfaces in 2,3 variables, with 4 it depends on the badness
+of their singularities (important: for f smooth things are rather
+simple and not interseting). With 5,6,7 we've computed only a few things.
+
+LIBs used: dmod.lib, bfun.lib; implicitly: dmodapp.lib
+
+So, for the testing we need feasible but complicated stuff. Here we go.
+Keep me informed on the progress, have fun!
+With best regards,
+Viktor
+
+// header is the same for all
+LIB "dmod.lib";
+ring r=0,(x,y,z),dp;
+poly f = x^5 + y^7 + x*y^6; // eg Reiffen(5,7)-curve
+//// the following are possible execution schemes
+
+/// A. to get all d-mod data:
+// 1. bernsteinBM: I by SannfsBM-like stuff, then III'. complicated
+list L = bernsteinBM(f);
+
+// 2. annfsBM: I by SannfsBM-like stuff, then III' + more GBs; complicated
+
+def A = annfsBM(F); setring A;
+LD; BS;
+
+// 3. annfsOT: I by SannfsOT stuff, then III' + more GBs; complicated and much slower than BM
+
+def A = annfsOT(F); setring A;
+LD; BS;
+
+// 4. annfsLOT: I by SannfsLOT stuff, then III' + more GBs; complicated and slower than BM; computes in a tensor of Weyl and shift
+
+def A = annfsLOT(F); setring A;
+LD; BS;
+
+
+/// A'. to get d-mod data via initial ideals
+//header:
+LIB "bfun.lib";
+ring r = 0,(x,y,z),dp; // resp ring r = 0,(x,y,z,w),dp;
+poly f = x^5 + y^7 + x*y^6; // eg Reiffen(5,7)-curve as before
+bfct(f);
+
+// ****** choices for F: (see our ISSAC 2010 paper) **** //
+(z2+w3)*(2*z*x+3*w^2*y);
+x7z-xy6z+x6y-y7;
+(xz+y)*(x7-y7); // can vary 7 to higher nat numbers
+x4+y4+z4-(xyz)^3; // easy
+(xy+z)*(y4+z5+yz^4); // hard
+xyz(x+z)*(y-x)*(y-z)*(y+z);// hard
+xyz(x+z)*(x+y)*(3x+y-2z)*(y+z);// hard
+xyz(x-2z)*(x-y-z)*(x-y)*(y+z);// hard
+// ************************************************** //
+
+/// B. to get the B-operator: very complicated in general
+ ring r = 0,(x,y,z,w),Dp;
+ poly F = x^3+y^3+z^2*w;
+ def A = operatorBM(F); setring A;
+ F; // the original polynomial itself
+ LD; // generic annihilator
+ LD0; // annihilator
+ bs; // normalized Bernstein poly
+ BS; // roots and multiplicities of the Bernstein poly
+ PS; // the operator, s.t. PS*F^{s+1} = bs*F^s mod LD
+ reduce(PS*F-bs,LD); // must be zero
+
+//************other examples for Operators ********** //
+// 3 vars:
+ poly F = x^3+y^3+z^3; // easy
+ poly F = z*(x^4+y^5+x*y^4);// hard
+// 4 vars:
+ poly F = x^3+y^3+z^3+w^3; // easy
+ poly F = x^3+y^4+z^5+w^6; // medium+
+// ************************************************** //
+
+
+/// C. to get annihilator only: easier than group A
+// header setup is as before
+// 1. slow method of Oaku-Takayama
+def S = SannfsOT(f); setring S; LD;
+
+// 2. better method of L+Oaku-Takayama
+def S = SannfsLOT(f); setring S; LD;
+
+// 3. the fastest method of Briancon-Maisonobe
+def S = SannfsBM(f); setring S; LD;
+
+/// REMARK: in these stuff one can specify the Groebner engine,
+by default slimgb is used, but std is possible but much slower -
+it is worth trying as well (more computations are done by std)
+
+for instance, C.3 (and the rest of C) can be done with std as follows:
+def S = SannfsBM(f,1); setring S; LD;
+
+//*** choices for F as above *** //
+
+/// D. different algorithm, more complicated than for a single hypersurface, since it takes a tuple of polynomials into account
+a sort of multivariate BM-algorithm (multiple s_i instead of a single s)
+
+// header is different
+LIB "dmod.lib";
+ring r = 0,(x,y),Dp;
+// ex BMI_2, easy
+ideal F = x2+y3,x3+y2;
+
+def A = annfsBMI(F); setring A;
+LD; BS;
+
+/// ***** other examples for annfsBMI ****** ///
+// ex BMI_0, HARD
+ring r = 0,(x,y),Dp;
+ideal F = (x2-y3)*(x3-y2), (x2-y3)*(xy4+y5+x4);
+
+// ex BMI_007, HARD but easier than 0
+ring r = 0,(x,y),Dp;
+ideal F = (x2-y3)*(x3-y2), (xy4+y5+x4);
+
+// ex BMI_1, easy
+ring r = 0,(x,y),Dp;
+ideal F = x,y,x+y;
+
+// ex BMI_4, medium+
+ring r = 0,(x,y,z),Dp;
+ideal F = x+y,x-z,y+z,z;
+
+// ex BMI_5, medium+
+ring r = 0,(x,y,z),Dp;
+ideal F = x,y,z,x-z,y+z;
+
+//// end D.

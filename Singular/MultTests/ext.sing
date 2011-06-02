@@ -1,0 +1,105 @@
+LIB "tst.lib"; 
+
+system("--min-time", "0.01");
+system("--ticks-per-sec", 100);
+
+
+// system("NCUseExtensions");
+proc BeforeTest()
+{
+  "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+  "Basering: "; basering;
+  system("NCGetType");
+  system("NCMultTest", 0);
+  system("NCMultTest", -1);
+  system("omMemoryTest");
+  "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+  tst_init();
+}
+
+proc AfterTest()
+{
+  tst_status(1);
+  "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+  system("omMemoryTest");
+  system("NCMultTest", -1);
+  "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+}
+
+
+proc TestMult(int v, int S, int N, int M, int MM)
+{
+  int k, i, j; poly tt;
+  int step = 1;
+
+  if( S > N ){ step = -1; }
+  
+  int tBegin, tFinish;
+  if( v == 1 )
+  {
+    "&&&&&&&&&& TEST MULT: y^i * x, i being from: " + string(S) + "..." + string(N), " (repeat: ", M, ")";
+    BeforeTest();    
+    tBegin=timer;
+    for( k = MM; k>0; k-- )
+    {
+    for( i = 1; i <= N; i = i + step )
+    {
+      for(j = M; j>0; j--) { tt = var(2)^i * var(1); }
+    }
+    }
+    tFinish=timer;
+    AfterTest();
+  } else
+  {
+    "&&&&&&&&&& TEST MULT: y * x^i, i being from : " + string(S) + "..." + string(N), " (repeat: ", M, ")";
+    BeforeTest();
+    tBegin=timer;
+    for( k = MM; k>0; k-- )
+    {
+    for( i = 1; i <= N; i = i + step )
+    {
+      for(j = M; j>0; j--) { tt = var(2) * var(1)^i; }
+    }
+    }
+    tFinish=timer;
+    AfterTest();
+  }
+  i = (tFinish - tBegin);
+  "Timer => ", i;
+  return( i );
+
+}
+
+
+
+proc Test()
+{
+  int a = TestMult(1, 1, 50, 5, 5);
+  int b = TestMult(2, 1, 50, 5, 5);
+
+  "======>>>>>>  a: ", a, ",,,,,, b: ", b;
+}
+
+ring C = (0,q,a,b,g),(x,y),dp;
+def  A = nc_algebra(q, a*x + b*y + g);
+setring A; 
+
+
+Test();
+
+// change the defaults...
+system("NCMultTest", 1, 0);
+system("NCMultTest", 2, 0);
+system("NCMultTest", 3, 1); // tested setting: 1 (no caches...?)
+
+setring C;
+def  B = nc_algebra(q, a*x + b*y + g);
+setring B;
+
+Test();
+
+
+$
+
+
+
