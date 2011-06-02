@@ -1240,6 +1240,126 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
         return FALSE;
       }
 
+      if(strcmp(sys_cmd,"NCMultTest")==0)
+      {
+	const ring r = currRing;
+	 
+	extern BOOLEAN bNoPluralMultiplication;
+	extern BOOLEAN bNoFormula;
+	extern BOOLEAN bNoCache;
+
+        res->rtyp = NONE;
+	res->data = NULL;
+	 
+	int opt = 0;
+	if ((h!=NULL) && (h->Typ()==INT_CMD))
+	{
+	   opt = (int)((long)(h->Data()));
+	   h=h->next;
+	}
+        switch(opt)
+        {
+	 case -1:
+	 {
+	    extern void nc_PrintMT(const ring r);
+	    nc_PrintMT(r);
+	    break;
+	 }
+	 case 0: 
+	 {	   
+	    PrintLn();
+	    Print("********* NCMultTest (%d) ***********", opt);
+	    PrintLn();
+	 
+	    // use only formula shortcuts in my OOP Multiplier
+	    // static USE_CONST bool bNoPluralMultiplication = false;
+	    Print("%s (use only formula shortcuts in my OOP Multiplier): %s", "bNoPluralMultiplication", bNoPluralMultiplication?"true":"false");
+	    PrintLn();
+
+	    // the following make sense only if bNoPluralMultiplication is false:
+
+	    // don't use any formula shortcuts 
+	    //static USE_CONST bool bNoFormula = true;
+	    Print("%s (don't use any formula shortcuts): %s", "bNoFormula", bNoFormula?"true":"false");
+	    PrintLn();
+	    
+	    // only formula whenever possible, only make sanse if bNoFormula is false!
+	    // static USE_CONST bool bNoCache   = false; 
+	    Print("%s (only formula whenever possible): %s", "bNoCache", bNoCache?"true":"false");
+	    PrintLn();
+	    
+	    
+	    if( bNoPluralMultiplication )
+	      // true, *, *  == new OOP multiplication!
+	      PrintS("true, *, *  == new OOP multiplication!");
+	    else
+	      {
+		 if( bNoFormula )
+		   {
+		      if( !bNoCache )
+			// false, true, false == old "good" Plural
+			PrintS("// false, true, false == old 'good' Plural");
+		   } else
+		   {
+		      // false, false ==>> Plural + Cache + Direct Formula - not much
+		      PrintS("// false, false ==>> Plural + Cache + Direct Formula - not much");
+		      
+		      if( bNoCache )
+			// false, false, true ==>> Plural Mult + Direct Formula (no ~cache)
+			PrintS("// false, false, true ==>> Plural Mult + Direct Formula (no ~cache)");
+		   }
+	      }
+	    PrintLn();
+	 } // -1 => print some info
+	 case 1: 
+	     {
+		res->rtyp = INT_CMD;
+		res->data = (void*)bNoPluralMultiplication;
+		if ((h!=NULL) && (h->Typ()==INT_CMD))
+		  {
+		     bNoPluralMultiplication = (BOOLEAN)(int)((long)(h->Data()));
+		     Print("Set 'Plural' to: %d", bNoPluralMultiplication); PrintLn();	
+		     h=h->next;
+		  }
+		break;
+	     }
+	 case 2: 
+	     {
+		res->rtyp = INT_CMD;
+		res->data = (void*)bNoCache;
+		if ((h!=NULL) && (h->Typ()==INT_CMD))
+		  {
+		     bNoCache = (BOOLEAN)(int)((long)(h->Data()));
+		     Print("Set the 'Caching' to: %d", bNoCache); PrintLn();	
+		     h=h->next;
+		  }
+		break;
+	     }
+	 case 3: 
+	     {
+		res->rtyp = INT_CMD;
+		res->data = (void*)bNoFormula;
+		if ((h!=NULL) && (h->Typ()==INT_CMD))
+		  {
+		     bNoCache = (BOOLEAN)(int)((long)(h->Data()));
+		     Print("Set the 'usage of direct formulas' to: %d", bNoFormula); PrintLn();	
+		     h=h->next;
+		  }
+		break;
+	     }
+	 default:
+	     {
+		Print("Sorry: unknown command (%d)", opt);
+		PrintLn();
+		break;
+	     }
+	   
+	   
+	}
+	 
+	return FALSE;
+      }
+     
 
       if(strcmp(sys_cmd,"ForceSCA")==0)
       {
