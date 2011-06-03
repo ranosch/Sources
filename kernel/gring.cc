@@ -51,10 +51,7 @@
 #endif
 
 
-#ifndef NDEBUG
-# define _COUNTS_
-#endif
-
+const short DefMTsize=7; // defalut size of the cache table: 7^2!
 
 int  iNCExtensions = 0x00001; // only SCA can be used by default
 
@@ -1187,6 +1184,58 @@ static inline poly gnc_uu_Mult_ww_formula (int i, int a, int j, int b, const rin
    
   return(t);
 }
+     
+static inline void nc_enlargeMatrices(const int vik, const int oldSize, const int newSize, const ring r)
+{
+   // enlarges ccMT aswell!
+   const matrix MT = r->GetNC()->ppMT[vik];
+   
+   assume( MATCOLS(MT) == MATROWS(MT) );
+   assume( MATCOLS(MT) == oldSize );
+   assume( newSize > oldSize );
+   
+   const int newcMTsize=(((newSize+6)/7)*7);
+   assume (newSize<=newcMTsize);
+   
+#ifdef _COUNTS_
+    PrintLn();
+    Print("nc_enlargeMatrix: resizing the cache matrix [%d] from %d^2 to %d^2!", vik, oldSize, newcMTsize);
+    PrintLn();
+#endif
+   
+   matrix tmp = mpNew(newcMTsize, newcMTsize);
+
+     
+#ifdef _COUNTS_
+   int *ccMT = r->GetNC()->ccMT[vik];
+   int *ccMTtemp = (int *)omAlloc0(newcMTsize * newcMTsize * sizeof(int));
+#endif
+
+   
+   for (int k=1;k<=oldSize;k++)
+     for (int m=1;m<=oldSize;m++)
+      {
+	 MATELEM(tmp,k,m) = MATELEM(MT,k,m);	 
+	 MATELEM(MT,k,m)  = NULL;
+
+#ifdef _COUNTS_
+	 MATELEMENT(ccMTtemp,newcMTsize, k,m) = MATELEMENT(ccMT,oldSize, k,m);
+#endif
+      }
+
+   id_Delete((ideal *)&(MT),r);
+
+#ifdef _COUNTS_
+   omFreeSize((ADDRESS)ccMT, oldSize*oldSize*sizeof(int));
+   r->GetNC()->ccMT[vik] = ccMTtemp;
+#endif
+
+   r->GetNC()->ppMTsize[vik] = newcMTsize;
+   r->GetNC()->ppMT[vik] = tmp;
+
+   /* The update of multiplication matrix is finished */
+}
+
 
 poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
   /* (x_i)^a times (x_j)^b */
@@ -1277,56 +1326,23 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
   /* now check whether the polynomial is already computed */
   const int rN=r->N;
   const int vik = UPMATELEM(j,i,rN);
-  int cMTsize=r->GetNC()->ppMTsize[vik];
-  int newcMTsize=0;
-  newcMTsize=si_max(a,b);
+
+  const int cMTsize    = r->GetNC()->ppMTsize[vik];
+  const int newcMTsize = si_max(a,b);
 
   // need bigger cache?
-  int k,m;
-
   if (newcMTsize > cMTsize)
-  {
-    int inM=(((newcMTsize+6)/7)*7);
-    assume (inM>=newcMTsize);
-    newcMTsize = inM;
-#ifdef _COUNTS_
-    PrintLn();
-    Print("gnc_uu_Mult_ww[%3d]: resizing the cache for [var(%d), var(%d)]: %d^2 -> %d^2!", level, i, j, cMTsize, newcMTsize);
-    PrintLn();
-#endif
-    //    matrix tmp = (matrix)omAlloc0(inM*inM*sizeof(poly));
-    matrix tmp = mpNew(newcMTsize,newcMTsize);
-
-    for (k=1;k<=cMTsize;k++)
-    {
-      for (m=1;m<=cMTsize;m++)
-      {
-        out = MATELEM(r->GetNC()->ppMT[vik],k,m);
-	 
-        if ( out != NULL )
-        {
-          MATELEM(tmp,k,m) = out;/*MATELEM(r->GetNC()->MT[vik],k,m)*/
-          //           omCheckAddr(tmp->m);
-          MATELEM(r->GetNC()->ppMT[vik],k,m)=NULL;
-          //           omCheckAddr(r->GetNC()->MT[vik]->m);
-          out=NULL;
-        }
-      }
-    }
-    id_Delete((ideal *)&(r->GetNC()->ppMT[vik]),r);
-    r->GetNC()->ppMT[vik] = tmp;
-    tmp=NULL;
-    r->GetNC()->ppMTsize[vik] = newcMTsize;
-  }
-  /* The update of multiplication matrix is finished */
+     nc_enlargeMatrices(vik, cMTsize, newcMTsize, r); // TODO: enlarge ccMT aswell!
      
+     
+       
   // try using the cached value?
   out =  nc_GetMT(i,j,a,b,r);
   if (out !=NULL) 
   {
 #ifdef _COUNTS_
      PrintLn();
-     Print("gnc_uu_Mult_ww[%3d--]: used cached value for [var(%d)^{%d}  *  var(%d)^{%d}]!", level, i, a, j, b);
+     Print("gnc_uu_Mult_ww[%3d--]: cache hit for [var(%d)^{%d}  *  var(%d)^{%d}]!", level, i, a, j, b);
      PrintLn();
      level --;       
 #endif
@@ -1336,9 +1352,12 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
   } // with cache
   
   // no cached result => compute...
-  out = gnc_uu_Mult_ww_formula(i, a, j, b, r); // should also cache it necessary
+   out = gnc_uu_Mult_ww_formula(i, a, j, b, r); // should also cache it necessary
 #ifdef _COUNTS_
-   level --;
+   PrintLn();
+   Print("gnc_uu_Mult_ww[%3d--]: cache miss for [var(%d)^{%d}  *  var(%d)^{%d}] :(", level, i, a, j, b);
+   PrintLn();
+   level --;       
 #endif
   return out;
      
@@ -2785,6 +2804,10 @@ void nc_PrintMT(const ring r)
 	  const int id = UPMATELEM(i,j,N);
 	  const int size=r->GetNC()->ppMTsize[id];
 	  const matrix M = r->GetNC()->ppMT[id];
+#ifdef _COUNTS_
+	  const int* ccMT = r->GetNC()->ccMT[id];
+	  assume(ccMT != NULL);
+#endif
 	  
 	  Print("{i: %d < j: %d} => => MTsize: %d, MT: ", i, j, size); PrintLn();
 
@@ -2796,6 +2819,10 @@ void nc_PrintMT(const ring r)
 		 {
 		    Print("   [%3d,%3d]=> len: %4d, size: %4d, deg: %4d, p: ", s, t, pLength(p), pSize(p), pDeg(p,r)); // r == currRing!!!
 		    p_wrp(p, r, r);
+#ifdef _COUNTS_
+		    Print("& Count: %4d", MATELEMENT(ccMT,size, s,t));
+#endif
+		    
 		    PrintLn();
 		 }
 	      }
@@ -2907,11 +2934,18 @@ void nc_rKill(ring r)
     {
       for(j=i+1;j<=rN;j++)
       {
-        id_Delete((ideal *)&(r->GetNC()->ppMT[UPMATELEM(i,j,rN)]),r);
+        id_Delete((ideal *)&( r->GetNC()->ppMT[UPMATELEM(i,j,rN)] ), r);
+#ifdef _COUNTS_
+	 const int S = r->GetNC()->ppMTsize[UPMATELEM(i,j,rN)];
+	 omFreeSize((ADDRESS)r->GetNC()->ccMT[UPMATELEM(i,j,rN)],S*S*sizeof(int));
+#endif
       }
     }
     omFreeSize((ADDRESS)r->GetNC()->ppMT,rN*(rN-1)/2*sizeof(matrix));
     omFreeSize((ADDRESS)r->GetNC()->ppMTsize,rN*(rN-1)/2*sizeof(int));
+#ifdef _COUNTS_
+    omFreeSize((ADDRESS)r->GetNC()->ccMT,rN*(rN-1)/2*sizeof(int*));
+#endif     
     id_Delete((ideal *)&(r->GetNC()->COM),r);
   }
   id_Delete((ideal *)&(r->GetNC()->C),r);
@@ -3437,12 +3471,17 @@ BOOLEAN gnc_InitMultiplication(ring r, bool bSetupQuotient)
   int i,j;
   r->GetNC()->ppMT = (matrix *)omAlloc0((r->N*(r->N-1))/2*sizeof(matrix));
   r->GetNC()->ppMTsize = (int *)omAlloc0((r->N*(r->N-1))/2*sizeof(int));
+   
+#ifdef _COUNTS_
+  r->GetNC()->ccMT = (int **)omAlloc0((r->N*(r->N-1))/2*sizeof(int*));
+  assume( r->GetNC()->ccMT != NULL );
+#endif     
+   
   idTest(((ideal)r->GetNC()->C));
   matrix COM = mpCopy(r->GetNC()->C);
   poly p,q;
   int IsNonComm=0;
   int tmpIsSkewConstant;
-  const short DefMTsize=7; // defalut size of the cache table: 7^2!
 
   // Create (square) caches for EACH pair of variables (with, at least one entry at [1,1])
   for(i=1; i<r->N; i++)
@@ -3465,6 +3504,14 @@ BOOLEAN gnc_InitMultiplication(ring r, bool bSetupQuotient)
         r->GetNC()->ppMTsize[UPMATELEM(i,j,r->N)] = DefMTsize; /* default sizes */
         r->GetNC()->ppMT[UPMATELEM(i,j,r->N)] = mpNew(DefMTsize, DefMTsize);
       }
+       
+#ifdef _COUNTS_
+      {
+	 const int S = r->GetNC()->ppMTsize[UPMATELEM(i,j,r->N)];       
+	 r->GetNC()->ccMT[UPMATELEM(i,j,r->N)] = (int *)omAlloc0(S*S*sizeof(int));
+      }       
+#endif     
+       
        
       // set MT[i,j,1,1] to c_i_j*x_i*x_j + D_i_j (i.e. x_j * x_i)
       p = p_One(r); 

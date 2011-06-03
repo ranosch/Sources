@@ -74,8 +74,8 @@ proc TestMult(int v, int S, int N, int M, int MM)
 
 proc Test()
 {
-  int a = TestMult(1, 1, 50, 5, 5);
-  int b = TestMult(2, 1, 50, 5, 5);
+  int a = TestMult(1, 4, 10, 1, 1);
+  int b = TestMult(2, 4, 10, 1, 1);
 
   "======>>>>>>  a: ", a, ",,,,,, b: ", b;
 }

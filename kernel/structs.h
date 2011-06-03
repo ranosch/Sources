@@ -403,6 +403,10 @@ public:
 };
 
 
+#ifndef NDEBUG
+# define _COUNTS_
+#endif
+
 struct nc_struct
 {
   nc_type type;
@@ -415,8 +419,12 @@ struct nc_struct
   matrix D;
 
   // computed data:
-  matrix *ppMT; // size 0.. (rVar()*rVar()-1)/2
-  int *ppMTsize; // size 0.. (rVar()*rVar()-1)/2
+  mutable matrix *ppMT; // size 0.. (rVar()*rVar()-1)/2
+  mutable int *ppMTsize; // size 0.. (rVar()*rVar()-1)/2
+#ifdef _COUNTS_
+  mutable int **ccMT; 
+#endif
+   
   matrix COM;
 
   // IsSkewConstant indicates whethere coeffs C_ij are all equal, 

@@ -26,8 +26,9 @@ class ip_smatrix
 
   #define MATROWS(i) ((i)->nrows)
   #define MATCOLS(i) ((i)->ncols)
-  #define MATELEM(mat,i,j) ((mat)->m)[MATCOLS((mat)) * ((i)-1) + (j)-1]
 };
+  #define MATELEMENT(P,S,i,j) (P)[(S)* ((i)-1) + (j)-1]
+  #define MATELEM(mat,i,j) MATELEMENT((mat)->m, MATCOLS(mat), i, j)
 
 matrix mpNew(int r, int c);
 matrix mpCopy(matrix a);

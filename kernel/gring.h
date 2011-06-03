@@ -10,7 +10,6 @@
 
 #ifdef HAVE_PLURAL
 
-
 #include <kernel/structs.h>
 #include <kernel/ring.h>
 #include <kernel/matpol.h>
@@ -315,22 +314,6 @@ BOOLEAN gnc_InitMultiplication(ring r, bool bSetupQuotient = false); // just for
 
 #define UNUSED_ARGUMENT(x) (void) HIDEVARIABLE(x)
 
-
-static inline poly nc_GetMT(const int UNUSED(i), const int UNUSED(j), const matrix MT, const int a = 1, const int b = 1, const ring_const UNUSED(r) = currRing)
-{
-   UNUSED_ARGUMENT(i);   
-   UNUSED_ARGUMENT(j);   
-   UNUSED_ARGUMENT(r);   
-
-   assume(MT != NULL);
-   
-   assume(a > 0 && b > 0);
-   assume(a <= MATROWS(MT));
-   assume(b <= MATCOLS(MT));
-   
-   return MATELEM(MT,a,b);
-}
-
 static inline poly nc_GetMT(const int i, const int j, matrix const *MT, const int a = 1, const int b = 1, const ring_const r = currRing)
 {
    assume(MT != NULL);
@@ -340,15 +323,29 @@ static inline poly nc_GetMT(const int i, const int j, matrix const *MT, const in
 
    const int id = UPMATELEM(j, i, N); ///< Note the reversion!
 
-   if(true)
-   {
-      assume( r->GetNC()->ppMTsize != NULL );
-      const int s = r->GetNC()->ppMTsize[id];
-      assume(a <= s);
-      assume(b <= s);
-   }  
+   assume( r->GetNC()->ppMTsize != NULL );
+   const int S = r->GetNC()->ppMTsize[id];
+   assume(a > 0 && b > 0);
+   assume(a <= S);
+   assume(b <= S);
 
-   return nc_GetMT(i, j, MT[id], a, b, r);
+//// //   return nc_GetMT__(i, j, MT[id], a, b, r);
+   assume(S == MATROWS(MT[id]));
+   assume(S == MATCOLS(MT[id]));
+   
+   poly ret = MATELEM(MT[id], a,b);
+   
+#ifdef _COUNTS_
+//   if( ret != NULL ) // TODO: Only if ret != NULL... => only hits...?
+   {	
+      int* CC = r->GetNC()->ccMT[id];
+      assume(CC != NULL);
+      MATELEMENT(CC,S, a,b)++;
+   }
+#endif
+   
+   return ret;
+   
 }
 
 
