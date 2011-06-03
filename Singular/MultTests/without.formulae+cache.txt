@@ -1,0 +1,689 @@
+                     SINGULAR                                 /  Development
+ A Computer Algebra System for Polynomial Computations       /   version 3-1-3
+                                                           0<
+ by: W. Decker, G.-M. Greuel, G. Pfister, H. Schoenemann     \   March 2011
+FB Mathematik der Universitaet, D-67653 Kaiserslautern        \
+// ** executing /mnt/DATA/GITHUB/w/trunk/Singular/LIB/.singularrc
+// ** loaded /mnt/DATA/GITHUB/w/trunk/Singular/LIB/tst.lib $Id$
+&&&&&&&&&& TEST MULT: y^i * x, i being from: 1...50  (repeat:  5 )
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+Basering: 
+//   characteristic : 0
+//   4 parameter    : q a b g 
+//   minpoly        : 0
+//   number of vars : 2
+//        block   1 : ordering dp
+//                  : names    x y
+//        block   2 : ordering C
+//   noncommutative relations:
+//    yx=(q)*xy+(a)*x+(b)*y+(g)
+0
+
+********* NCMultTest (0) ***********
+bNoPluralMultiplication (use only formula shortcuts in my OOP Multiplier): false
+bNoFormula (don't use any formula shortcuts): true
+bNoCache (only formula whenever possible): false
+// false, true, false == old 'good' Plural
+0
+{i: 1 < j: 2} => => MTsize: 7, MT: 
+   [  1,  1]=> len:    4, size:    8, deg:    2, p: (q)*xy+(a)*x+...
+
+[om_Info]: 
+ MaxBytesSystem         :     700088 
+ CurrentBytesSystem     :     700088 
+ MaxBytesSbrk           :     131072 
+ CurrentBytesSbrk       :     131072 
+ MaxBytesMmap           :     524288 
+ CurrentBytesMmap       :     524288 
+ UsedBytes              :     228576 
+ AvailBytes             :     471512 
+ UsedBytesMalloc        :     175800 
+ AvailBytesMalloc       :          0 
+ MaxBytesFromMalloc     :     175800 
+ CurrentBytesFromMalloc :     175800 
+ MaxBytesFromValloc     :     524288 
+ CurrentBytesFromValloc :     524288 
+ UsedBytesFromValloc    :      52776 
+ AvailBytesFromValloc   :     471512 
+ MaxPages               :         30 
+ UsedPages              :         30 
+ AvailPages             :         98 
+ MaxRegionsAlloc        :          1 
+ CurrentRegionsAlloc    :          1 
+
+[om_Opts]: 
+ MinTrack               :          0
+ MinCheck               :          0
+ MaxTrack               :          5
+ MaxCheck               :         10
+ Keep                   :        100
+ HowToReportErrors      :          2
+ MarkAsStatic           :          0
+ PagesPerRegion         :        128
+ OutOfMemoryFunc        :   0x556fc0
+ MemoryLowFunc          :      (nil)
+ ErrorHook              :   0x8a0ab3
+
+
+[om_ErrorStatus]        : 'no error' (omError_NoError)
+[om_InternalErrorStatus]: 'no error' (omError_NoError)
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+init >> USER    :motsak
+init >> HOSTNAME:dilbert
+init >> uname -a:Linux dilbert 2.6.38-ARCH #1 SMP PREEMPT Tue May 3 07:40:34 CEST 2011 x86_64 Intel(R) Core(TM) i7 CPU 860 @ 2.80GHz GenuineIntel GNU/Linux
+init >> date    :Fri Jun  3 02:06:51 CEST 2011
+init >> version :3132
+init >> ticks   :100
+init >> 
+1 >> tst_memory_0 :: dilbert:2328584
+1 >> tst_memory_1 :: dilbert:2839904
+1 >> tst_memory_2 :: dilbert:2872704
+1 >> tst_timer_1 :: dilbert:15
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+[om_Info]: 
+ MaxBytesSystem         :    2872704 
+ CurrentBytesSystem     :    2823504 
+ MaxBytesSbrk           :     131072 
+ CurrentBytesSbrk       :     131072 
+ MaxBytesMmap           :    2621440 
+ CurrentBytesMmap       :    2621440 
+ UsedBytes              :    2310520 
+ AvailBytes             :     512984 
+ UsedBytesMalloc        :     202064 
+ AvailBytesMalloc       :          0 
+ MaxBytesFromMalloc     :     251264 
+ CurrentBytesFromMalloc :     202064 
+ MaxBytesFromValloc     :    2621440 
+ CurrentBytesFromValloc :    2621440 
+ UsedBytesFromValloc    :    2108456 
+ AvailBytesFromValloc   :     512984 
+ MaxPages               :        567 
+ UsedPages              :        566 
+ AvailPages             :         74 
+ MaxRegionsAlloc        :          5 
+ CurrentRegionsAlloc    :          5 
+
+[om_Opts]: 
+ MinTrack               :          0
+ MinCheck               :          0
+ MaxTrack               :          5
+ MaxCheck               :         10
+ Keep                   :        100
+ HowToReportErrors      :          2
+ MarkAsStatic           :          0
+ PagesPerRegion         :        128
+ OutOfMemoryFunc        :   0x556fc0
+ MemoryLowFunc          :      (nil)
+ ErrorHook              :   0x8a0ab3
+
+
+[om_ErrorStatus]        : 'no error' (omError_NoError)
+[om_InternalErrorStatus]: 'no error' (omError_NoError)
+{i: 1 < j: 2} => => MTsize: 56, MT: 
+   [  1,  1]=> len:    4, size:    8, deg:    2, p: (q)*xy+(a)*x+...
+   [  2,  1]=> len:    6, size:   21, deg:    3, p: (q2)*xy2+(2qa)*xy+...
+   [  3,  1]=> len:    8, size:   40, deg:    4, p: (q3)*xy3+(3q2a)*xy2+...
+   [  4,  1]=> len:   10, size:   65, deg:    5, p: (q4)*xy4+(4q3a)*xy3+...
+   [  5,  1]=> len:   12, size:   96, deg:    6, p: (q5)*xy5+(5q4a)*xy4+...
+   [  6,  1]=> len:   14, size:  133, deg:    7, p: (q6)*xy6+(6q5a)*xy5+...
+   [  7,  1]=> len:   16, size:  176, deg:    8, p: (q7)*xy7+(7q6a)*xy6+...
+   [  8,  1]=> len:   18, size:  225, deg:    9, p: (q8)*xy8+(8q7a)*xy7+...
+   [  9,  1]=> len:   20, size:  280, deg:   10, p: (q9)*xy9+(9q8a)*xy8+...
+   [ 10,  1]=> len:   22, size:  341, deg:   11, p: (q10)*xy10+(10q9a)*xy9+...
+   [ 11,  1]=> len:   24, size:  408, deg:   12, p: (q11)*xy11+(11q10a)*xy10+...
+   [ 12,  1]=> len:   26, size:  481, deg:   13, p: (q12)*xy12+(12q11a)*xy11+...
+   [ 13,  1]=> len:   28, size:  560, deg:   14, p: (q13)*xy13+(13q12a)*xy12+...
+   [ 14,  1]=> len:   30, size:  645, deg:   15, p: (q14)*xy14+(14q13a)*xy13+...
+   [ 15,  1]=> len:   32, size:  736, deg:   16, p: (q15)*xy15+(15q14a)*xy14+...
+   [ 16,  1]=> len:   34, size:  833, deg:   17, p: (q16)*xy16+(16q15a)*xy15+...
+   [ 17,  1]=> len:   36, size:  936, deg:   18, p: (q17)*xy17+(17q16a)*xy16+...
+   [ 18,  1]=> len:   38, size: 1045, deg:   19, p: (q18)*xy18+(18q17a)*xy17+...
+   [ 19,  1]=> len:   40, size: 1160, deg:   20, p: (q19)*xy19+(19q18a)*xy18+...
+   [ 20,  1]=> len:   42, size: 1281, deg:   21, p: (q20)*xy20+(20q19a)*xy19+...
+   [ 21,  1]=> len:   44, size: 1408, deg:   22, p: (q21)*xy21+(21q20a)*xy20+...
+   [ 22,  1]=> len:   46, size: 1541, deg:   23, p: (q22)*xy22+(22q21a)*xy21+...
+   [ 23,  1]=> len:   48, size: 1680, deg:   24, p: (q23)*xy23+(23q22a)*xy22+...
+   [ 24,  1]=> len:   50, size: 1825, deg:   25, p: (q24)*xy24+(24q23a)*xy23+...
+   [ 25,  1]=> len:   52, size: 1976, deg:   26, p: (q25)*xy25+(25q24a)*xy24+...
+   [ 26,  1]=> len:   54, size: 2133, deg:   27, p: (q26)*xy26+(26q25a)*xy25+...
+   [ 27,  1]=> len:   56, size: 2296, deg:   28, p: (q27)*xy27+(27q26a)*xy26+...
+   [ 28,  1]=> len:   58, size: 2465, deg:   29, p: (q28)*xy28+(28q27a)*xy27+...
+   [ 29,  1]=> len:   60, size: 2640, deg:   30, p: (q29)*xy29+(29q28a)*xy28+...
+   [ 30,  1]=> len:   62, size: 2821, deg:   31, p: (q30)*xy30+(30q29a)*xy29+...
+   [ 31,  1]=> len:   64, size: 3008, deg:   32, p: (q31)*xy31+(31q30a)*xy30+...
+   [ 32,  1]=> len:   66, size: 3201, deg:   33, p: (q32)*xy32+(32q31a)*xy31+...
+   [ 33,  1]=> len:   68, size: 3400, deg:   34, p: (q33)*xy33+(33q32a)*xy32+...
+   [ 34,  1]=> len:   70, size: 3605, deg:   35, p: (q34)*xy34+(34q33a)*xy33+...
+   [ 35,  1]=> len:   72, size: 3816, deg:   36, p: (q35)*xy35+(35q34a)*xy34+...
+   [ 36,  1]=> len:   74, size: 4033, deg:   37, p: (q36)*xy36+(36q35a)*xy35+...
+   [ 37,  1]=> len:   76, size: 4256, deg:   38, p: (q37)*xy37+(37q36a)*xy36+...
+   [ 38,  1]=> len:   78, size: 4485, deg:   39, p: (q38)*xy38+(38q37a)*xy37+...
+   [ 39,  1]=> len:   80, size: 4720, deg:   40, p: (q39)*xy39+(39q38a)*xy38+...
+   [ 40,  1]=> len:   82, size: 4961, deg:   41, p: (q40)*xy40+(40q39a)*xy39+...
+   [ 41,  1]=> len:   84, size: 5208, deg:   42, p: (q41)*xy41+(41q40a)*xy40+...
+   [ 42,  1]=> len:   86, size: 5461, deg:   43, p: (q42)*xy42+(42q41a)*xy41+...
+   [ 43,  1]=> len:   88, size: 5720, deg:   44, p: (q43)*xy43+(43q42a)*xy42+...
+   [ 44,  1]=> len:   90, size: 5985, deg:   45, p: (q44)*xy44+(44q43a)*xy43+...
+   [ 45,  1]=> len:   92, size: 6256, deg:   46, p: (q45)*xy45+(45q44a)*xy44+...
+   [ 46,  1]=> len:   94, size: 6533, deg:   47, p: (q46)*xy46+(46q45a)*xy45+...
+   [ 47,  1]=> len:   96, size: 6816, deg:   48, p: (q47)*xy47+(47q46a)*xy46+...
+   [ 48,  1]=> len:   98, size: 7105, deg:   49, p: (q48)*xy48+(48q47a)*xy47+...
+   [ 49,  1]=> len:  100, size: 7400, deg:   50, p: (q49)*xy49+(49q48a)*xy48+...
+   [ 50,  1]=> len:  102, size: 7701, deg:   51, p: (q50)*xy50+(50q49a)*xy49+...
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+Timer =>  10
+&&&&&&&&&& TEST MULT: y * x^i, i being from : 1...50  (repeat:  5 )
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+Basering: 
+//   characteristic : 0
+//   4 parameter    : q a b g 
+//   minpoly        : 0
+//   number of vars : 2
+//        block   1 : ordering dp
+//                  : names    x y
+//        block   2 : ordering C
+//   noncommutative relations:
+//    yx=(q)*xy+(a)*x+(b)*y+(g)
+0
+
+********* NCMultTest (0) ***********
+bNoPluralMultiplication (use only formula shortcuts in my OOP Multiplier): false
+bNoFormula (don't use any formula shortcuts): true
+bNoCache (only formula whenever possible): false
+// false, true, false == old 'good' Plural
+0
+{i: 1 < j: 2} => => MTsize: 56, MT: 
+   [  1,  1]=> len:    4, size:    8, deg:    2, p: (q)*xy+(a)*x+...
+   [  2,  1]=> len:    6, size:   21, deg:    3, p: (q2)*xy2+(2qa)*xy+...
+   [  3,  1]=> len:    8, size:   40, deg:    4, p: (q3)*xy3+(3q2a)*xy2+...
+   [  4,  1]=> len:   10, size:   65, deg:    5, p: (q4)*xy4+(4q3a)*xy3+...
+   [  5,  1]=> len:   12, size:   96, deg:    6, p: (q5)*xy5+(5q4a)*xy4+...
+   [  6,  1]=> len:   14, size:  133, deg:    7, p: (q6)*xy6+(6q5a)*xy5+...
+   [  7,  1]=> len:   16, size:  176, deg:    8, p: (q7)*xy7+(7q6a)*xy6+...
+   [  8,  1]=> len:   18, size:  225, deg:    9, p: (q8)*xy8+(8q7a)*xy7+...
+   [  9,  1]=> len:   20, size:  280, deg:   10, p: (q9)*xy9+(9q8a)*xy8+...
+   [ 10,  1]=> len:   22, size:  341, deg:   11, p: (q10)*xy10+(10q9a)*xy9+...
+   [ 11,  1]=> len:   24, size:  408, deg:   12, p: (q11)*xy11+(11q10a)*xy10+...
+   [ 12,  1]=> len:   26, size:  481, deg:   13, p: (q12)*xy12+(12q11a)*xy11+...
+   [ 13,  1]=> len:   28, size:  560, deg:   14, p: (q13)*xy13+(13q12a)*xy12+...
+   [ 14,  1]=> len:   30, size:  645, deg:   15, p: (q14)*xy14+(14q13a)*xy13+...
+   [ 15,  1]=> len:   32, size:  736, deg:   16, p: (q15)*xy15+(15q14a)*xy14+...
+   [ 16,  1]=> len:   34, size:  833, deg:   17, p: (q16)*xy16+(16q15a)*xy15+...
+   [ 17,  1]=> len:   36, size:  936, deg:   18, p: (q17)*xy17+(17q16a)*xy16+...
+   [ 18,  1]=> len:   38, size: 1045, deg:   19, p: (q18)*xy18+(18q17a)*xy17+...
+   [ 19,  1]=> len:   40, size: 1160, deg:   20, p: (q19)*xy19+(19q18a)*xy18+...
+   [ 20,  1]=> len:   42, size: 1281, deg:   21, p: (q20)*xy20+(20q19a)*xy19+...
+   [ 21,  1]=> len:   44, size: 1408, deg:   22, p: (q21)*xy21+(21q20a)*xy20+...
+   [ 22,  1]=> len:   46, size: 1541, deg:   23, p: (q22)*xy22+(22q21a)*xy21+...
+   [ 23,  1]=> len:   48, size: 1680, deg:   24, p: (q23)*xy23+(23q22a)*xy22+...
+   [ 24,  1]=> len:   50, size: 1825, deg:   25, p: (q24)*xy24+(24q23a)*xy23+...
+   [ 25,  1]=> len:   52, size: 1976, deg:   26, p: (q25)*xy25+(25q24a)*xy24+...
+   [ 26,  1]=> len:   54, size: 2133, deg:   27, p: (q26)*xy26+(26q25a)*xy25+...
+   [ 27,  1]=> len:   56, size: 2296, deg:   28, p: (q27)*xy27+(27q26a)*xy26+...
+   [ 28,  1]=> len:   58, size: 2465, deg:   29, p: (q28)*xy28+(28q27a)*xy27+...
+   [ 29,  1]=> len:   60, size: 2640, deg:   30, p: (q29)*xy29+(29q28a)*xy28+...
+   [ 30,  1]=> len:   62, size: 2821, deg:   31, p: (q30)*xy30+(30q29a)*xy29+...
+   [ 31,  1]=> len:   64, size: 3008, deg:   32, p: (q31)*xy31+(31q30a)*xy30+...
+   [ 32,  1]=> len:   66, size: 3201, deg:   33, p: (q32)*xy32+(32q31a)*xy31+...
+   [ 33,  1]=> len:   68, size: 3400, deg:   34, p: (q33)*xy33+(33q32a)*xy32+...
+   [ 34,  1]=> len:   70, size: 3605, deg:   35, p: (q34)*xy34+(34q33a)*xy33+...
+   [ 35,  1]=> len:   72, size: 3816, deg:   36, p: (q35)*xy35+(35q34a)*xy34+...
+   [ 36,  1]=> len:   74, size: 4033, deg:   37, p: (q36)*xy36+(36q35a)*xy35+...
+   [ 37,  1]=> len:   76, size: 4256, deg:   38, p: (q37)*xy37+(37q36a)*xy36+...
+   [ 38,  1]=> len:   78, size: 4485, deg:   39, p: (q38)*xy38+(38q37a)*xy37+...
+   [ 39,  1]=> len:   80, size: 4720, deg:   40, p: (q39)*xy39+(39q38a)*xy38+...
+   [ 40,  1]=> len:   82, size: 4961, deg:   41, p: (q40)*xy40+(40q39a)*xy39+...
+   [ 41,  1]=> len:   84, size: 5208, deg:   42, p: (q41)*xy41+(41q40a)*xy40+...
+   [ 42,  1]=> len:   86, size: 5461, deg:   43, p: (q42)*xy42+(42q41a)*xy41+...
+   [ 43,  1]=> len:   88, size: 5720, deg:   44, p: (q43)*xy43+(43q42a)*xy42+...
+   [ 44,  1]=> len:   90, size: 5985, deg:   45, p: (q44)*xy44+(44q43a)*xy43+...
+   [ 45,  1]=> len:   92, size: 6256, deg:   46, p: (q45)*xy45+(45q44a)*xy44+...
+   [ 46,  1]=> len:   94, size: 6533, deg:   47, p: (q46)*xy46+(46q45a)*xy45+...
+   [ 47,  1]=> len:   96, size: 6816, deg:   48, p: (q47)*xy47+(47q46a)*xy46+...
+   [ 48,  1]=> len:   98, size: 7105, deg:   49, p: (q48)*xy48+(48q47a)*xy47+...
+   [ 49,  1]=> len:  100, size: 7400, deg:   50, p: (q49)*xy49+(49q48a)*xy48+...
+   [ 50,  1]=> len:  102, size: 7701, deg:   51, p: (q50)*xy50+(50q49a)*xy49+...
+
+[om_Info]: 
+ MaxBytesSystem         :    2872704 
+ CurrentBytesSystem     :    2823504 
+ MaxBytesSbrk           :     131072 
+ CurrentBytesSbrk       :     131072 
+ MaxBytesMmap           :    2621440 
+ CurrentBytesMmap       :    2621440 
+ UsedBytes              :    2200096 
+ AvailBytes             :     623408 
+ UsedBytesMalloc        :     202064 
+ AvailBytesMalloc       :          0 
+ MaxBytesFromMalloc     :     251264 
+ CurrentBytesFromMalloc :     202064 
+ MaxBytesFromValloc     :    2621440 
+ CurrentBytesFromValloc :    2621440 
+ UsedBytesFromValloc    :    1998032 
+ AvailBytesFromValloc   :     623408 
+ MaxPages               :        567 
+ UsedPages              :        564 
+ AvailPages             :         76 
+ MaxRegionsAlloc        :          5 
+ CurrentRegionsAlloc    :          5 
+
+[om_Opts]: 
+ MinTrack               :          0
+ MinCheck               :          0
+ MaxTrack               :          5
+ MaxCheck               :         10
+ Keep                   :        100
+ HowToReportErrors      :          2
+ MarkAsStatic           :          0
+ PagesPerRegion         :        128
+ OutOfMemoryFunc        :   0x556fc0
+ MemoryLowFunc          :      (nil)
+ ErrorHook              :   0x8a0ab3
+
+
+[om_ErrorStatus]        : 'no error' (omError_NoError)
+[om_InternalErrorStatus]: 'no error' (omError_NoError)
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+init >> USER    :motsak
+init >> HOSTNAME:dilbert
+init >> uname -a:Linux dilbert 2.6.38-ARCH #1 SMP PREEMPT Tue May 3 07:40:34 CEST 2011 x86_64 Intel(R) Core(TM) i7 CPU 860 @ 2.80GHz GenuineIntel GNU/Linux
+init >> date    :Fri Jun  3 02:06:51 CEST 2011
+init >> version :3132
+init >> ticks   :100
+init >> 
+2 >> tst_memory_0 :: dilbert:4115008
+2 >> tst_memory_1 :: dilbert:4412984
+2 >> tst_memory_2 :: dilbert:4445784
+2 >> tst_timer_1 :: dilbert:30
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+[om_Info]: 
+ MaxBytesSystem         :    4445784 
+ CurrentBytesSystem     :    4396584 
+ MaxBytesSbrk           :     131072 
+ CurrentBytesSbrk       :     131072 
+ MaxBytesMmap           :    4194304 
+ CurrentBytesMmap       :    4194304 
+ UsedBytes              :    4096944 
+ AvailBytes             :     299640 
+ UsedBytesMalloc        :     202280 
+ AvailBytesMalloc       :          0 
+ MaxBytesFromMalloc     :     251480 
+ CurrentBytesFromMalloc :     202280 
+ MaxBytesFromValloc     :    4194304 
+ CurrentBytesFromValloc :    4194304 
+ UsedBytesFromValloc    :    3894664 
+ AvailBytesFromValloc   :     299640 
+ MaxPages               :       1009 
+ UsedPages              :       1008 
+ AvailPages             :         16 
+ MaxRegionsAlloc        :          8 
+ CurrentRegionsAlloc    :          8 
+
+[om_Opts]: 
+ MinTrack               :          0
+ MinCheck               :          0
+ MaxTrack               :          5
+ MaxCheck               :         10
+ Keep                   :        100
+ HowToReportErrors      :          2
+ MarkAsStatic           :          0
+ PagesPerRegion         :        128
+ OutOfMemoryFunc        :   0x556fc0
+ MemoryLowFunc          :      (nil)
+ ErrorHook              :   0x8a0ab3
+
+
+[om_ErrorStatus]        : 'no error' (omError_NoError)
+[om_InternalErrorStatus]: 'no error' (omError_NoError)
+{i: 1 < j: 2} => => MTsize: 56, MT: 
+   [  1,  1]=> len:    4, size:    8, deg:    2, p: (q)*xy+(a)*x+...
+   [  1,  2]=> len:    6, size:   21, deg:    3, p: (q2)*x2y+(qa+a)*x2+...
+   [  1,  3]=> len:    8, size:   40, deg:    4, p: (q3)*x3y+(q2a+qa+a)*x3+...
+   [  1,  4]=> len:   10, size:   65, deg:    5, p: (q4)*x4y+(q3a+q2a+qa+a)*x4+...
+   [  1,  5]=> len:   12, size:   96, deg:    6, p: (q5)*x5y+(q4a+q3a+q2a+qa+a)*x5+...
+   [  1,  6]=> len:   14, size:  133, deg:    7, p: (q6)*x6y+(q5a+q4a+q3a+q2a+qa+a)*x6+...
+   [  1,  7]=> len:   16, size:  176, deg:    8, p: (q7)*x7y+(q6a+q5a+q4a+q3a+q2a+qa+a)*x7+...
+   [  1,  8]=> len:   18, size:  225, deg:    9, p: (q8)*x8y+(q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x8+...
+   [  1,  9]=> len:   20, size:  280, deg:   10, p: (q9)*x9y+(q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x9+...
+   [  1, 10]=> len:   22, size:  341, deg:   11, p: (q10)*x10y+(q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x10+...
+   [  1, 11]=> len:   24, size:  408, deg:   12, p: (q11)*x11y+(q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x11+...
+   [  1, 12]=> len:   26, size:  481, deg:   13, p: (q12)*x12y+(q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x12+...
+   [  1, 13]=> len:   28, size:  560, deg:   14, p: (q13)*x13y+(q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x13+...
+   [  1, 14]=> len:   30, size:  645, deg:   15, p: (q14)*x14y+(q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x14+...
+   [  1, 15]=> len:   32, size:  736, deg:   16, p: (q15)*x15y+(q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x15+...
+   [  1, 16]=> len:   34, size:  833, deg:   17, p: (q16)*x16y+(q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x16+...
+   [  1, 17]=> len:   36, size:  936, deg:   18, p: (q17)*x17y+(q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x17+...
+   [  1, 18]=> len:   38, size: 1045, deg:   19, p: (q18)*x18y+(q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x18+...
+   [  1, 19]=> len:   40, size: 1160, deg:   20, p: (q19)*x19y+(q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x19+...
+   [  1, 20]=> len:   42, size: 1281, deg:   21, p: (q20)*x20y+(q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x20+...
+   [  1, 21]=> len:   44, size: 1408, deg:   22, p: (q21)*x21y+(q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x21+...
+   [  1, 22]=> len:   46, size: 1541, deg:   23, p: (q22)*x22y+(q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x22+...
+   [  1, 23]=> len:   48, size: 1680, deg:   24, p: (q23)*x23y+(q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x23+...
+   [  1, 24]=> len:   50, size: 1825, deg:   25, p: (q24)*x24y+(q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x24+...
+   [  1, 25]=> len:   52, size: 1976, deg:   26, p: (q25)*x25y+(q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x25+...
+   [  1, 26]=> len:   54, size: 2133, deg:   27, p: (q26)*x26y+(q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x26+...
+   [  1, 27]=> len:   56, size: 2296, deg:   28, p: (q27)*x27y+(q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x27+...
+   [  1, 28]=> len:   58, size: 2465, deg:   29, p: (q28)*x28y+(q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x28+...
+   [  1, 29]=> len:   60, size: 2640, deg:   30, p: (q29)*x29y+(q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x29+...
+   [  1, 30]=> len:   62, size: 2821, deg:   31, p: (q30)*x30y+(q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x30+...
+   [  1, 31]=> len:   64, size: 3008, deg:   32, p: (q31)*x31y+(q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x31+...
+   [  1, 32]=> len:   66, size: 3201, deg:   33, p: (q32)*x32y+(q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x32+...
+   [  1, 33]=> len:   68, size: 3400, deg:   34, p: (q33)*x33y+(q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x33+...
+   [  1, 34]=> len:   70, size: 3605, deg:   35, p: (q34)*x34y+(q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x34+...
+   [  1, 35]=> len:   72, size: 3816, deg:   36, p: (q35)*x35y+(q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x35+...
+   [  1, 36]=> len:   74, size: 4033, deg:   37, p: (q36)*x36y+(q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x36+...
+   [  1, 37]=> len:   76, size: 4256, deg:   38, p: (q37)*x37y+(q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x37+...
+   [  1, 38]=> len:   78, size: 4485, deg:   39, p: (q38)*x38y+(q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x38+...
+   [  1, 39]=> len:   80, size: 4720, deg:   40, p: (q39)*x39y+(q38a+q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x39+...
+   [  1, 40]=> len:   82, size: 4961, deg:   41, p: (q40)*x40y+(q39a+q38a+q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x40+...
+   [  1, 41]=> len:   84, size: 5208, deg:   42, p: (q41)*x41y+(q40a+q39a+q38a+q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x41+...
+   [  1, 42]=> len:   86, size: 5461, deg:   43, p: (q42)*x42y+(q41a+q40a+q39a+q38a+q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x42+...
+   [  1, 43]=> len:   88, size: 5720, deg:   44, p: (q43)*x43y+(q42a+q41a+q40a+q39a+q38a+q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x43+...
+   [  1, 44]=> len:   90, size: 5985, deg:   45, p: (q44)*x44y+(q43a+q42a+q41a+q40a+q39a+q38a+q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x44+...
+   [  1, 45]=> len:   92, size: 6256, deg:   46, p: (q45)*x45y+(q44a+q43a+q42a+q41a+q40a+q39a+q38a+q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x45+...
+   [  1, 46]=> len:   94, size: 6533, deg:   47, p: (q46)*x46y+(q45a+q44a+q43a+q42a+q41a+q40a+q39a+q38a+q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x46+...
+   [  1, 47]=> len:   96, size: 6816, deg:   48, p: (q47)*x47y+(q46a+q45a+q44a+q43a+q42a+q41a+q40a+q39a+q38a+q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x47+...
+   [  1, 48]=> len:   98, size: 7105, deg:   49, p: (q48)*x48y+(q47a+q46a+q45a+q44a+q43a+q42a+q41a+q40a+q39a+q38a+q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x48+...
+   [  1, 49]=> len:  100, size: 7400, deg:   50, p: (q49)*x49y+(q48a+q47a+q46a+q45a+q44a+q43a+q42a+q41a+q40a+q39a+q38a+q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x49+...
+   [  1, 50]=> len:  102, size: 7701, deg:   51, p: (q50)*x50y+(q49a+q48a+q47a+q46a+q45a+q44a+q43a+q42a+q41a+q40a+q39a+q38a+q37a+q36a+q35a+q34a+q33a+q32a+q31a+q30a+q29a+q28a+q27a+q26a+q25a+q24a+q23a+q22a+q21a+q20a+q19a+q18a+q17a+q16a+q15a+q14a+q13a+q12a+q11a+q10a+q9a+q8a+q7a+q6a+q5a+q4a+q3a+q2a+qa+a)*x50+...
+   [  2,  1]=> len:    6, size:   21, deg:    3, p: (q2)*xy2+(2qa)*xy+...
+   [  3,  1]=> len:    8, size:   40, deg:    4, p: (q3)*xy3+(3q2a)*xy2+...
+   [  4,  1]=> len:   10, size:   65, deg:    5, p: (q4)*xy4+(4q3a)*xy3+...
+   [  5,  1]=> len:   12, size:   96, deg:    6, p: (q5)*xy5+(5q4a)*xy4+...
+   [  6,  1]=> len:   14, size:  133, deg:    7, p: (q6)*xy6+(6q5a)*xy5+...
+   [  7,  1]=> len:   16, size:  176, deg:    8, p: (q7)*xy7+(7q6a)*xy6+...
+   [  8,  1]=> len:   18, size:  225, deg:    9, p: (q8)*xy8+(8q7a)*xy7+...
+   [  9,  1]=> len:   20, size:  280, deg:   10, p: (q9)*xy9+(9q8a)*xy8+...
+   [ 10,  1]=> len:   22, size:  341, deg:   11, p: (q10)*xy10+(10q9a)*xy9+...
+   [ 11,  1]=> len:   24, size:  408, deg:   12, p: (q11)*xy11+(11q10a)*xy10+...
+   [ 12,  1]=> len:   26, size:  481, deg:   13, p: (q12)*xy12+(12q11a)*xy11+...
+   [ 13,  1]=> len:   28, size:  560, deg:   14, p: (q13)*xy13+(13q12a)*xy12+...
+   [ 14,  1]=> len:   30, size:  645, deg:   15, p: (q14)*xy14+(14q13a)*xy13+...
+   [ 15,  1]=> len:   32, size:  736, deg:   16, p: (q15)*xy15+(15q14a)*xy14+...
+   [ 16,  1]=> len:   34, size:  833, deg:   17, p: (q16)*xy16+(16q15a)*xy15+...
+   [ 17,  1]=> len:   36, size:  936, deg:   18, p: (q17)*xy17+(17q16a)*xy16+...
+   [ 18,  1]=> len:   38, size: 1045, deg:   19, p: (q18)*xy18+(18q17a)*xy17+...
+   [ 19,  1]=> len:   40, size: 1160, deg:   20, p: (q19)*xy19+(19q18a)*xy18+...
+   [ 20,  1]=> len:   42, size: 1281, deg:   21, p: (q20)*xy20+(20q19a)*xy19+...
+   [ 21,  1]=> len:   44, size: 1408, deg:   22, p: (q21)*xy21+(21q20a)*xy20+...
+   [ 22,  1]=> len:   46, size: 1541, deg:   23, p: (q22)*xy22+(22q21a)*xy21+...
+   [ 23,  1]=> len:   48, size: 1680, deg:   24, p: (q23)*xy23+(23q22a)*xy22+...
+   [ 24,  1]=> len:   50, size: 1825, deg:   25, p: (q24)*xy24+(24q23a)*xy23+...
+   [ 25,  1]=> len:   52, size: 1976, deg:   26, p: (q25)*xy25+(25q24a)*xy24+...
+   [ 26,  1]=> len:   54, size: 2133, deg:   27, p: (q26)*xy26+(26q25a)*xy25+...
+   [ 27,  1]=> len:   56, size: 2296, deg:   28, p: (q27)*xy27+(27q26a)*xy26+...
+   [ 28,  1]=> len:   58, size: 2465, deg:   29, p: (q28)*xy28+(28q27a)*xy27+...
+   [ 29,  1]=> len:   60, size: 2640, deg:   30, p: (q29)*xy29+(29q28a)*xy28+...
+   [ 30,  1]=> len:   62, size: 2821, deg:   31, p: (q30)*xy30+(30q29a)*xy29+...
+   [ 31,  1]=> len:   64, size: 3008, deg:   32, p: (q31)*xy31+(31q30a)*xy30+...
+   [ 32,  1]=> len:   66, size: 3201, deg:   33, p: (q32)*xy32+(32q31a)*xy31+...
+   [ 33,  1]=> len:   68, size: 3400, deg:   34, p: (q33)*xy33+(33q32a)*xy32+...
+   [ 34,  1]=> len:   70, size: 3605, deg:   35, p: (q34)*xy34+(34q33a)*xy33+...
+   [ 35,  1]=> len:   72, size: 3816, deg:   36, p: (q35)*xy35+(35q34a)*xy34+...
+   [ 36,  1]=> len:   74, size: 4033, deg:   37, p: (q36)*xy36+(36q35a)*xy35+...
+   [ 37,  1]=> len:   76, size: 4256, deg:   38, p: (q37)*xy37+(37q36a)*xy36+...
+   [ 38,  1]=> len:   78, size: 4485, deg:   39, p: (q38)*xy38+(38q37a)*xy37+...
+   [ 39,  1]=> len:   80, size: 4720, deg:   40, p: (q39)*xy39+(39q38a)*xy38+...
+   [ 40,  1]=> len:   82, size: 4961, deg:   41, p: (q40)*xy40+(40q39a)*xy39+...
+   [ 41,  1]=> len:   84, size: 5208, deg:   42, p: (q41)*xy41+(41q40a)*xy40+...
+   [ 42,  1]=> len:   86, size: 5461, deg:   43, p: (q42)*xy42+(42q41a)*xy41+...
+   [ 43,  1]=> len:   88, size: 5720, deg:   44, p: (q43)*xy43+(43q42a)*xy42+...
+   [ 44,  1]=> len:   90, size: 5985, deg:   45, p: (q44)*xy44+(44q43a)*xy43+...
+   [ 45,  1]=> len:   92, size: 6256, deg:   46, p: (q45)*xy45+(45q44a)*xy44+...
+   [ 46,  1]=> len:   94, size: 6533, deg:   47, p: (q46)*xy46+(46q45a)*xy45+...
+   [ 47,  1]=> len:   96, size: 6816, deg:   48, p: (q47)*xy47+(47q46a)*xy46+...
+   [ 48,  1]=> len:   98, size: 7105, deg:   49, p: (q48)*xy48+(48q47a)*xy47+...
+   [ 49,  1]=> len:  100, size: 7400, deg:   50, p: (q49)*xy49+(49q48a)*xy48+...
+   [ 50,  1]=> len:  102, size: 7701, deg:   51, p: (q50)*xy50+(50q49a)*xy49+...
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+Timer =>  10
+======>>>>>>  a:  10 ,,,,,, b:  10
+Set 'Plural' to: 0
+0
+Set the 'Caching' to: 0
+0
+Set the 'usage of direct formulas' to: 1
+1
+&&&&&&&&&& TEST MULT: y^i * x, i being from: 1...50  (repeat:  5 )
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+Basering: 
+//   characteristic : 0
+//   4 parameter    : q a b g 
+//   minpoly        : 0
+//   number of vars : 2
+//        block   1 : ordering dp
+//                  : names    x y
+//        block   2 : ordering C
+//   noncommutative relations:
+//    yx=(q)*xy+(a)*x+(b)*y+(g)
+0
+
+********* NCMultTest (0) ***********
+bNoPluralMultiplication (use only formula shortcuts in my OOP Multiplier): false
+bNoFormula (don't use any formula shortcuts): true
+bNoCache (only formula whenever possible): true
+
+0
+{i: 1 < j: 2} => => MTsize: 7, MT: 
+   [  1,  1]=> len:    4, size:    8, deg:    2, p: (q)*xy+(a)*x+...
+
+[om_Info]: 
+ MaxBytesSystem         :    4445784 
+ CurrentBytesSystem     :    4396584 
+ MaxBytesSbrk           :     131072 
+ CurrentBytesSbrk       :     131072 
+ MaxBytesMmap           :    4194304 
+ CurrentBytesMmap       :    4194304 
+ UsedBytes              :    3989576 
+ AvailBytes             :     407008 
+ UsedBytesMalloc        :     202280 
+ AvailBytesMalloc       :          0 
+ MaxBytesFromMalloc     :     251480 
+ CurrentBytesFromMalloc :     202280 
+ MaxBytesFromValloc     :    4194304 
+ CurrentBytesFromValloc :    4194304 
+ UsedBytesFromValloc    :    3787296 
+ AvailBytesFromValloc   :     407008 
+ MaxPages               :       1009 
+ UsedPages              :       1007 
+ AvailPages             :         17 
+ MaxRegionsAlloc        :          8 
+ CurrentRegionsAlloc    :          8 
+
+[om_Opts]: 
+ MinTrack               :          0
+ MinCheck               :          0
+ MaxTrack               :          5
+ MaxCheck               :         10
+ Keep                   :        100
+ HowToReportErrors      :          2
+ MarkAsStatic           :          0
+ PagesPerRegion         :        128
+ OutOfMemoryFunc        :   0x556fc0
+ MemoryLowFunc          :      (nil)
+ ErrorHook              :   0x8a0ab3
+
+
+[om_ErrorStatus]        : 'no error' (omError_NoError)
+[om_InternalErrorStatus]: 'no error' (omError_NoError)
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+init >> USER    :motsak
+init >> HOSTNAME:dilbert
+init >> uname -a:Linux dilbert 2.6.38-ARCH #1 SMP PREEMPT Tue May 3 07:40:34 CEST 2011 x86_64 Intel(R) Core(TM) i7 CPU 860 @ 2.80GHz GenuineIntel GNU/Linux
+init >> date    :Fri Jun  3 02:06:51 CEST 2011
+init >> version :3132
+init >> ticks   :100
+init >> 
+3 >> tst_memory_0 :: dilbert:106131936
+3 >> tst_memory_1 :: dilbert:108249088
+3 >> tst_memory_2 :: dilbert:108281856
+3 >> tst_timer_1 :: dilbert:444
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+[om_Info]: 
+ MaxBytesSystem         :  108281856 
+ CurrentBytesSystem     :  108232704 
+ MaxBytesSbrk           :     278528 
+ CurrentBytesSbrk       :     229376 
+ MaxBytesMmap           :  108003328 
+ CurrentBytesMmap       :  108003328 
+ UsedBytes              :  106113856 
+ AvailBytes             :    2106008 
+ UsedBytesMalloc        :     216536 
+ AvailBytesMalloc       :          0 
+ MaxBytesFromMalloc     :     265736 
+ CurrentBytesFromMalloc :     216536 
+ MaxBytesFromValloc     :  108003328 
+ CurrentBytesFromValloc :  108003328 
+ UsedBytesFromValloc    :  105897320 
+ AvailBytesFromValloc   :    2106008 
+ MaxPages               :      26277 
+ UsedPages              :      26276 
+ AvailPages             :         92 
+ MaxRegionsAlloc        :        206 
+ CurrentRegionsAlloc    :        206 
+
+[om_Opts]: 
+ MinTrack               :          0
+ MinCheck               :          0
+ MaxTrack               :          5
+ MaxCheck               :         10
+ Keep                   :        100
+ HowToReportErrors      :          2
+ MarkAsStatic           :          0
+ PagesPerRegion         :        128
+ OutOfMemoryFunc        :   0x556fc0
+ MemoryLowFunc          :      (nil)
+ ErrorHook              :   0x8a0ab3
+
+
+[om_ErrorStatus]        : 'no error' (omError_NoError)
+[om_InternalErrorStatus]: 'no error' (omError_NoError)
+{i: 1 < j: 2} => => MTsize: 7, MT: 
+   [  1,  1]=> len:    4, size:    8, deg:    2, p: (q)*xy+(a)*x+...
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+Timer =>  407
+&&&&&&&&&& TEST MULT: y * x^i, i being from : 1...50  (repeat:  5 )
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+Basering: 
+//   characteristic : 0
+//   4 parameter    : q a b g 
+//   minpoly        : 0
+//   number of vars : 2
+//        block   1 : ordering dp
+//                  : names    x y
+//        block   2 : ordering C
+//   noncommutative relations:
+//    yx=(q)*xy+(a)*x+(b)*y+(g)
+0
+
+********* NCMultTest (0) ***********
+bNoPluralMultiplication (use only formula shortcuts in my OOP Multiplier): false
+bNoFormula (don't use any formula shortcuts): true
+bNoCache (only formula whenever possible): true
+
+0
+{i: 1 < j: 2} => => MTsize: 7, MT: 
+   [  1,  1]=> len:    4, size:    8, deg:    2, p: (q)*xy+(a)*x+...
+
+[om_Info]: 
+ MaxBytesSystem         :  108281856 
+ CurrentBytesSystem     :  108219864 
+ MaxBytesSbrk           :     278528 
+ CurrentBytesSbrk       :     212992 
+ MaxBytesMmap           :  108003328 
+ CurrentBytesMmap       :  108003328 
+ UsedBytes              :  106003152 
+ AvailBytes             :    2216712 
+ UsedBytesMalloc        :     216536 
+ AvailBytesMalloc       :          0 
+ MaxBytesFromMalloc     :     265736 
+ CurrentBytesFromMalloc :     216536 
+ MaxBytesFromValloc     :  108003328 
+ CurrentBytesFromValloc :  108003328 
+ UsedBytesFromValloc    :  105786616 
+ AvailBytesFromValloc   :    2216712 
+ MaxPages               :      26277 
+ UsedPages              :      26274 
+ AvailPages             :         94 
+ MaxRegionsAlloc        :        206 
+ CurrentRegionsAlloc    :        206 
+
+[om_Opts]: 
+ MinTrack               :          0
+ MinCheck               :          0
+ MaxTrack               :          5
+ MaxCheck               :         10
+ Keep                   :        100
+ HowToReportErrors      :          2
+ MarkAsStatic           :          0
+ PagesPerRegion         :        128
+ OutOfMemoryFunc        :   0x556fc0
+ MemoryLowFunc          :      (nil)
+ ErrorHook              :   0x8a0ab3
+
+
+[om_ErrorStatus]        : 'no error' (omError_NoError)
+[om_InternalErrorStatus]: 'no error' (omError_NoError)
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+init >> USER    :motsak
+init >> HOSTNAME:dilbert
+init >> uname -a:Linux dilbert 2.6.38-ARCH #1 SMP PREEMPT Tue May 3 07:40:34 CEST 2011 x86_64 Intel(R) Core(TM) i7 CPU 860 @ 2.80GHz GenuineIntel GNU/Linux
+init >> date    :Fri Jun  3 02:06:55 CEST 2011
+init >> version :3132
+init >> ticks   :100
+init >> 
+4 >> tst_memory_0 :: dilbert:141496840
+4 >> tst_memory_1 :: dilbert:143892744
+4 >> tst_memory_2 :: dilbert:143933440
+4 >> tst_timer_1 :: dilbert:849
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+[om_Info]: 
+ MaxBytesSystem         :  143933440 
+ CurrentBytesSystem     :  143876344 
+ MaxBytesSbrk           :     278528 
+ CurrentBytesSbrk       :     212992 
+ MaxBytesMmap           :  143654912 
+ CurrentBytesMmap       :  143654912 
+ UsedBytes              :  141478776 
+ AvailBytes             :    2397568 
+ UsedBytesMalloc        :     221432 
+ AvailBytesMalloc       :          0 
+ MaxBytesFromMalloc     :     270632 
+ CurrentBytesFromMalloc :     221432 
+ MaxBytesFromValloc     :  143654912 
+ CurrentBytesFromValloc :  143654912 
+ UsedBytesFromValloc    :  141257344 
+ AvailBytesFromValloc   :    2397568 
+ MaxPages               :      35037 
+ UsedPages              :      35036 
+ AvailPages             :         36 
+ MaxRegionsAlloc        :        274 
+ CurrentRegionsAlloc    :        274 
+
+[om_Opts]: 
+ MinTrack               :          0
+ MinCheck               :          0
+ MaxTrack               :          5
+ MaxCheck               :         10
+ Keep                   :        100
+ HowToReportErrors      :          2
+ MarkAsStatic           :          0
+ PagesPerRegion         :        128
+ OutOfMemoryFunc        :   0x556fc0
+ MemoryLowFunc          :      (nil)
+ ErrorHook              :   0x8a0ab3
+
+
+[om_ErrorStatus]        : 'no error' (omError_NoError)
+[om_InternalErrorStatus]: 'no error' (omError_NoError)
+{i: 1 < j: 2} => => MTsize: 7, MT: 
+   [  1,  1]=> len:    4, size:    8, deg:    2, p: (q)*xy+(a)*x+...
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+Timer =>  397
+======>>>>>>  a:  407 ,,,,,, b:  397
+
+$Bye.
