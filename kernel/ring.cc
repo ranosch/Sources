@@ -417,7 +417,7 @@ void rWrite(ring r)
           if ( (MATELEM(r->GetNC()->D,i,j)!=NULL) || (!nl) )
           {
             Print("\n//    %s%s=",r->names[j-1],r->names[i-1]);
-            p_Write0(nc_GetMT(j, i, 1, 1, r), r, r);
+            p_Write0(nc_GetMT(j,i, 1,1, r,  FALSE), r, r);
           }
         }
       }

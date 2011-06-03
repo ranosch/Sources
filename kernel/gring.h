@@ -314,7 +314,7 @@ BOOLEAN gnc_InitMultiplication(ring r, bool bSetupQuotient = false); // just for
 
 #define UNUSED_ARGUMENT(x) (void) HIDEVARIABLE(x)
 
-static inline poly nc_GetMT(const int i, const int j, matrix const *MT, const int a = 1, const int b = 1, const ring_const r = currRing)
+static inline poly nc_GetMT(const int i, const int j, matrix const *MT, const int a = 1, const int b = 1, const ring_const r = currRing, const BOOLEAN bToCount = TRUE)
 {
    assume(MT != NULL);
    assume(j < i);
@@ -337,6 +337,7 @@ static inline poly nc_GetMT(const int i, const int j, matrix const *MT, const in
    
 #ifdef _COUNTS_
 //   if( ret != NULL ) // TODO: Only if ret != NULL... => only hits...?
+   if (bToCount)
    {	
       int* CC = r->GetNC()->ccMT[id];
       assume(CC != NULL);
@@ -352,10 +353,10 @@ static inline poly nc_GetMT(const int i, const int j, matrix const *MT, const in
 // get var(i)^a * var(j)^b // x_i = y,  x_j = x !
 // assumes i > j
 // either a = b = 1, or it is in the cache...
-static inline poly nc_GetMT(const int i, const int j, const int a = 1, const int b = 1, const ring_const r = currRing)
+static inline poly nc_GetMT(const int i, const int j, const int a = 1, const int b = 1, const ring_const r = currRing, const BOOLEAN bToCount = TRUE)
 {
    assume(r != NULL);
-   return nc_GetMT(i, j, r->GetNC()->ppMT, a, b, r);
+   return nc_GetMT(i, j, r->GetNC()->ppMT, a, b, r, bToCount);
 }
 
 static inline poly nc_SetMT(const int UNUSED(i), const int UNUSED(j), matrix MT, const int a, const int b, poly p, const ring_const UNUSED(r) = currRing)

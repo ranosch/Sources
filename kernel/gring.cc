@@ -12,6 +12,12 @@
 #define MYTEST 0
 #define OUTPUT 0
 
+#ifdef NDEBUG
+#define OUTPUT_TRACE 0
+#else
+#define OUTPUT_TRACE 1
+#endif
+
 #if MYTEST
 #define OM_CHECK 4
 #define OM_TRACK 5
@@ -997,12 +1003,10 @@ poly gnc_mm_Mult_uu(int *F,int jG,int bG, const ring r)
 
 poly gnc_uu_Mult_ww_vert (int i, int a, int j, int b, const ring r)
 {
-#ifdef _COUNTS_
-#ifndef NDEBUG
+#if OUTPUT_TRACE 
   PrintLn();
   Print("gnc_uu_Mult_ww_vert: var(%d)^{%d}  *  var(%d)^{%d}", i, a, j, b);
   PrintLn();
-#endif
 #endif
    
   int k,m;
@@ -1025,7 +1029,7 @@ poly gnc_uu_Mult_ww_vert (int i, int a, int j, int b, const ring r)
   if(!bNoCache)
   {
      // assumes that the entry have not been computed yet...
-     assume(nc_GetMT(i,j,a,b,r)==NULL);
+     assume(nc_GetMT(i,j,a,b,r, FALSE)==NULL);
 
      
      
@@ -1035,6 +1039,8 @@ poly gnc_uu_Mult_ww_vert (int i, int a, int j, int b, const ring r)
 
      t = NULL;
      
+     // what about starting from a.b and looking for the "closest" known usefull product 
+     // instead of going (1,1) -> (a,1) -> (a,b)... ?
      for (k=2; k<=a; k++)
      {
 	if (nc_GetMT(i,j,k,1,r)==NULL)   /* not computed yet */
@@ -1157,12 +1163,10 @@ poly gnc_uu_Mult_ww_vert (int i, int a, int j, int b, const ring r)
 
 static inline poly gnc_uu_Mult_ww_formula (int i, int a, int j, int b, const ring r)
 {
-#ifdef _COUNTS_
-#ifndef NDEBUG
+#if OUTPUT_TRACE 
   PrintLn();
   Print("gnc_uu_Mult_ww_formula: var(%d)^{%d}  *  var(%d)^{%d}", i, a, j, b);
   PrintLn();
-#endif
 #endif
    
   /// ???
@@ -1191,6 +1195,7 @@ static inline poly gnc_uu_Mult_ww_formula (int i, int a, int j, int b, const rin
 static inline void nc_enlargeMatrices(const int vik, const int oldSize, const int newSize, const ring r)
 {
    // enlarges ccMT aswell!
+   // no counting!!!
    const matrix MT = r->GetNC()->ppMT[vik];
    
    assume( MATCOLS(MT) == MATROWS(MT) );
@@ -1200,12 +1205,10 @@ static inline void nc_enlargeMatrices(const int vik, const int oldSize, const in
    const int newcMTsize=(((newSize+6)/7)*7);
    assume (newSize<=newcMTsize);
    
-#ifdef _COUNTS_
-#ifndef NDEBUG
+#if OUTPUT_TRACE 
     PrintLn();
     Print("nc_enlargeMatrix: resizing the cache matrix [%d] from %d^2 to %d^2!", vik, oldSize, newcMTsize);
     PrintLn();
-#endif
 #endif
    
    matrix tmp = mpNew(newcMTsize, newcMTsize);
@@ -1246,13 +1249,11 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
   /* (x_i)^a times (x_j)^b */
   /* x_i = y,  x_j = x ! */
 {
-#ifdef _COUNTS_
-#ifndef NDEBUG
+#if OUTPUT_TRACE 
   static int level = 0;
   PrintLn();
   Print("gnc_uu_Mult_ww[%3d]: var(%d)^{%d}  *  var(%d)^{%d}?", level++, i, a, j, b);
   PrintLn();
-#endif
 #endif
    
    
@@ -1266,24 +1267,33 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
     p_SetExp(out,i,a,r);
     p_AddExp(out,j,b,r);
     p_Setm(out,r);
-#ifdef _COUNTS_
-#ifndef NDEBUG
+#if OUTPUT_TRACE 
     level --;
-#endif
 #endif
     return(out);
   }/* zero exeptions and usual case */
   /*  if ((a==0)||(b==0)||(i<=j)) return(out); */
    
   assume(i > j);
+  poly out;
+ 
+  if( a == 1 && b == 1 )
+     {
+	out =  nc_GetMT(i,j,a,b,r);
+#if OUTPUT_TRACE 
+	PrintLn();
+	Print("gnc_uu_Mult_ww[%3d--]: cache hit for vars(%d,%d)^[1,1]!", level, i, j, a, b);
+	PrintLn();
+	level --;       
+#endif
+	return (p_Copy(out,r));
+     }
 
   if (MATELEM(r->GetNC()->COM,j,i)!=NULL)
     /* commutative or quasicommutative case */
   {
-#ifdef _COUNTS_
-#ifndef NDEBUG
+#if OUTPUT_TRACE 
     level --;
-#endif
 #endif
     poly out=p_One(r);
     p_SetExp(out,i,a,r);
@@ -1301,7 +1311,6 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
       return(out);
     }
   }/* end_of commutative or quasicommutative case */
-  poly out;
 
   // no cache to be used?
   if(bNoCache)
@@ -1319,10 +1328,8 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
 		 {
 		    // //    return FormulaMultiplier->Multiply(j, i, b, a);
 		    out = CFormulaPowerMultiplier::Multiply( PairType, j, i, b, a, r);
-#ifdef _COUNTS_
-#ifndef NDEBUG
+#if OUTPUT_TRACE 
 		    level --;
-#endif
 #endif
 		    return out;
 		 }      
@@ -1353,13 +1360,11 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
   out =  nc_GetMT(i,j,a,b,r);
   if (out !=NULL) 
   {
-#ifdef _COUNTS_
-#ifndef NDEBUG
+#if OUTPUT_TRACE 
      PrintLn();
      Print("gnc_uu_Mult_ww[%3d--]: cache hit for [var(%d)^{%d}  *  var(%d)^{%d}]!", level, i, a, j, b);
      PrintLn();
      level --;       
-#endif
 #endif
      return (p_Copy(out,r));
   }
@@ -1368,13 +1373,11 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
   
   // no cached result => compute...
    out = gnc_uu_Mult_ww_formula(i, a, j, b, r); // should also cache it necessary
-#ifdef _COUNTS_
-#ifndef NDEBUG
+#if OUTPUT_TRACE 
    PrintLn();
    Print("gnc_uu_Mult_ww[%3d--]: cache miss for [var(%d)^{%d}  *  var(%d)^{%d}] :(", level, i, a, j, b);
    PrintLn();
    level --;       
-#endif
 #endif
   return out;
      
@@ -1388,12 +1391,10 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
 poly gnc_uu_Mult_ww_horvert (int i, int a, int j, int b, const ring r)
 
 {
-#ifdef _COUNTS_
-#ifndef NDEBUG
+#if OUTPUT_TRACE 
   PrintLn();
   Print("gnc_uu_Mult_ww_horvert: var(%d)^{%d}  *  var(%d)^{%d}?", i, a, j, b);
   PrintLn();
-#endif
 #endif
   int k,m;
   int rN=r->N;
