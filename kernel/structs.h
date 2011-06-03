@@ -402,10 +402,8 @@ public:
 //                                         LocalGB;  // MORA
 };
 
-
-#ifndef NDEBUG
+// count non-commutative products (cache access times)
 # define _COUNTS_
-#endif
 
 struct nc_struct
 {

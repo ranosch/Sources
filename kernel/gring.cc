@@ -998,11 +998,12 @@ poly gnc_mm_Mult_uu(int *F,int jG,int bG, const ring r)
 poly gnc_uu_Mult_ww_vert (int i, int a, int j, int b, const ring r)
 {
 #ifdef _COUNTS_
+#ifndef NDEBUG
   PrintLn();
   Print("gnc_uu_Mult_ww_vert: var(%d)^{%d}  *  var(%d)^{%d}", i, a, j, b);
   PrintLn();
 #endif
-
+#endif
    
   int k,m;
   int rN=r->N;
@@ -1157,9 +1158,11 @@ poly gnc_uu_Mult_ww_vert (int i, int a, int j, int b, const ring r)
 static inline poly gnc_uu_Mult_ww_formula (int i, int a, int j, int b, const ring r)
 {
 #ifdef _COUNTS_
+#ifndef NDEBUG
   PrintLn();
   Print("gnc_uu_Mult_ww_formula: var(%d)^{%d}  *  var(%d)^{%d}", i, a, j, b);
   PrintLn();
+#endif
 #endif
    
   /// ???
@@ -1198,9 +1201,11 @@ static inline void nc_enlargeMatrices(const int vik, const int oldSize, const in
    assume (newSize<=newcMTsize);
    
 #ifdef _COUNTS_
+#ifndef NDEBUG
     PrintLn();
     Print("nc_enlargeMatrix: resizing the cache matrix [%d] from %d^2 to %d^2!", vik, oldSize, newcMTsize);
     PrintLn();
+#endif
 #endif
    
    matrix tmp = mpNew(newcMTsize, newcMTsize);
@@ -1242,10 +1247,12 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
   /* x_i = y,  x_j = x ! */
 {
 #ifdef _COUNTS_
+#ifndef NDEBUG
   static int level = 0;
   PrintLn();
   Print("gnc_uu_Mult_ww[%3d]: var(%d)^{%d}  *  var(%d)^{%d}?", level++, i, a, j, b);
   PrintLn();
+#endif
 #endif
    
    
@@ -1260,7 +1267,9 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
     p_AddExp(out,j,b,r);
     p_Setm(out,r);
 #ifdef _COUNTS_
+#ifndef NDEBUG
     level --;
+#endif
 #endif
     return(out);
   }/* zero exeptions and usual case */
@@ -1272,7 +1281,9 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
     /* commutative or quasicommutative case */
   {
 #ifdef _COUNTS_
+#ifndef NDEBUG
     level --;
+#endif
 #endif
     poly out=p_One(r);
     p_SetExp(out,i,a,r);
@@ -1309,7 +1320,9 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
 		    // //    return FormulaMultiplier->Multiply(j, i, b, a);
 		    out = CFormulaPowerMultiplier::Multiply( PairType, j, i, b, a, r);
 #ifdef _COUNTS_
+#ifndef NDEBUG
 		    level --;
+#endif
 #endif
 		    return out;
 		 }      
@@ -1341,10 +1354,12 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
   if (out !=NULL) 
   {
 #ifdef _COUNTS_
+#ifndef NDEBUG
      PrintLn();
      Print("gnc_uu_Mult_ww[%3d--]: cache hit for [var(%d)^{%d}  *  var(%d)^{%d}]!", level, i, a, j, b);
      PrintLn();
      level --;       
+#endif
 #endif
      return (p_Copy(out,r));
   }
@@ -1354,10 +1369,12 @@ poly gnc_uu_Mult_ww (int i, int a, int j, int b, const ring r)
   // no cached result => compute...
    out = gnc_uu_Mult_ww_formula(i, a, j, b, r); // should also cache it necessary
 #ifdef _COUNTS_
+#ifndef NDEBUG
    PrintLn();
    Print("gnc_uu_Mult_ww[%3d--]: cache miss for [var(%d)^{%d}  *  var(%d)^{%d}] :(", level, i, a, j, b);
    PrintLn();
    level --;       
+#endif
 #endif
   return out;
      
@@ -1372,9 +1389,11 @@ poly gnc_uu_Mult_ww_horvert (int i, int a, int j, int b, const ring r)
 
 {
 #ifdef _COUNTS_
+#ifndef NDEBUG
   PrintLn();
   Print("gnc_uu_Mult_ww_horvert: var(%d)^{%d}  *  var(%d)^{%d}?", i, a, j, b);
   PrintLn();
+#endif
 #endif
   int k,m;
   int rN=r->N;
