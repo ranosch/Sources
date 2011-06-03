@@ -1,3 +1,5 @@
+int @@@DEBUG@@@ = 1;
+
 LIB "tst.lib"; 
 
 system("--min-time", "0.01");
@@ -7,23 +9,22 @@ system("--ticks-per-sec", 100);
 // system("NCUseExtensions");
 proc BeforeTest()
 {
-  "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
-  "Basering: "; basering;
-  system("NCGetType");
-  system("NCMultTest", 0);
-  system("NCMultTest", -1);
-  system("omMemoryTest");
-  "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+  if( defined(@@@DEBUG@@@) ) 
+  {
+    "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+    "Basering: "; basering;
+    system("NCGetType");
+    system("NCMultTest", 0);
+    system("NCMultTest", -1);
+    system("omMemoryTest");
+    "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+  }
   tst_init();
 }
 
 proc AfterTest()
 {
   tst_status(1);
-  "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
-  system("omMemoryTest");
-  system("NCMultTest", -1);
-  "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
 }
 
 
@@ -66,6 +67,7 @@ proc TestMult(int v, int S, int N, int M, int MM)
   }
   i = (tFinish - tBegin);
   "Timer => ", i;
+  "Last product: ", tt;
   return( i );
 
 }
@@ -74,8 +76,8 @@ proc TestMult(int v, int S, int N, int M, int MM)
 
 proc Test()
 {
-  int a = TestMult(1, 4, 10, 1, 1);
-  int b = TestMult(2, 4, 10, 1, 1);
+  int a = TestMult(1, 20, 20, 1, 1);
+  int b = TestMult(2, 20, 20, 1, 1);
 
   "======>>>>>>  a: ", a, ",,,,,, b: ", b;
 }
@@ -88,9 +90,10 @@ setring A;
 Test();
 
 // change the defaults...
-system("NCMultTest", 1, 0);
-system("NCMultTest", 2, 0);
-system("NCMultTest", 3, 1); // tested setting: 1 (no caches...?)
+system("NCMultTest", 1, 0); // bNoPluralMultiplication
+system("NCMultTest", 2, 0); // bNoCache
+system("NCMultTest", 3, 1); // bNoFormulae
+// tested setting: 1 (no caches...?)
 
 setring C;
 def  B = nc_algebra(q, a*x + b*y + g);

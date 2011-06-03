@@ -249,6 +249,16 @@ SEE ALSO: tst_init
       Set_tst_timer(timer);
     }
   }
+  if( defined(@@@DEBUG@@@) )
+  {
+    "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+    "Basering: "; basering;
+    system("NCGetType");
+    system("NCMultTest", 0);
+    system("omMemoryTest");
+    system("NCMultTest", -1);
+    "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+  }
 }
 example
 {
