@@ -1,5 +1,4 @@
 /////////////////////////////////////////////////////////////////////////////
-
 version="$Id$";
 category="Utilities";
 info="
@@ -249,15 +248,21 @@ SEE ALSO: tst_init
       Set_tst_timer(timer);
     }
   }
+//  int @@@DEBUG@@@;
   if( defined(@@@DEBUG@@@) )
   {
-    "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
-    "Basering: "; basering;
-    system("NCGetType");
-    system("NCMultTest", 0);
-    system("omMemoryTest");
-    system("NCMultTest", -1);
-    "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+    if( defined(basering) )
+    {
+      "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+      "Basering: "; basering;
+      if( system("NCGetType") != 0 )
+      {
+        system("NCMultTest", 0);
+        system("omMemoryTest");
+        system("NCMultTest", -1);
+      }
+      "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+    }
   }
 }
 example
@@ -282,6 +287,22 @@ PURPOSE: initializes further calls to tst routines:
 EXAMPLE: example tst_init; shows example
 "
 {
+//  int @@@DEBUG@@@;
+  if( defined(@@@DEBUG@@@) ) 
+  {
+    if( defined(basering) ) 
+    {
+      "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+      "Basering: "; basering;
+      if( system("NCGetType") != 0 )
+      {
+        system("NCMultTest", 0);
+        system("NCMultTest", -1);
+        system("omMemoryTest");
+      }
+      "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
+    }
+  }
   if (! defined(tst_no_status))
   {
     string outfile = "";
