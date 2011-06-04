@@ -63,12 +63,13 @@ proc TestMult(int v, int S, int N, int M, int MM)
     j = N;
     k = M;
     
-    "&&&&&&&&&& TEST MULT:  y^i * (y^j *x^k) - y^{i+j)*x^k, i: ", i, ", ", j, ", k: ", k, " (repeat: ", MM, " times)";
+    "&&&&&&&&&& TEST MULT:  y^i * (y^j *x^k) - (y^(i+j))*x^k, i: ", i, ", ", j, ", k: ", k, " (repeat: ", MM, " times)";
     BeforeTest();
     tBegin=timer;
     for( l = MM; l > 0; l-- )
     {
-      tt = var(2)^i * (var(2)^j * var(1)^k) - (var(2)^(i+j)) * var(1)^k;
+      tt = var(2)^i * (var(2)^j * var(1)^k);
+      tt = tt - (var(2)^(i+j)) * var(1)^k;
     }
     tFinish=timer;
     AfterTest();
@@ -93,7 +94,15 @@ proc TestMult(int v, int S, int N, int M, int MM)
   
   i = (tFinish - tBegin);
   "Timer => ", i;
-  "Last product: ", tt;
+  "Last product had: len: ", size(tt), ", deg: ", deg(tt), "::::";
+  if( size(tt) > 20 ) 
+  {
+    tt = tt[1..20]; "Last product': ", tt, "..."; 
+  }
+  else
+  {
+    "Last product: ", tt;
+  }
   return( i );
 
 }
@@ -102,27 +111,61 @@ proc TestMult(int v, int S, int N, int M, int MM)
 
 proc Test()
 {
+  int k, v;
+  int REPEAT = 2;
   def save = basering;
   list rrr = ringlist(save);
 
-  def r1 = ring(rrr); setring r1; 
-  "======>>>>>>  1: ", TestMult(1, 20, 20, 1, 1); 
-  kill r1; setring save;
-
-  def r1 = ring(rrr); setring r1; 
-  "======>>>>>>  2: ", TestMult(2, 20, 20, 1, 1);
-  kill r1; setring save;
-
-  def r1 = ring(rrr); setring r1; 
-  "======>>>>>>  4: ", TestMult(4, 20, 20, 1, 1); 
-  kill r1; setring save;
+  for( k = 40; k<= 60; k++ )
+  {
+    "111111111111111111111111111111111";
+    for( v = REPEAT; v > 0; v -- )
+    {
+      def r1 = ring(rrr); setring r1; 
+      "======>>>>>>  1: ", TestMult(1, k, k, 1, 1); 
+      kill r1; setring save;
+    }
+  }
   
-  def r1 = ring(rrr); setring r1; 
-  "======>>>>>>  3: ", TestMult(3, 5, 5, 5, 1);
-  kill r1; setring save;
+  for( k = 40; k<= 60; k++ )
+  {
+    "222222222222222222222222222222222";
+    for( v = REPEAT; v > 0; v -- )
+    {
+      def r1 = ring(rrr); setring r1; 
+      "======>>>>>>  2: ", TestMult(2, k, k, 1, 1);
+      kill r1; setring save;
+    }
+  }
+  
+  for( k = 1; k<= 16; k++ )
+  {
+    "444444444444444444444444444444444";  
+    for( v = REPEAT; v > 0; v -- )
+    {
+      def r1 = ring(rrr); setring r1; 
+      "======>>>>>>  4: ", TestMult(4, k, k, 1, 1); 
+      kill r1; setring save;
+    }
+  }
+
+  for( k = 1; k<= 10; k++ )
+  {
+    "333333333333333333333333333333333";
+    for( v = REPEAT; v > 0; v -- )
+    {
+      def r1 = ring(rrr); setring r1; 
+      "======>>>>>>  3: ", TestMult(3, k, k, k, 1);
+      kill r1; setring save;
+    }
+  }
 
 
 }
+
+system("NCMultTest", 1, 0); // bNoPluralMultiplication
+system("NCMultTest", 2, 0); // bNoCache
+system("NCMultTest", 3, 0); // bNoFormulae
 
 ring C = (0,q,a,b,g),(x,y),dp;
 def  A = nc_algebra(q, a*x + b*y + g);
@@ -133,8 +176,8 @@ Test();
 
 // change the defaults...
 system("NCMultTest", 1, 0); // bNoPluralMultiplication
-system("NCMultTest", 2, 0); // bNoCache
-system("NCMultTest", 3, 1); // bNoFormulae
+system("NCMultTest", 2, 1); // bNoCache
+system("NCMultTest", 3, 0); // bNoFormulae
 // tested setting: 1 (no caches...?)
 
 setring C;

@@ -255,7 +255,7 @@ SEE ALSO: tst_init
     {
       "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
       "Basering: "; basering;
-      if( system("NCGetType") != 0 )
+      if( system("NCGetType") >= 0 )
       {
         system("NCMultTest", 0);
         system("omMemoryTest");
@@ -294,7 +294,7 @@ EXAMPLE: example tst_init; shows example
     {
       "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&";
       "Basering: "; basering;
-      if( system("NCGetType") != 0 )
+      if( system("NCGetType") >= 0 )
       {
         system("NCMultTest", 0);
         system("NCMultTest", -1);
