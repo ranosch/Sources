@@ -1318,7 +1318,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
 		if ((h!=NULL) && (h->Typ()==INT_CMD))
 		  {
 		     bNoPluralMultiplication = (BOOLEAN)(int)((long)(h->Data()));
-		     Print("Set 'Plural' to: %d", bNoPluralMultiplication); PrintLn();	
+		     Print("Set NO'PluralMultiplication' to: %d", bNoPluralMultiplication); PrintLn();	
 		     h=h->next;
 		  }
 		break;
@@ -1330,7 +1330,7 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
 		if ((h!=NULL) && (h->Typ()==INT_CMD))
 		  {
 		     bNoCache = (BOOLEAN)(int)((long)(h->Data()));
-		     Print("Set the 'Caching' to: %d", bNoCache); PrintLn();	
+		     Print("Set the NO'Caching' to: %d", bNoCache); PrintLn();	
 		     h=h->next;
 		  }
 		break;
@@ -1341,8 +1341,8 @@ BOOLEAN jjSYSTEM(leftv res, leftv args)
 		res->data = (void*)bNoFormula;
 		if ((h!=NULL) && (h->Typ()==INT_CMD))
 		  {
-		     bNoCache = (BOOLEAN)(int)((long)(h->Data()));
-		     Print("Set the 'usage of direct formulas' to: %d", bNoFormula); PrintLn();	
+		     bNoFormula = (BOOLEAN)(int)((long)(h->Data()));
+		     Print("Set the NO'usage of direct formulas' to: %d", bNoFormula); PrintLn();	
 		     h=h->next;
 		  }
 		break;
