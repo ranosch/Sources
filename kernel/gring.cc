@@ -93,7 +93,7 @@ USE_CONST BOOLEAN bNoPluralMultiplication = FALSE;
 /// don't use any formula shortcuts 
 /// (only if bNoPluralMultiplication is false)
 // static 
-USE_CONST BOOLEAN bNoFormula = TRUE;
+USE_CONST BOOLEAN bNoFormula = FALSE;
 
 /// only formula whenever possible, only make sanse if bNoFormula is false!
 /// (only if bNoPluralMultiplication is false)
@@ -2839,12 +2839,14 @@ void nc_PrintMT(const ring r)
 		 {
 		    Print("   [%3d,%3d]=> len: %4d, size: %4d, deg: %4d, p: ", s, t, pLength(p), pSize(p), pDeg(p,r)); // r == currRing!!!
 		    p_wrp(p, r, r);
-#ifdef _COUNTS_
-		    Print("& Count: %4d", MATELEMENT(ccMT,size, s,t));
-#endif
-		    
+    
 		    PrintLn();
 		 }
+#ifdef _COUNTS_
+		 const int count = MATELEMENT(ccMT,size, s,t);
+		 if( count != 0 )
+		   Print("   [%3d,%3d]=> Count: %4d", s, t,  count);
+#endif
 	      }
        }
 }
@@ -2933,6 +2935,9 @@ inline void nc_CleanUp(ring r)
 void nc_rKill(ring r)
 // kills the nc extension of ring r
 {
+#ifdef _COUNTS_
+   nc_PrintMT(r);
+#endif
   if( r->GetNC()->GetGlobalMultiplier() != NULL )
   {
     delete r->GetNC()->GetGlobalMultiplier();
