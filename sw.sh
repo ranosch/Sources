@@ -7,8 +7,7 @@ BRANCH="spielwiese"
 CFGOPTIONS="--with-gmp=yes"
 
 # computer specific make options: e.g. -j9
-# MKOPTIONS="-j49"
-MKOPTIONS=
+DEFMKOPTIONS="-j2"
 
 
 D="`hostname`.`date +%y.%m.%d.%H.%M.%S`"
@@ -43,10 +42,7 @@ echo "SYSTEM: `uname -a`" >> $LOG
 
 
 echo "Looking for make... " >> $LOG 
-
-[ -z "$MAKE" ] && { MAKE="make"; }
-
-echo "Using '$MAKE'... " >> $LOG;
+echo "Using [${MAKE:=make}] with [${MKOPTIONS:=$DEFMKOPTIONS}]" >> $LOG;
 
 
 echo "Creating empty tempdir: $SW" >> $LOG
@@ -186,8 +182,3 @@ exit 0
 
 
 
-
-
-
-
-	  
