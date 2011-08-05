@@ -1170,7 +1170,7 @@ inline BOOLEAN criterion2 (
   int j               = currRing->N;
   unsigned long tempR = i;
   RewRuList* tempL;
-//#if F5EDEBUG1
+#if F5EDEBUG1
   Print("CRITERION2-BEGINNING\nTested Element: ");
   while( j )
   {
@@ -1198,7 +1198,7 @@ inline BOOLEAN criterion2 (
   Print("\nRule Index: %ld\n", i);
   pWrite( pTestRule );
   pDelete( &pTestRule ); 
-//#endif
+#endif
 //nextElement:
   //for( ; i < end; i++)
   while( tempR != -1 )
@@ -1207,7 +1207,7 @@ inline BOOLEAN criterion2 (
     nextElement:
     while( tempL )
     {
-      Print("TempL Rule: %ld -- TempR: %ld\n", tempL->rule, tempR);
+      //Print("TempL Rule: %ld -- TempR: %ld\n", tempL->rule, tempR);
       if( tempL->rule != i )
       {
 #if F5EDEBUG1
@@ -1232,7 +1232,7 @@ inline BOOLEAN criterion2 (
             }
             j--;
           }
-//#if F5EDEBUG1
+#if F5EDEBUG1
           Print("Rewrite Rule: ");
           j = currRing->N;
           while( j )
@@ -1243,7 +1243,7 @@ inline BOOLEAN criterion2 (
           j = currRing->N;
           Print("\n%ld\n%ld\n",rewRules->slabel[tempL->rule], tempL->rule);
           Print("CRITERION2-END-DETECTED \n");
-//#endif
+#endif
           return TRUE;
         }
       }
@@ -1416,7 +1416,7 @@ void computeSpols (
           (*rewRules)->size++;
 
         } 
-//#if F5EDEBUG1
+#if F5EDEBUG1
         Print("RULE #%d: ",(*rewRules)->size);
         for( int _l=0; _l<currRing->N+1; _l++ )
         {
@@ -1446,7 +1446,7 @@ void computeSpols (
           tempRuL = tempRuL->next;
         }
         Print("\n-------------------------------------\n");
-//#endif
+#endif
         // from this point on, rewRulesLast != NULL, thus we do not need to test this
         // again in the following iteration over the list of critical pairs
         
