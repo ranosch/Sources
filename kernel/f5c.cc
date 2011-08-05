@@ -1405,7 +1405,7 @@ inline BOOLEAN criterion2 (
       while(j)
       {
         tempArray[j] = mLabel[j] - rewRules->label[i][j];
-        Print(" %d\n", tempArray[j]);
+        //Print(" %d\n", tempArray[j]);
         if( tempArray[j] < 0 )
         {
           j = currRing->N;
@@ -1415,7 +1415,7 @@ inline BOOLEAN criterion2 (
         j--;
       }
       // tempArray is multiplier for lms
-      Print("CRIT2TESTMULT: \n");
+      //Print("CRIT2TESTMULT: \n");
       if( !rewRules->p[i] )
       {
         j = currRing->N;
@@ -1535,7 +1535,7 @@ void computeSpols (
       {
         lmTest  = pHead(lmTest2);
       }
-      pWrite( pHead(lmTest) );
+      //pWrite( pHead(lmTest) );
       if( 
           !newCriterion1(temp->mLabel1, temp->smLabel1, *f5Rules, stratSize) &&
           !criterion2 ( lmTest, temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1,
