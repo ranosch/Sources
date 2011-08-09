@@ -148,7 +148,7 @@ ideal f5cMain(ideal F, ideal Q)
   omFree(offsets);
 #if F5EDEBUG00
   Print("-------------------------------------------\n");
-  Print("# Super Top Reductions:  %ld\n", superTopReductions);
+  //Print("# Super Top Reductions:  %ld\n", superTopReductions);
   Print("# Zero Reductions:       %ld\n", zeroReductions);
   Print("# Reductions:            %ld\n", number1Reductions);
   Print("# Reduction steps:       %ld\n", numberReductions);
