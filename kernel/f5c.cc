@@ -51,6 +51,7 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
+#define SIGSTDR           0
 #define F5ETAILREDUCTION  0 
 #define F5EDEBUG00        1 
 #define F5EDEBUG0         0 
@@ -131,9 +132,18 @@ ideal f5cMain(ideal F, ideal Q)
     // the following interreduction is the essential idea of F5e.
     // NOTE that we do not need the old rules from previous iteration steps
     // => we only interreduce the polynomials and forget about their labels
+
+#if SIGSTDR
     ideal rTemp = kInterRed(r);
     idDelete( &r );
     r = rTemp;
+#else
+    for( int k=0; k<IDELEMS(r); k++ )
+    {
+      pNorm(r->m[k]);
+    }
+#endif
+
 #if F5EDEBUG2
     for( int k=0; k<IDELEMS(r); k++ )
     {
@@ -1094,6 +1104,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
           if( pLmCmp(cp->mLabelExp, (tempForDel->next)->mLabelExp) == 0 )
           {
             // need to check which generating element was generated later
+            /*
             if( pLength(cp->p1) < pLength((tempForDel->next)->p1) )
             {
               Cpair* tempDel  = tempForDel->next;
@@ -1106,6 +1117,7 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
             }
             else
             {
+            */
               // throw away the new critical pair
               // Note that this situation can only happen when a higher label reduction
               // has led to cp and the 2nd generator becomes the new 1st generator!!!
@@ -1113,7 +1125,9 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
               omFreeSize( cp->mult1, ((currRing->N)+1)*sizeof(int) );
               omFreeSize( cp->mult2, ((currRing->N)+1)*sizeof(int) );
               //omFreeSize( cp, sizeof(Cpair) );
+            /*
             }
+            */
           }
           else
           {
@@ -1745,13 +1759,13 @@ void currReduction  (
       // loop over elements of lower index, i.e. elements in strat
       for( int ctr=0; ctr<IDELEMS(redGB); ctr++ )
       {
-        if( isDivisibleGetMult( redGB->m[ctr], f5Rules->slabel[ctr], kBucketGetLm( bucket ), 
+        if( isDivisibleGetMult( strat->S[ctr], f5Rules->slabel[ctr], kBucketGetLm( bucket ), 
               bucketExp, &multTemp, &isMult
               ) 
           )
         {
           multCoeff1          = pGetCoeff( kBucketGetLm(bucket) );
-          multCoeff2          = pGetCoeff( redGB->m[ctr] );
+          multCoeff2          = pGetCoeff( strat->S[ctr] );
           multCoeff2          = n_Div( multCoeff1, multCoeff2, currRing );
 
           static poly multiplier = pOne();
@@ -1770,7 +1784,7 @@ void currReduction  (
           Print("MULT: %p\n", multiplier );
           pWrite( multiplier );
 #endif
-          multReducer = pp_Mult_mm( redGB->m[ctr]->next, multiplier, currRing );
+          multReducer = pp_Mult_mm( strat->S[ctr]->next, multiplier, currRing );
 #if F5EDEBUG2
           Print("MULTRED BEFORE: \n" );
           pWrite( pHead(multReducer) );
@@ -1855,10 +1869,10 @@ void currReduction  (
           // in the basic algorithm we do not execute higher label reductions at all!
           if( pLmCmp( multLabelTempExp, spLabelExp ) == 1 )
           {            
-            /*
 #if F5EDEBUG1
 Print("HIGHER LABEL REDUCTION \n");
 #endif
+/*
 poly newPoly  = pInit();
 int length;
 int cano            = kBucketCanonicalize( bucket );
@@ -2292,7 +2306,7 @@ Print("ADDRESS: %p\n", rewRules->label[0]);
       // we know that sp = 0 at this point!
       sp  = kBucketExtractLm( bucket );
 #if F5EDEBUG1
-      Print("END OF TOP REDUCTION:  ");
+      Print("REST OF SP AT THE END OF TOP REDUCTION:  ");
       pWrite(kBucketGetLm(bucket));
 #endif
 #if F5EDEBUG3
@@ -2452,6 +2466,10 @@ startagainTail:
       while( kBucketGetLm(bucket) )
       {
         sp = p_Merge_q( sp, kBucketExtractLm(bucket), currRing );  
+#if F5EDEBUG3
+        Print("MERGED ELEMENT: ");
+        pWrite( sp );
+#endif
       }
 #endif // Tail reduction yes/no   
 kBucketLmZero: 
@@ -3345,9 +3363,9 @@ static inline BOOLEAN isDivisibleGetMult  ( poly a, unsigned long sev_a, poly b,
 #endif
 #if F5EDEBUG3
   pWrite(pHead(a));
-  Print("%ld\n",pGetShortExpVector(a));
+  Print("%ld == %ld ?\n",~pGetShortExpVector(a), sev_a);
   pWrite(pHead(b));
-  Print("%ld\n",~pGetShortExpVector(b));
+  Print("%ld == %ld ?\n",~pGetShortExpVector(b), not_sev_b);
   Print("SHORT EXP TEST -- BOOLEAN? %ld\n",(sev_a & not_sev_b));
   p_LmCheckPolyRing1(a, currRing);
   p_LmCheckPolyRing1(b, currRing);
