@@ -51,6 +51,7 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
+#define NOTRED            1
 #define SIGSTDR           1
 #define F5ETAILREDUCTION  0 
 #define F5EDEBUG00        1 
@@ -134,9 +135,19 @@ ideal f5cMain(ideal F, ideal Q)
     // => we only interreduce the polynomials and forget about their labels
 
 #if SIGSTDR
-    ideal rTemp = kInterRed(r);
-    idDelete( &r );
-    r = rTemp;
+    // reduce standard bases only when necessary
+    // => no reduced gb as end result!
+#if NOTRED
+    if( i<IDELEMS(FRed)-1 )
+    {  
+#endif
+      ideal rTemp = kInterRed(r);
+      idDelete( &r );
+      r = rTemp;
+#if NOTRED
+    }
+#endif
+
 #else
     for( int k=0; k<IDELEMS(r); k++ )
     {
