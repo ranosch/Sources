@@ -50,8 +50,10 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
+#define NOTRED            0 
 #define F5ETAILREDUCTION  0 
-#define F5EDEBUG0         1 
+#define F5EDEBUG00        1 
+#define F5EDEBUG0         0 
 #define F5EDEBUG1         0 
 #define F5EDEBUG2         0 
 #define F5EDEBUG3         0 
@@ -62,6 +64,10 @@ int create_count_f5 = 0; // for KDEBUG option in reduceByRedGBCritPair
 // this is needed for the lengths of the rules arrays in the following
 unsigned long rewRulesSize  = 0;
 unsigned long stratSize     = 0;
+unsigned long zeroReductions      = 0;
+unsigned long number1Reductions   = 0;
+unsigned long numberReductions    = 0;
+ 
  
 /// NOTE that the input must be homogeneous to guarantee termination and
 /// correctness. Thus these properties are assumed in the following.
@@ -147,8 +153,19 @@ ideal f5cMain(ideal F, ideal Q)
   omFree(shift);
   omFree(negBitmaskShifted);
   omFree(offsets);
+#if F5EDEBUG00
+  Print("-------------------------------------------\n");
+  //Print("# Super Top Reductions:  %ld\n", superTopReductions);
+  Print("# Zero Reductions:       %ld\n", zeroReductions);
+  Print("# Reductions:            %ld\n", number1Reductions);
+  Print("# Reduction steps:       %ld\n", numberReductions);
+  Print("-------------------------------------------\n");
+#endif
   create_count_f5 = 0;
   stratSize       = 0;
+  zeroReductions      = 0;
+  numberReductions    = 0;
+  number1Reductions   = 0;
   return r;
 }
 
@@ -1379,6 +1396,7 @@ void computeSpols (
         pWrite( pHead(sp) );
         pTest(sp);
 #endif
+        number1Reductions++;
         if( sp )
         {
           // store the s-polynomial in the linked list for further
@@ -1948,6 +1966,7 @@ void currReduction  (
             tempLength = pLength( multReducer );
             
             kBucket_Add_q( bucket, pNeg(multReducer), &tempLength ); 
+            numberReductions++;
 #if F5EDEBUG2
             Print("AFTER REDUCTION STEP: ");
             pWrite( kBucketGetLm(bucket) );
@@ -1987,6 +2006,7 @@ void currReduction  (
           pWrite( temp->p );
 #endif
           kBucket_Add_q( bucket, pNeg(tempNeg->next), &tempLength ); 
+          numberReductions++;
 #if F5EDEBUG2
           Print("AFTER REDUCTION STEP: ");
           pWrite( kBucketGetLm(bucket) );
@@ -2210,6 +2230,7 @@ void currReduction  (
     }
     else // spTemp->p == 0
     {
+      zeroReductions++;
       pDelete( &spTemp->p );
     }
     rewRulesCurr  = rewRulesCurr++;
