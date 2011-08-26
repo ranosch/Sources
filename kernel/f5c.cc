@@ -2187,7 +2187,7 @@ void currReduction  (
       newElement->redundant = redundant;
       // update pointer to last element in gCurr list
       *gCurrFirst           = newElement;
-#if F5EDEBUG0
+#if F5EDEBUG1
       Print("ELEMENT ADDED TO GCURR: ");
       pWrite( pHead((*gCurrFirst)->p) );
       poly pSig = pOne(); 
