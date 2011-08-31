@@ -51,6 +51,7 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
+#define NOTRED            1 
 #define F5ETAILREDUCTION  0 
 #define F5EDEBUG00        1
 #define F5EDEBUG0         0 
