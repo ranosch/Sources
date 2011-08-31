@@ -51,6 +51,7 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
+#define NOTRED            1 
 #define F5ETAILREDUCTION  0 
 #define F5EDEBUG00        1 
 #define F5EDEBUG0         0 
@@ -131,9 +132,16 @@ ideal f5cMain(ideal F, ideal Q)
     // the following interreduction is the essential idea of F5e.
     // NOTE that we do not need the old rules from previous iteration steps
     // => we only interreduce the polynomials and forget about their labels
-    ideal rTemp = kInterRed(r);
-    idDelete( &r );
-    r = rTemp;
+#if NOTRED
+    if( i<IDELEMS(FRed)-1 )
+    {  
+#endif
+      ideal rTemp = kInterRed(r);
+      idDelete( &r );
+      r = rTemp;
+#if NOTRED
+    }
+#endif
 #if F5EDEBUG2
     for( int k=0; k<IDELEMS(r); k++ )
     {
