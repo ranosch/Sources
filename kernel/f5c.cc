@@ -55,7 +55,7 @@
 #define F5ETAILREDUCTION  0 
 #define F5EDEBUG00        1 
 #define F5EDEBUG0         0 
-#define F5EDEBUG1         0 
+#define F5EDEBUG1         0
 #define F5EDEBUG2         0 
 #define F5EDEBUG3         0 
 #define setMaxIdeal       64
@@ -463,7 +463,7 @@ void criticalPairInit (
       // to the list of critical pairs 
       cpTemp->p2        = strat->S[i];
 #if F5EDEBUG1
-      Print("2nd gen: ");
+      Print("2nd gen : ");
       pWrite( pHead(cpTemp->p2) );
 #endif
       // now we really need the memory for the exp label
@@ -1038,13 +1038,32 @@ void insertCritPair ( Cpair* cp, long deg, CpairDegBound** bound, int numVariabl
   lmTest2   = pp_Mult_mm( cp->p2, m2, currRing );
   lmTest1   = lmTest1->next;
   lmTest2   = lmTest2->next;
-  if( pLmCmp( pHead(lmTest1), pHead(lmTest2) ) == 1  )
+#if F5EDEBUG1
+      Print("insert start 1: ");
+      pWrite( pHead(lmTest1) );
+      pWrite( pHead(lmTest2) );
+#endif
+  if( pHead(lmTest1) != 0 && pHead(lmTest2) != 0 )
   {
-    lmTest  = pHead(lmTest1);
+    if( pLmCmp( pHead(lmTest1), pHead(lmTest2) ) == 1  )
+    {
+      lmTest  = pHead(lmTest1);
+    }
+    else
+    {
+      lmTest  = pHead(lmTest2);
+    }
   }
   else
   {
-    lmTest  = pHead(lmTest2);
+    if( pHead(lmTest1) == 0 )
+    {
+      lmTest = pHead(lmTest2);
+    }
+    else
+    {
+      lmTest = pHead(lmTest1);
+    }
   }
   // pointer for deleting critical pairs of the same signature:
   // ggv says: one pair per signature!
@@ -1400,7 +1419,7 @@ inline BOOLEAN criterion2 (
   for( ; i < end; i++)
   {
 #if F5EDEBUG1
-    Print("Rewrite Rule: ");
+    Print("Rewrite Rule 1: ");
     while( j )
     {
       Print("%d ",rewRules->label[i][(currRing->N)-j]);
@@ -1437,7 +1456,7 @@ inline BOOLEAN criterion2 (
           );
       tempMult = pp_Mult_qq( pHead(rewRules->p[i]), tempMult, currRing );
       // if tempMult > lm do not use rule, but search more!
-      if( pLmCmp( tempMult, lm) == 1 )
+      if( lm == 0 || pLmCmp( tempMult, lm) == 1 )
       {
         j = currRing->N;
         i++;
@@ -1445,7 +1464,7 @@ inline BOOLEAN criterion2 (
       }
       // else we can use the rule!!!
 #if F5EDEBUG1
-    Print("Rewrite Rule: ");
+    Print("Rewrite Rule 2: ");
     j = currRing->N;
     while( j )
     {
@@ -1536,13 +1555,27 @@ void computeSpols (
       lmTest2   = pp_Mult_mm( temp->p2, m2, currRing );
       lmTest1   = lmTest1->next;
       lmTest2   = lmTest2->next;
-      if( pLmCmp( pHead(lmTest1), pHead(lmTest2) ) == 1  )
+      if( pHead(lmTest1) != 0 && pHead(lmTest2) != 0 )
       {
-        lmTest  = pHead(lmTest1);
+        if( pLmCmp( pHead(lmTest1), pHead(lmTest2) ) == 1  )
+        {
+          lmTest  = pHead(lmTest1);
+        }
+        else
+        {
+          lmTest  = pHead(lmTest2);
+        }
       }
       else
       {
-        lmTest  = pHead(lmTest2);
+        if( pHead(lmTest1) == 0 )
+        {
+          lmTest = pHead(lmTest2);
+        }
+        else
+        {
+          lmTest = pHead(lmTest1);
+        }
       }
       //pWrite( pHead(lmTest) );
       if( 
