@@ -2600,7 +2600,8 @@ kBucketLmZero:
           Print("ADDED TO BASIS: ");
           poly output = pInit();
           output = pHead((*gCurrLast)->p);          
-          pNormalize( output );
+          pSetCoeff(output,nInit(1));
+          // pNormalize( output );
           pWrite( output );
           pDelete( &output );
           poly pSig = pOne(); 
@@ -2625,7 +2626,7 @@ kBucketLmZero:
         {
           // we have done a super top reduction!
           // => delete poly and its label completely
-#if F5EDEBUG0
+#if F5EDEBUG1
           Print("SUPER TOP REDUCTION!\n");
           pWrite( pHead(sp) );
           poly pSig = pOne(); 
@@ -2645,7 +2646,7 @@ kBucketLmZero:
       {
         // if spTemp->p = 0 we have to add the corresponding rewRule to the array
         // of f5Rules
-#if F5EDEBUG0
+#if F5EDEBUG1
         Print("ZERO REDUCTION!\n");
         poly pSig = pOne(); 
         for( int lale = 1; lale < (currRing->N+1); lale++ )
