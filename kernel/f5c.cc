@@ -54,7 +54,7 @@
 #define NOTRED            1 
 #define F5ETAILREDUCTION  0 
 #define F5EDEBUG00        1
-#define F5EDEBUG0         0 
+#define F5EDEBUG0         1 
 #define F5EDEBUG1         0 
 #define F5EDEBUG2         0 
 #define F5EDEBUG3         0 
@@ -2598,7 +2598,11 @@ kBucketLmZero:
           *gCurrLast            = newElement;
 #if F5EDEBUG0
           Print("ADDED TO BASIS: ");
-          pWrite( (*gCurrLast)->p );
+          poly output = pInit();
+          output = pHead((*gCurrLast)->p);          
+          pNormalize( output );
+          pWrite( output );
+          pDelete( &output );
           poly pSig = pOne(); 
           for( int lale = 1; lale < (currRing->N+1); lale++ )
           {
