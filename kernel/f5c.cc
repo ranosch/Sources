@@ -50,6 +50,8 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
+#define F5C               0
+#define NOTRED            1
 #define F5ETAILREDUCTION  0 
 #define F5EDEBUG00        1 
 #define F5EDEBUG0         0 
@@ -130,9 +132,27 @@ ideal f5cMain(ideal F, ideal Q)
     // the following interreduction is the essential idea of F5e.
     // NOTE that we do not need the old rules from previous iteration steps
     // => we only interreduce the polynomials and forget about their labels
+#if F5C
+    // reduce standard bases only when necessary
+    // => no reduced gb as end result!
+#if NOTRED
+    if( i<IDELEMS(FRed)-1 )
+    {  
+#endif
     ideal rTemp = kInterRed(r);
     idDelete( &r );
     r = rTemp;
+#if NOTRED
+    }
+#endif
+
+#else
+    for( int k=0; k<IDELEMS(r); k++ )
+    {
+      pNorm(r->m[k]);
+    }
+#endif
+
 #if F5EDEBUG3
     for( k=0; k<IDELEMS(r); k++ )
     {
@@ -191,7 +211,6 @@ ideal f5cIter (
 #endif  
   // create the reduction structure "strat" which is needed for all 
   // reductions with redGB in this iteration step
-  Print("HERE\n");
   kStrategy strat   = new skStrategy;
   BOOLEAN b         = pLexOrder;
   BOOLEAN toReset   = FALSE;
@@ -1607,7 +1626,7 @@ void currReduction  (
       // loop over elements of lower index, i.e. elements in strat
       for( int ctr=0; ctr<IDELEMS(redGB); ctr++ )
       {
-        if( isDivisibleGetMult( redGB->m[ctr], strat->sevS[ctr], kBucketGetLm( bucket ), 
+        if( isDivisibleGetMult( strat->S[ctr], strat->sevS[ctr], kBucketGetLm( bucket ), 
               bucketExp, &multTemp, &isMult
               ) 
           )
@@ -1634,7 +1653,7 @@ void currReduction  (
           Print("POLY: \n" );
           pWrite( redGB->m[ctr]->next );
 #endif
-          multReducer = pp_Mult_mm( redGB->m[ctr]->next, multiplier, currRing );
+          multReducer = pp_Mult_mm( strat->S[ctr]->next, multiplier, currRing );
 #if F5EDEBUG2
           Print("MULTRED BEFORE: \n" );
           pWrite( pHead(multReducer) );
@@ -2322,18 +2341,13 @@ void currReduction  (
         // copy data from critical pair rule to rewRule
         register unsigned long _length  = currRing->N+1;
         register unsigned long _i       = 0;
-  Print("HERE\n");
         register int* _d                = f5Rules->label[f5Rules->size];
-  Print("HERE %p\n", f5Rules->label[f5Rules->size]);
         register int* _s                = rewRules->label[rewRulesCurr];
-  Print("HERE %ld\n", rewRulesCurr);
         while( _i<_length )
         {
-          Print("%ld\n",_i);
           _d[_i]  = _s[_i];
           _i++;
         }
-  Print("HERE\n");
         f5Rules->slabel[f5Rules->size]  = rewRules->slabel[rewRulesCurr];
         f5Rules->size++;
       }
