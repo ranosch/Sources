@@ -50,7 +50,8 @@
 #undef PDEBUG
 #define PDEBUG 0 
 #endif
-#define F5C               0
+#define F5C               1
+#define GGVMODE           0 
 #define NOTRED            1
 #define F5ETAILREDUCTION  0 
 #define F5EDEBUG00        1 
@@ -2335,6 +2336,8 @@ void currReduction  (
       Print("SIZES BEFORE: %ld < %ld ?\n",f5Rules->size, f5RulesSize);
       Print("ADDRESS: %p\n", f5Rules->label[0]);
 #endif
+
+#if GGVMODE
       // get the corresponding offsets for the insertion of the element in the two lists:
       if( f5Rules->size<f5RulesSize )
       {
@@ -2402,7 +2405,8 @@ void currReduction  (
 #if F5EDEBUG2
         Print("MEMORY ALLOCATED -- %p\n", f5Rules->label[0]);
 #endif
-      } 
+      }
+#endif
       pDelete( &sp );
     }
     // free memory of bucket
