@@ -30,7 +30,7 @@
                     // "reduceByRedGBCritPair" uses "TObject" as a 
                     // parameter
 
-
+#define F5CC 1
 //------------------------------------------------------------------------------
 //------------------------------ STRUCTURES ------------------------------------
 //------------------------------------------------------------------------------
@@ -208,6 +208,10 @@ void criticalPairInit (
                                     ///       the previous iteration step  
   const F5Rules& f5Rules,           ///<[in]  list of exponent vectors to check the F5 
                                     ///       Criterion, i.e. Criterion 1
+#if F5CC
+  const F5Rules& f5Rules2,          ///<[in]  list of exponent vectors to check the F5 
+                                    ///       Criterion, i.e. Criterion 1
+#endif
   const RewRules& rewRules,         ///<[in]  list of exponent vectors to check the Rewritten
                                     ///       Criterion, i.e. Criterion 2
   CpairDegBound** bounds,           ///<[in,out]  list of critical pair 
@@ -235,6 +239,10 @@ void criticalPairPrev (
                                     ///       the previous iteration step  
   const F5Rules& f5Rules,           ///<[in]  list of exponent vectors to check the F5 
                                     ///       Criterion
+#if F5CC
+  const F5Rules& f5Rules2,          ///<[in]  list of exponent vectors to check the F5 
+                                    ///       Criterion
+#endif
   const RewRules& rewRules,         ///<[in]  list of exponent vectors to check the Rewritten
                                     ///       Criterion, i.e. Criterion 2
   CpairDegBound** bounds,           ///<[in,out]  list of critical pair 
@@ -299,6 +307,19 @@ inline BOOLEAN criterion1 (
 
 
 
+/// @brief \c criterion12() checks the multiplied label of a generator of a
+/// critical pair by the F5 Criterion
+/// @return 1, if the label is detected by the F5 Criterion; 0, else
+/// @sa criterion2
+inline BOOLEAN criterion12 (
+  const int*          mLabel,  ///<[in]  multiplied labeled to be checked
+  const unsigned long smLabel, ///<[in]  corresponding short exponent vector
+  const F5Rules*      f5Rules, ///<[in]  rules (integer vectors) for F5 Criterion checks
+  const int           idx      ///<[in]  index of element in G 
+                          );
+
+
+
 /// @brief \c criterion2() checks the multiplied label of a generator of a
 /// critical pair by the Rewritten Criterion 
 /// @return 1, if the label is detected by the Rewritten Criterion; 0, else
@@ -326,6 +347,9 @@ void computeSpols (
   Lpoly**         gCurr,      ///<[in,out]  pointer to the list of reducers of the 
                               ///           current iteration step
   F5Rules**  f5Rules,         ///<[in]  rules for F5 Criterion checks
+#if F5CC
+  F5Rules**  f5Rules2,        ///<[in]  rules for F5 Criterion checks
+#endif
   RewRules** rewRules,        ///<[in]  rules for Rewritten Criterion checks
   int numVariables,           ///<[in]  global stuff for faster exponent computations
   int* shift,                 ///<[in]  global stuff for faster exponent computations
@@ -377,6 +401,9 @@ void currReduction  (
                           ///           as the corresponding value is changed when
                           ///           new elements are added to gCurr.
   F5Rules** f5Rules,      ///<[in]      rules for F5 Criterion checks
+#if F5CC
+  F5Rules** f5Rules2,      ///<[in]      rules for F5 Criterion checks
+#endif
   int*  multTemp,         ///<[in]      integer exponent vector for the mulitples
                           ///           of the reducers
   int*  multLabelTemp,    ///<[in]      integer exponent vector for the mulitples
