@@ -790,7 +790,7 @@ void criticalPairPrev (
     
     // testing the F5 Criterion
 #if F5EDEBUG1
-    Print("2nd generator of pair: ");
+    Print("2nd generator of pair1: ");
     pWrite( pHead(strat->S[i]) );
 #endif
     if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) &&
@@ -880,7 +880,7 @@ void criticalPairPrev (
 #endif
 
 #if F5EDEBUG1
-    Print("2nd generator of pair: ");
+    Print("2nd generator of pair2: ");
     pWrite( pHead(strat->S[strat->sl]) );
 #endif
   // testing the F5 Criterion
@@ -1306,6 +1306,8 @@ void insertCritPair( Cpair* cp, long deg, CpairDegBound** bound )
     test  = test->next;
   }
   Print("-------------------------------------\n");
+#endif
+#if F5EDEBUG1
   Print("INSERTCRITPAIR-END deg bound %p\n",*bound);
 #endif
 }
@@ -1380,6 +1382,7 @@ inline BOOLEAN criterion12  ( const int* mLabel, const unsigned long smLabel,
   {
     pos  += idx-i;
   }
+  int i = 0;
   int j = currRing->N;
 #if F5EDEBUG1
     Print("CRITERION12-BEGINNING\nTested Element: ");
@@ -1396,7 +1399,7 @@ inline BOOLEAN criterion12  ( const int* mLabel, const unsigned long smLabel,
 #endif
   nextElement:
   
-  for(int i=0 ; i < idx; i++)
+  for( ; i < idx; i++)
   {
 #if F5EDEBUG1
     Print("F5 Rule: ");
