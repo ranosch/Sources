@@ -52,6 +52,7 @@
 #endif
 #define F5CC              1
 #define F5C               1
+#define USEREW            1 
 #define GGVMODE           1 
 #define NOTRED            1
 #define F5ETAILREDUCTION  0 
@@ -793,11 +794,13 @@ void criticalPairPrev (
     Print("2nd generator of pair1: ");
     pWrite( pHead(strat->S[i]) );
 #endif
-    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) &&
+    if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) 
 #if F5CC
-        !criterion12(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules2, i) &&
+        && !criterion12(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules2, i) 
 #endif
-        !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
+#if USEREW
+        && !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
+#endif
       )
     {
       // completing the construction of the new critical pair and inserting it
@@ -884,11 +887,13 @@ void criticalPairPrev (
     pWrite( pHead(strat->S[strat->sl]) );
 #endif
   // testing the F5 Criterion
-  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) &&
+  if( !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat)
 #if F5CC
-      !criterion12(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules2, i) &&
+      && !criterion12(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules2, i)
 #endif
-      !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
+#if USEREW
+      && !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
+#endif
     )
   {
     // completing the construction of the new critical pair and inserting it
@@ -1021,8 +1026,10 @@ void criticalPairCurr (
       if( 
           !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) 
           && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules, strat) 
+#if USEREW
           && !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
           && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, &rewRules, cpTemp->rewRule2)
+#endif
         ) 
       {
         // completing the construction of the new critical pair and inserting it
@@ -1131,8 +1138,10 @@ void criticalPairCurr (
     if( 
         !criterion1(cpTemp->mLabel1, cpTemp->smLabel1, &f5Rules, strat) 
         && !criterion1(cpTemp->mLabel2, cpTemp->smLabel2, &f5Rules, strat) 
+#if USEREW
         && !criterion2(cpTemp->mLabel1, cpTemp->smLabel1, &rewRules, cpTemp->rewRule1)
         && !criterion2(cpTemp->mLabel2, cpTemp->smLabel2, &rewRules, cpTemp->rewRule2)
+#endif
       ) 
     {
       // completing the construction of the new critical pair and inserting it
@@ -1574,8 +1583,12 @@ void computeSpols (
       // and compute the corresponding s-polynomial (and pre-reduce it
       // w.r.t. redGB
       if( 
+#if USEREW
           !criterion2(temp->mLabel1, temp->smLabel1, (*rewRules), temp->rewRule1) &&
           (!temp->mLabel2 || !criterion2(temp->mLabel2, temp->smLabel2, (*rewRules), temp->rewRule2)) 
+#else
+          1
+#endif
         )
       {
         if( (*rewRules)->size < rewRulesSize )
@@ -1994,8 +2007,10 @@ void currReduction  (
           multLabelShortExp   = ~getShortExpVecFromArray( multLabelTemp );
           
           // test the multiplied label by both criteria 
-          if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules, strat ) && 
-              !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
+          if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules, strat ) 
+#if USEREW
+              && !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
+#endif
             )
           { 
             static unsigned long* multTempExp = (unsigned long*) 
@@ -2445,8 +2460,10 @@ void currReduction  (
             multLabelShortExp  = getShortExpVecFromArray( multLabelTemp );
             
             // test the multiplied label by both criteria 
-            if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules, strat ) && 
-                !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
+            if( !criterion1( multLabelTemp, multLabelShortExp, f5Rules, strat )
+#if USEREW
+                && !criterion2( multLabelTemp, multLabelShortExp, rewRules, temp->rewRule )
+#endif
               )
             {  
               poly multTempExp = pOne(); 
